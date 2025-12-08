@@ -4,20 +4,29 @@ import sys
 
 class ServoController:
     """
-    用于控制 MG996R 舵机的硬件 PWM 控制器 (Raspberry Pi 5)。
-    基于 /sys/class/pwm/pwmchip0/pwm2 接口。
+    用于控制 SG90 (9g) 舵机的硬件 PWM 控制器 (Raspberry Pi 5)。
+    支持多通道:
+    - GPIO 12 (PWM0)
+    - GPIO 13 (PWM1)
+    - GPIO 18 (PWM2)
+    - GPIO 19 (PWM3)
+    基于 /sys/class/pwm/pwmchip0/pwmX 接口。
     """
-    def __init__(self):
+    def __init__(self, channel=2):
         self.pwm_chip = "/sys/class/pwm/pwmchip0"
-        self.pwm_channel = 2
+        self.pwm_channel = channel
         self.pwm_path = os.path.join(self.pwm_chip, f"pwm{self.pwm_channel}")
         self.period_ns = 20000000 # 50Hz (20ms)
         
-        # --- 最终校准参数 ---
-        # 0度 (锁定): 380 us
-        # 180度 (解锁): 2375 us (取 2360-2390 的中间值)
-        self.LOCK_PULSE_NS = 380000
-        self.UNLOCK_PULSE_NS = 2375000 
+        # --- SG90 参数 (Micro Servo 9g) ---
+        # SG90 典型参数:
+        # 周期: 20ms (50Hz)
+        # 0度   : ~0.5ms (500,000 ns)
+        # 180度 : ~2.5ms (2,500,000 ns)
+        # 注意: 不同厂家的 SG90 可能略有差异，如果角度不准，请微调以下数值
+        
+        self.LOCK_PULSE_NS = 500000      # 0.5ms (0度 / 锁定)
+        self.UNLOCK_PULSE_NS = 2500000   # 2.5ms (180度 / 解锁)
 
         self._setup_pwm()
 
@@ -93,20 +102,33 @@ if __name__ == "__main__":
         print("错误: 需要 sudo 权限运行硬件 PWM。")
         sys.exit(1)
         
-    servo = ServoController()
+    # 测试所有 4 个通道
+    channels = [0, 1, 2, 3]
+    servos = []
+    
+    print("--- 多舵机测试 (PWM 0, 1, 2, 3) ---")
+    
+    for ch in channels:
+        try:
+            print(f"初始化通道 {ch}...")
+            s = ServoController(channel=ch)
+            servos.append(s)
+        except Exception as e:
+            print(f"通道 {ch} 初始化失败: {e}")
+
     try:
-        print("--- 最终舵机控制模块测试 ---")
-        print("1. 解锁 (Open)")
-        servo.unlock()
+        print("1. 全部解锁 (Open)")
+        for s in servos:
+            s.unlock()
         time.sleep(1)
         
-        print("2. 锁定 (Close)")
-        servo.lock()
+        print("2. 全部锁定 (Close)")
+        for s in servos:
+            s.lock()
         time.sleep(1)
         
         print("测试完成。")
     finally:
         # 注意：通常我们在程序结束时不 unexport，以便下次快速启动
-        # 这里为了演示完整性调用 cleanup，实际使用中可保留
-        # servo.cleanup()
+        pass
         pass

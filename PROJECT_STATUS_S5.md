@@ -10,7 +10,7 @@
 | 模块 | 决策/规格 | 状态 | 备注 |
 | :--- | :--- | :--- | :--- |
 | **主控** | Raspberry Pi 5 | ✅ 就绪 | 运行 Raspberry Pi OS (Bookworm) |
-| **舵机控制** | **硬件 PWM** (GPIO 18) | ✅ 完成 | 解决了软件 PWM 的抖动问题，已封装防抖逻辑 |
+| **舵机控制** | **SG90 (9g)** / 硬件 PWM | ✅ 更新 | 已从 MG996R 替换为 SG90，参数已调整 |
 | **数据库** | SQLite (`capsule_dispenser.db`) | ✅ 完成 | 已集成到主程序，支持用户查询和日志记录 |
 | **指纹模块** | DY-50 (类 R307) | ✅ 完成 | 解决了 Pi 5 特有的串口映射问题 (`ttyAMA0`) |
 | **供电** | 舵机独立 6V 供电 | ✅ 就绪 | 必须与 Pi 共地 |
@@ -22,15 +22,29 @@
 ### 3.1 舵机控制系统 (Servo System)
 经过多次测试（软件 PWM -> lgpio -> 硬件 PWM），最终确定使用 Linux 内核级硬件 PWM 以确保绝对稳定。
 
-*   **接口**: `/sys/class/pwm/pwmchip0/pwm2` (GPIO 18)
-*   **系统配置**: `/boot/firmware/config.txt` 中已添加 `dtoverlay=pwm,pin=18,func=2`
-*   **校准参数**:
-    *   **0度 (锁定)**: `380 us` (380,000 ns)
-    *   **180度 (解锁)**: `2375 us` (2,375,000 ns)
+*   **硬件型号**: SG90 (Micro Servo 9g) x 4
+*   **接口分配**:
+    *   **Servo 1**: GPIO 18 (PWM2)
+    *   **Servo 2**: GPIO 12 (PWM0)
+    *   **Servo 3**: GPIO 13 (PWM1)
+    *   **Servo 4**: GPIO 19 (PWM3)
+*   **系统配置 (Raspberry Pi 5 专用)**:
+    由于 `config.txt` 在 Pi 5 上配置多路 PWM 存在兼容性问题，采用 **Systemd 服务 + pinctrl** 强制配置引脚模式。
+    1.  **配置脚本**: `/usr/local/bin/setup_pwm_pins.sh`
+        ```bash
+        #!/bin/bash
+        pinctrl set 12 a0  # PWM0
+        pinctrl set 13 a0  # PWM1
+        pinctrl set 18 a3  # PWM2 (注意: Pi 5 上 GPIO 18/19 需设为 Alt3)
+        pinctrl set 19 a3  # PWM3
+        ```
+    2.  **自启动服务**: `/etc/systemd/system/pwm-setup.service` (开机自动运行上述脚本)
+*   **校准参数 (SG90)**:
+    *   **0度 (锁定)**: `500 us` (500,000 ns)
+    *   **180度 (解锁)**: `2500 us` (2,500,000 ns)
 *   **核心代码**: `servo_control.py`
-    *   实现了 `lock()` 和 `unlock()` 方法。
+    *   支持多通道初始化 `ServoController(channel=N)`。
     *   包含**自动防抖逻辑**：动作完成后立即切断 PWM 信号。
-    *   包含**强制重置逻辑**：初始化时自动 unexport/export 以防止接口假死。
 
 ### 3.2 数据库设计 (Database)
 *   **文件**: `capsule_dispenser.db`

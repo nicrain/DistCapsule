@@ -42,12 +42,23 @@ def main():
     print("--- 智能胶囊分配器 (Demo v2) ---")
     print("初始化硬件...")
 
-    # 1. 初始化舵机
+    # 1. 初始化舵机 (4个通道)
+    servos = {}
     try:
-        servo = ServoController()
-        # 上电先锁住
-        servo.lock()
-        print("✅ 舵机已就绪 (锁定状态)")
+        # 映射: 胶囊仓ID -> ServoController
+        # 假设我们有4个仓位
+        servos[1] = ServoController(channel=2) # GPIO 18 (原有的)
+        servos[2] = ServoController(channel=0) # GPIO 12
+        servos[3] = ServoController(channel=1) # GPIO 13
+        servos[4] = ServoController(channel=3) # GPIO 19
+        
+        # 上电先全部锁住
+        for s in servos.values():
+            s.lock()
+        print(f"✅ {len(servos)} 个舵机已就绪 (锁定状态)")
+    except Exception as e:
+        print(f"❌ 舵机初始化失败: {e}")
+        return
     except Exception as e:
         print(f"❌ 舵机初始化失败: {e}")
         return
@@ -106,13 +117,17 @@ def main():
             log_access(finger_id, "FINGERPRINT_UNLOCK", "SUCCESS", f"Confidence: {confidence}")
             
             print("🔓 执行开锁...")
-            servo.unlock()
+            # 简单演示：所有舵机一起动作
+            # 实际应用中，可以根据 finger_id 决定打开哪个仓位
+            for s in servos.values():
+                s.unlock()
             
             print(f"⏳ 保持开启 {UNLOCK_TIME} 秒...")
             time.sleep(UNLOCK_TIME)
             
             print("🔒 自动上锁...")
-            servo.lock()
+            for s in servos.values():
+                s.lock()
             
             print("--- 等待下一次操作 ---")
             # 等待手指移开，防止连续触发
