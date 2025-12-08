@@ -1,134 +1,77 @@
-import os
+import lgpio
 import time
 import sys
 
+# 映射 PWM 通道 ID 到 BCM GPIO 编号 (Pi 5)
+# Channel 0 -> GPIO 12
+# Channel 1 -> GPIO 13
+# Channel 2 -> GPIO 18
+# Channel 3 -> GPIO 19
+CHANNEL_TO_PIN = {
+    0: 12,
+    1: 13,
+    2: 18,
+    3: 19
+}
+
 class ServoController:
     """
-    用于控制 SG90 (9g) 舵机的硬件 PWM 控制器 (Raspberry Pi 5)。
-    支持多通道:
-    - GPIO 12 (PWM0)
-    - GPIO 13 (PWM1)
-    - GPIO 18 (PWM2)
-    - GPIO 19 (PWM3)
-    基于 /sys/class/pwm/pwmchip0/pwmX 接口。
+    使用 lgpio (软件 PWM) 控制 SG90 舵机。
+    完全绕过硬件 PWM 限制，解决与风扇的冲突。
     """
     def __init__(self, channel=2):
-        self.pwm_chip = "/sys/class/pwm/pwmchip0"
-        self.pwm_channel = channel
-        self.pwm_path = os.path.join(self.pwm_chip, f"pwm{self.pwm_channel}")
-        self.period_ns = 20000000 # 50Hz (20ms)
-        
-        # --- SG90 参数 (Micro Servo 9g) ---
-        # SG90 典型参数:
-        # 周期: 20ms (50Hz)
-        # 0度   : ~0.5ms (500,000 ns)
-        # 180度 : ~2.5ms (2,500,000 ns)
-        # 注意: 不同厂家的 SG90 可能略有差异，如果角度不准，请微调以下数值
-        
-        self.LOCK_PULSE_NS = 500000      # 0.5ms (0度 / 锁定)
-        self.UNLOCK_PULSE_NS = 2500000   # 2.5ms (180度 / 解锁)
-
-        self._setup_pwm()
-
-    def _write_file(self, filename, value):
-        full_path = os.path.join(self.pwm_path, filename)
-        # 对于 export/unexport，路径在 chip 目录下
-        if filename in ['export', 'unexport']:
-            full_path = os.path.join(self.pwm_chip, filename)
-            
+        self.pin = CHANNEL_TO_PIN.get(channel, channel)
+        # Pi 5 的 GPIO 通常在 chip 4
         try:
-            with open(full_path, 'w') as f:
-                f.write(str(value))
-        except OSError as e:
-            # 忽略 "Device or resource busy" (通常意味着已导出)
-            if e.errno != 16: 
-                print(f"[Servo Error] 写入 {filename} 失败: {e}")
-
-    def _setup_pwm(self):
-        """初始化 PWM 通道 (增强版: 强制重置)"""
-        # 如果已经存在，先尝试 unexport 以便重置状态
-        if os.path.exists(self.pwm_path):
-            try:
-                self._write_file("unexport", self.pwm_channel)
-                time.sleep(0.1)
-            except:
-                pass
-
-        # 重新 export
-        if not os.path.exists(self.pwm_path):
-            self._write_file("export", self.pwm_channel)
-            time.sleep(0.2) # 给足时间让文件系统生成节点
+            self.h = lgpio.gpiochip_open(4)
+        except:
+            # Fallback for older Pis or different configs
+            self.h = lgpio.gpiochip_open(0)
         
-        # 再次检查路径是否存在
-        if not os.path.exists(self.pwm_path):
-            raise RuntimeError(f"无法导出 PWM 通道 {self.pwm_channel}")
+        try:
+            lgpio.gpio_claim_output(self.h, self.pin)
+        except:
+            # 如果已经被占用，尝试先释放再占用 (虽然 lgpio 通常允许多个 handle)
+            pass
 
-        # 先禁用以进行配置
-        self._write_file("enable", 0)
-        self._write_file("period", self.period_ns)
-        
-        # 默认先不开启 enable，等到 lock/unlock 时再开启
+        # SG90 参数
+        self.FREQ = 50 # 50Hz
+        # 0度 = 0.5ms / 20ms = 2.5%
+        # 180度 = 2.5ms / 20ms = 12.5%
+        self.DUTY_LOCK = 2.5
+        self.DUTY_UNLOCK = 12.5
 
-    def _enable(self, enabled: bool):
-        self._write_file("enable", "1" if enabled else "0")
-
-    def _set_duty_cycle(self, duty_ns):
-        self._write_file("duty_cycle", duty_ns)
+    def _set_pwm(self, duty_percent):
+        """设置 PWM 占空比 (0-100)"""
+        lgpio.tx_pwm(self.h, self.pin, self.FREQ, duty_percent)
 
     def lock(self):
-        """转动到锁定位置 (0度) 并切断信号防抖"""
-        # print("[Servo] 执行锁定...")
-        self._set_duty_cycle(self.LOCK_PULSE_NS)
-        self._enable(True)
-        time.sleep(0.8) # 给足时间转动
-        self._enable(False) # 切断信号，消除抖动
+        """转动到锁定位置 (0度)"""
+        self._set_pwm(self.DUTY_LOCK)
+        time.sleep(0.5) # 等待转动
+        # 关闭 PWM 以消除抖动并省电
+        lgpio.tx_pwm(self.h, self.pin, 0, 0)
 
     def unlock(self):
-        """转动到解锁位置 (180度) 并切断信号防抖"""
-        # print("[Servo] 执行解锁...")
-        self._set_duty_cycle(self.UNLOCK_PULSE_NS)
-        self._enable(True)
-        time.sleep(0.8)
-        self._enable(False)
+        """转动到解锁位置 (180度)"""
+        self._set_pwm(self.DUTY_UNLOCK)
+        time.sleep(0.5)
+        lgpio.tx_pwm(self.h, self.pin, 0, 0)
 
     def cleanup(self):
-        """清理资源"""
-        self._enable(False)
-        self._write_file("unexport", self.pwm_channel)
+        lgpio.gpiochip_close(self.h)
 
-# 简单的自测代码
+# 自测代码
 if __name__ == "__main__":
-    if os.geteuid() != 0:
-        print("错误: 需要 sudo 权限运行硬件 PWM。")
-        sys.exit(1)
-        
-    # 测试所有 4 个通道
-    channels = [0, 1, 2, 3]
-    servos = []
-    
-    print("--- 多舵机测试 (PWM 0, 1, 2, 3) ---")
-    
-    for ch in channels:
-        try:
-            print(f"初始化通道 {ch}...")
-            s = ServoController(channel=ch)
-            servos.append(s)
-        except Exception as e:
-            print(f"通道 {ch} 初始化失败: {e}")
-
+    print("--- 软件 PWM 舵机测试 ---")
     try:
-        print("1. 全部解锁 (Open)")
-        for s in servos:
-            s.unlock()
+        # 测试 GPIO 18 (Channel 2)
+        s = ServoController(channel=2)
+        print("Unlock...")
+        s.unlock()
         time.sleep(1)
-        
-        print("2. 全部锁定 (Close)")
-        for s in servos:
-            s.lock()
-        time.sleep(1)
-        
-        print("测试完成。")
-    finally:
-        # 注意：通常我们在程序结束时不 unexport，以便下次快速启动
-        pass
-        pass
+        print("Lock...")
+        s.lock()
+        print("测试完成")
+    except Exception as e:
+        print(f"Error: {e}")
