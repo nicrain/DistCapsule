@@ -41,22 +41,44 @@ class ServoController:
         # 180度 = 2.5ms / 20ms = 12.5%
         self.DUTY_LOCK = 2.5
         self.DUTY_UNLOCK = 12.5
+        self.current_duty = None # Track current position
 
     def _set_pwm(self, duty_percent):
         """设置 PWM 占空比 (0-100)"""
         lgpio.tx_pwm(self.h, self.pin, self.FREQ, duty_percent)
 
+    def _smooth_move(self, start_duty, end_duty, steps=50, duration=0.5):
+        """线性插值平滑移动，减少瞬时电流"""
+        delay = duration / steps
+        diff = end_duty - start_duty
+        for i in range(steps):
+            duty = start_duty + (diff * (i / steps))
+            self._set_pwm(duty)
+            time.sleep(delay)
+        self._set_pwm(end_duty)
+        time.sleep(0.1) # Final hold
+
     def lock(self):
         """转动到锁定位置 (0度)"""
-        self._set_pwm(self.DUTY_LOCK)
-        time.sleep(0.5) # 等待转动
+        if self.current_duty is not None:
+            self._smooth_move(self.current_duty, self.DUTY_LOCK)
+        else:
+            self._set_pwm(self.DUTY_LOCK)
+            time.sleep(0.5) # Wait for movement
+        
+        self.current_duty = self.DUTY_LOCK
         # 关闭 PWM 以消除抖动并省电
         lgpio.tx_pwm(self.h, self.pin, 0, 0)
 
     def unlock(self):
         """转动到解锁位置 (180度)"""
-        self._set_pwm(self.DUTY_UNLOCK)
-        time.sleep(0.5)
+        if self.current_duty is not None:
+            self._smooth_move(self.current_duty, self.DUTY_UNLOCK)
+        else:
+            self._set_pwm(self.DUTY_UNLOCK)
+            time.sleep(0.5)
+            
+        self.current_duty = self.DUTY_UNLOCK
         lgpio.tx_pwm(self.h, self.pin, 0, 0)
 
     def cleanup(self):

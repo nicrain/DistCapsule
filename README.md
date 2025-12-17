@@ -99,6 +99,7 @@ sudo python3 main_demo.py
 
 *   **2025-12 (S5)**: Migrated Servo control from Hardware PWM to **Software PWM** (`lgpio`).
     *   *Reason*: The Raspberry Pi 5's hardware PWM clock is shared with the cooling fan. When the fan activates, it forces the PWM frequency to ~25kHz, causing servos (which need 50Hz) to fail. Software PWM avoids this conflict entirely.
+    *   *Update*: Implemented **Soft Start (Smooth Move)** logic in `servo_control.py` to reduce peak current draw during servo actuation, stabilizing the power rail for the display and sensors.
 *   **2024-11**: Removed Arduino from architecture. The Pi 5 is powerful enough to handle all IO directly.
 
 ## 📄 License
