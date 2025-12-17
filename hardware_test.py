@@ -112,6 +112,11 @@ def test_screen():
         print("测试完成")
         time.sleep(1)
         
+        # 清屏
+        print("清屏...")
+        img_clear = Image.new("RGB", (disp.width, disp.height), (0, 0, 0))
+        disp.display(img_clear)
+        
     except Exception as e:
         print(f"屏幕错误: {e}")
 
@@ -125,7 +130,6 @@ def test_fingerprint():
             raise RuntimeError("无法读取模块参数")
             
         print("模块连接成功!")
-        print(f"系统参数: {finger.sys_param}")
         print(f"库容量: {finger.library_size}")
         print(f"安全等级: {finger.security_level}")
         print(f"地址: {hex(finger.device_address)}")

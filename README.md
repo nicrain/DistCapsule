@@ -66,7 +66,7 @@ sudo python3 hardware_test.py
 ```
 *   Select '1' to test all servos.
 *   Select '2' to test the screen colors.
-*   Select '3' to check fingerprint sensor connection.
+*   Select '3' to check fingerprint sensor connection and image capture.
 
 ### 4. Run Main Program
 Start the dispenser system. This runs the fingerprint listening loop, updates the display, and controls servos based on authentication.
