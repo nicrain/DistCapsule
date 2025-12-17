@@ -1,72 +1,102 @@
 # Smart Capsule Dispenser (智能胶囊分配器)
 
-这是一个基于 **Raspberry Pi 5** 构建的智能胶囊分配系统原型。它利用生物识别技术（指纹）来验证用户身份，并通过高精度硬件 PWM 控制舵机进行胶囊分发。
+**Platform:** Raspberry Pi 5 (Bookworm OS) | **Status:** Stable (S5) | **Last Updated:** 2025-12
 
-## ✨ 功能特性
+A secure, biometric-enabled capsule dispenser system. It transforms a standard capsule rack into a personalized "mailbox" system where each user has exclusive access to a specific storage channel via fingerprint authentication.
 
-*   **👆 指纹识别**: 集成 DY-50 (类 R307) 光学指纹模块，支持指纹录入、搜索和验证。
-*   **⚙️ 舵机控制**: 采用 Linux 内核级 **硬件 PWM** (Hardware PWM) 驱动 SG90 舵机，彻底解决了软件 PWM 的抖动问题。
-*   **🗄️ 本地数据库**: 内置 SQLite 数据库 (`capsule_dispenser.db`)，用于管理用户信息、权限和存储详细的访问日志。
-*   **🛡️ 稳定可靠**: 包含自动防抖逻辑（动作后切断信号）和串口通信错误处理。
+## ✨ Key Features
 
-## 🛠️ 硬件清单
+*   **Biometric Security**: Integrated DY-50 (R307 compatible) optical fingerprint sensor for fast user identification.
+*   **Precision Control**: Controls 5x SG90 servos using **Software PWM (`lgpio`)**, specifically optimized for the Raspberry Pi 5 to avoid hardware PWM conflicts with the system fan.
+*   **Interactive UI**: 1.3" IPS Display (ST7789) provides real-time status, feedback, and user prompts.
+*   **Local Database**: SQLite-backed user management and access logging.
+*   **Robust Design**: Includes jitter-prevention logic (auto-cutoff after movement) and robust error handling for serial communications.
 
-1.  **主控**: Raspberry Pi 5 (运行 Raspberry Pi OS Bookworm)
-2.  **执行器**: SG90 Micro Servo (9g 舵机)
-3.  **传感器**: DY-50 / R307 指纹模块 (UART 接口)
-4.  **电源**: 5V/5A (Pi)
+## 🛠 Hardware Architecture
 
-## 🔌 接线简述
+*   **Controller**: Raspberry Pi 5 (8GB recommended).
+*   **Actuators**: 5x SG90 Micro Servos (9g).
+*   Sensor: DY-50 / R307 Optical Fingerprint Module (UART).
+*   **Display**: 1.3" IPS LCD (240x240) with ST7789 driver (SPI).
+*   **Base Unit (Mechanical)**: Custom 3D Printed Components - The mechanical structure will be custom-designed and 3D printed. Initial drafts are available in the `3D/` directory.
+*   **Power**:
+    *   Pi 5: Official 27W USB-C Power Supply.
+    *   Servos: **External 5V Power Supply** (Common Ground with Pi is mandatory).
 
-> ⚠️ **注意**: 详细接线图请务必参考 [WIRING_GUIDE.md](WIRING_GUIDE.md)。
+> **⚠️ Wiring Warning**: Do not power 5 servos directly from the Pi's GPIO 5V pin. Use an external power source. See [WIRING_GUIDE.md](WIRING_GUIDE.md) for detailed pinouts.
 
-*   **舵机信号线**: GPIO 18 (Pin 12) -> 对应 `/sys/class/pwm/pwmchip0/pwm2`
-*   **指纹模块**:
-    *   TX (模块) -> GPIO 15 (RXD)
-    *   RX (模块) -> GPIO 14 (TXD)
-    *   **关键**: 在 Pi 5 上使用 `/dev/ttyAMA0` 端口。
+## 🚀 Installation & Setup
 
-## 🚀 快速开始
+### 1. System Dependencies
+The project relies on `lgpio` for GPIO control on the Pi 5 and `pyserial` for the sensor.
 
-### 1. 环境准备
 ```bash
-# 安装必要的 Python 库
 sudo apt-get update
-sudo apt-get install python3-serial python3-pip
-sudo pip3 install adafruit-circuitpython-fingerprint rpi-lgpio
+sudo apt-get install python3-serial python3-pip python3-lgpio python3-pil python3-rpi.gpio
 ```
 
-### 2. 系统配置
-编辑 `/boot/firmware/config.txt` 启用硬件 PWM：
-```text
-dtoverlay=pwm,pin=18,func=2
+### 2. Python Libraries
+```bash
+sudo pip3 install adafruit-circuitpython-fingerprint st7789
 ```
-重启树莓派生效。
 
-### 3. 运行代码
+### 3. Hardware Configuration
+*   **UART**: Enable Serial Port hardware but disable the login shell via `sudo raspi-config`. The fingerprint module uses `/dev/ttyAMA0` (GPIO 14/15) on Pi 5.
+*   **SPI**: Enable SPI interface via `sudo raspi-config` for the display.
 
-**初始化数据库:**
+## 📖 Usage Guide
+
+### 1. Initialize System
+Create the database tables for users and logs.
 ```bash
 python3 setup_database.py
 ```
 
-**录入指纹 (注册用户):**
+### 2. Enroll Users (Fingerprint)
+Register a new user and capture their fingerprint. Follow the on-screen prompts.
 ```bash
 sudo python3 fingerprint_enroll.py
 ```
+*   *Note: Ensure the database is initialized first.*
 
-**运行主演示程序:**
+### 3. Test Servos
+To verify that all 5 servos are connected and working correctly, run the driver script directly. This will cycle through all servos (unlock -> lock).
+```bash
+sudo python3 servo_control.py
+```
+
+### 4. Run Main Program
+Start the dispenser system. This runs the fingerprint listening loop, updates the display, and controls servos based on authentication.
 ```bash
 sudo python3 main_demo.py
 ```
 
-## 📂 项目结构
+## 📂 Project Structure
 
-*   `main_demo.py`: 核心主程序，集成指纹验证与舵机控制。
-*   `servo_control.py`: 封装好的舵机控制类，处理底层 PWM 操作。
-*   `fingerprint_enroll.py`: 独立的指纹录入工具。
-*   `setup_database.py`: 数据库建表脚本。
-*   `PROJECT_STATUS_S5.md`: 详细的项目开发状态和技术决策文档。
+| File | Description |
+| :--- | :--- |
+| `main_demo.py` | **Core Application**. Handles auth loop, UI updates, and servo triggering. |
+| `servo_control.py` | **Driver**. Wrapper for `lgpio` to control SG90 servos via Software PWM. |
+| `st7789_driver.py` | **Driver**. Custom SPI driver for the IPS display. |
+| `fingerprint_enroll.py` | **Tool**. Standalone script to register new fingerprints. |
+| `setup_database.py` | **Tool**. Initializes the SQLite database schema. |
+| `WIRING_GUIDE.md` | **Documentation**. Detailed pinout and wiring diagrams. |
+| `capsule_dispenser.db` | **Data**. Local SQLite database (created after setup). |
 
-## 📝 许可证
+## 🔮 Future Roadmap
+
+*   **Camera Integration**: Add Raspberry Pi Camera Module 3 for Face ID or QR Code unlock (Secondary Auth).
+*   **Web Dashboard**: Develop a local Flask/Django interface for remote log viewing, user management, and emergency unlock.
+*   **Inventory & Social**: 
+    *   Track capsule counts per channel.
+    *   "Capsule Sharing" feature: Allow users to offer surplus capsules to others via the app.
+*   **Enclosure**: Design a fully 3D-printed enclosure to hide wires and mount the Pi/Screen securely to the base unit.
+
+## 📜 History & Decisions
+
+*   **2025-12 (S5)**: Migrated Servo control from Hardware PWM to **Software PWM** (`lgpio`).
+    *   *Reason*: The Raspberry Pi 5's hardware PWM clock is shared with the cooling fan. When the fan activates, it forces the PWM frequency to ~25kHz, causing servos (which need 50Hz) to fail. Software PWM avoids this conflict entirely.
+*   **2024-11**: Removed Arduino from architecture. The Pi 5 is powerful enough to handle all IO directly.
+
+## 📄 License
 MIT License

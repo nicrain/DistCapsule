@@ -106,34 +106,18 @@ def main():
     # 0. 初始化屏幕
     init_display_system()
 
-        # 1. 初始化舵机 (4个通道)
+        # 1. 初始化舵机 (5个通道)
     servos = {}
     try:
         # 映射: 胶囊仓ID -> ServoController
-        # 恢复 4 个仓位 (软件 PWM 模式下无冲突)
+        # 恢复 5 个仓位 (软件 PWM 模式下无冲突)
         servos[1] = ServoController(channel=2) # GPIO 18
         servos[2] = ServoController(channel=0) # GPIO 12
         servos[3] = ServoController(channel=1) # GPIO 13
         servos[4] = ServoController(channel=3) # GPIO 19
-        
-        # 上电自检: 先解锁再锁定，确保用户看到舵机动作
-        print("   ...执行舵机自检 (Unlock -> Lock)...")
-        for i, s in servos.items():
-            print(f"   - 舵机 {i} 解锁")
-            s.unlock()
-            time.sleep(0.2)
-        
-        time.sleep(1)
-        
-        for i, s in servos.items():
-            print(f"   - 舵机 {i} 锁定")
-            s.lock()
-            time.sleep(0.2)
+        servos[5] = ServoController(channel=5) # GPIO 6 (Mapped in servo_control)
             
         print(f"✅ {len(servos)} 个舵机已就绪")
-    except Exception as e:
-        print(f"❌ 舵机初始化失败: {e}")
-        return
     except Exception as e:
         print(f"❌ 舵机初始化失败: {e}")
         return
