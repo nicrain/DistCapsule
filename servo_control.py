@@ -62,40 +62,4 @@ class ServoController:
     def cleanup(self):
         lgpio.gpiochip_close(self.h)
 
-# 自测代码
-if __name__ == "__main__":
-    print("--- 软件 PWM 舵机测试 ---")
-    channels = [0, 1, 2, 3, 5]
-    servos = {}
-
-    try:
-        # 初始化所有舵机
-        for ch in channels:
-            print(f"初始化通道 {ch} (GPIO {CHANNEL_TO_PIN[ch]})...")
-            servos[ch] = ServoController(channel=ch)
-
-        # 批量解锁
-        print("\n>>> 全部解锁 (Unlock)...")
-        for ch, s in servos.items():
-            print(f"   - 通道 {ch}")
-            s.unlock()
-            time.sleep(0.2)
-
-        time.sleep(1)
-
-        # 批量锁定
-        print("\n>>> 全部锁定 (Lock)...")
-        for ch, s in servos.items():
-            print(f"   - 通道 {ch}")
-            s.lock()
-            time.sleep(0.2)
-
-        print("\n测试完成")
-
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        # 清理
-        for s in servos.values():
-            s.cleanup()
 

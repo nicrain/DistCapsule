@@ -59,11 +59,14 @@ sudo python3 fingerprint_enroll.py
 ```
 *   *Note: Ensure the database is initialized first.*
 
-### 3. Test Servos
-To verify that all 5 servos are connected and working correctly, run the driver script directly. This will cycle through all servos (unlock -> lock).
+### 3. Hardware Test
+To verify that all components (Servos, Screen, Fingerprint) are connected and working correctly, run the integrated test tool.
 ```bash
-sudo python3 servo_control.py
+sudo python3 hardware_test.py
 ```
+*   Select '1' to test all servos.
+*   Select '2' to test the screen colors.
+*   Select '3' to check fingerprint sensor connection.
 
 ### 4. Run Main Program
 Start the dispenser system. This runs the fingerprint listening loop, updates the display, and controls servos based on authentication.
