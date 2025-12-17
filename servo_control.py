@@ -47,7 +47,7 @@ class ServoController:
         """设置 PWM 占空比 (0-100)"""
         lgpio.tx_pwm(self.h, self.pin, self.FREQ, duty_percent)
 
-    def _smooth_move(self, start_duty, end_duty, steps=50, duration=0.5):
+    def _smooth_move(self, start_duty, end_duty, steps=50, duration=2.0):
         """线性插值平滑移动，减少瞬时电流"""
         delay = duration / steps
         diff = end_duty - start_duty
