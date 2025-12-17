@@ -132,7 +132,12 @@ def test_fingerprint():
         print("模块连接成功!")
         print(f"库容量: {finger.library_size}")
         print(f"安全等级: {finger.security_level}")
-        print(f"地址: {hex(finger.device_address)}")
+        # 处理地址可能是 bytes 或 int 的情况
+        address = finger.device_address
+        if isinstance(address, int):
+            print(f"地址: {hex(address)}")
+        else:
+            print(f"地址: {address.hex() if hasattr(address, 'hex') else address}")
         
         print("\n请按手指进行图像测试 (按 Ctrl+C 返回)...")
         while True:
