@@ -268,12 +268,13 @@ def main():
                 # 执行开锁
                 servos[assigned_channel].unlock()
                 
-                # 倒计时逻辑：更新进度条
-                for i in range(UNLOCK_TIME, 0, -1):
+                # 倒计时逻辑：平滑进度条 (20 FPS)
+                steps = UNLOCK_TIME * 20
+                for i in range(steps, 0, -1):
                     # 计算剩余进度 (0.0 - 1.0)
-                    prog = i / UNLOCK_TIME
+                    prog = i / steps
                     update_screen("OPENING", display_msg, bg_color, progress=prog)
-                    time.sleep(1)
+                    time.sleep(0.05)
                 
                 print(f"🔒 关闭通道 #{assigned_channel}")
                 servos[assigned_channel].lock()
