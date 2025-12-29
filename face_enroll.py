@@ -125,37 +125,74 @@ def enroll_face():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    print("\n--- 操作指南 ---")
-    print("1. 确保光线充足，正对摄像头。")
-    print("2. 窗口中会出现人脸框。")
-    print("3. 按 's' 键保存当前帧人脸。")
-    print("4. 按 'q' 键取消退出。")
+    # ... (前文代码不变)
+
+    # 检查是否支持 GUI 显示
+    import os
+    has_display = os.environ.get('DISPLAY') is not None
+    
+    if has_display:
+        print("\n--- GUI 模式指南 ---")
+        print("1. 窗口中会出现人脸框。")
+        print("2. 按 's' 键保存，'q' 键退出。")
+    else:
+        print("\n⚠️  未检测到显示器 (SSH模式)。切换到 [自动录入模式]。")
+        print("➡️  请正对摄像头，保持静止...")
+        print("➡️  系统将在检测到单张清晰人脸时自动保存。")
+
+    start_time = time.time()
+    last_log_time = time.time()
 
     while True:
         ret, frame = cap.read()
         if not ret:
             print("无法获取图像帧")
-            break
+            time.sleep(0.1)
+            continue
 
         # 缩小图像以加快处理速度 (1/2)
         small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5) 
-        
-        # BGR 转 RGB (face_recognition 需要 RGB)
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-        # 检测人脸位置
+        # 检测人脸
         face_locations = face_recognition.face_locations(rgb_small_frame)
 
+        # --- 分支 1: 无显示器 (自动模式) ---
+        if not has_display:
+            # 每秒打印一次状态点，避免刷屏
+            if time.time() - last_log_time > 1.0:
+                print(".", end="", flush=True)
+                last_log_time = time.time()
+
+            if len(face_locations) == 1:
+                print(f"\n✅ 检测到人脸! 正在提取特征...")
+                encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                if encodings:
+                    if save_face_to_db(user_id, encodings[0]):
+                        print(f"✅ ID {user_id} 人脸录入成功！")
+                        break
+            elif len(face_locations) > 1:
+                if time.time() - last_log_time > 1.0:
+                    print("\n[提示] 检测到多张人脸，请保留一人...", end="")
+            
+            # 超时保护 (60秒)
+            if time.time() - start_time > 60:
+                print("\n❌ 录入超时 (60s)，未检测到有效人脸。")
+                break
+            
+            # 简单限速
+            time.sleep(0.1)
+            continue
+
+        # --- 分支 2: GUI 模式 (原有逻辑) ---
         # 在原图上画框
         for (top, right, bottom, left) in face_locations:
-            # 坐标还原回原图比例 (*2)
             top *= 2
             right *= 2
             bottom *= 2
             left *= 2
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
 
-        # 显示预览
         cv2.imshow('Face Enroll - Press s to Save', frame)
 
         key = cv2.waitKey(1) & 0xFF
@@ -163,13 +200,8 @@ def enroll_face():
             print("退出录入")
             break
         elif key == ord('s'):
-            if len(face_locations) == 0:
-                print("⚠️  未检测到人脸，无法保存！")
-            elif len(face_locations) > 1:
-                print("⚠️  检测到多张人脸，请确保画面中只有一个人！")
-            else:
+            if len(face_locations) == 1:
                 print("📸 正在提取特征...")
-                # 提取特征编码 (128维向量)
                 encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
                 if encodings:
                     if save_face_to_db(user_id, encodings[0]):
@@ -177,11 +209,14 @@ def enroll_face():
                         break
                     else:
                         print("保存失败")
-                else:
-                    print("❌ 特征提取失败，请调整角度重试")
+            elif len(face_locations) == 0:
+                print("⚠️  未检测到人脸")
+            else:
+                print("⚠️  多张人脸")
 
     cap.release()
-    cv2.destroyAllWindows()
+    if has_display:
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     enroll_face()
