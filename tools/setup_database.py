@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DATABASE_NAME = "capsule_dispenser.db"
+DATABASE_NAME = "../capsule_dispenser.db"
 
 def setup_database():
     """连接数据库并创建所有必需的表。"""

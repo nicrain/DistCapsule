@@ -2,12 +2,13 @@
 
 SERVICE_NAME="capsule"
 USER_NAME=$USER
-# 获取当前脚本所在的绝对路径
-WORK_DIR=$(pwd)
+# 获取脚本所在目录的上一级作为项目根目录
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PYTHON_EXEC=$(which python3)
 
 echo "--- 胶囊分配器 开机自启安装脚本 ---"
-echo "工作目录: $WORK_DIR"
+echo "项目根目录: $PROJECT_ROOT"
 echo "执行用户: $USER_NAME"
 echo "Python路径: $PYTHON_EXEC"
 
@@ -19,8 +20,8 @@ After=network.target multi-user.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$WORK_DIR
-ExecStart=$PYTHON_EXEC $WORK_DIR/main_demo.py
+WorkingDirectory=$PROJECT_ROOT
+ExecStart=$PYTHON_EXEC $PROJECT_ROOT/main.py
 Restart=always
 RestartSec=5
 # 确保输出即时刷新到日志

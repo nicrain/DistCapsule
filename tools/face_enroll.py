@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API
 # 或者更通用的屏蔽方式
 warnings.filterwarnings("ignore", category=UserWarning, module="face_recognition_models")
 
-DATABASE_NAME = "capsule_dispenser.db"
+DATABASE_NAME = "../capsule_dispenser.db"
 
 def get_db_connection():
     return sqlite3.connect(DATABASE_NAME)

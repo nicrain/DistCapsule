@@ -1,6 +1,6 @@
 import sqlite3
 
-DATABASE_NAME = "capsule_dispenser.db"
+DATABASE_NAME = "../capsule_dispenser.db"
 
 def add_test_user(user_id, name):
     conn = sqlite3.connect(DATABASE_NAME)

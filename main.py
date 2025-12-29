@@ -4,10 +4,10 @@ import sqlite3
 import datetime
 import threading
 import adafruit_fingerprint
-from servo_control import ServoController
+from hardware.servo_control import ServoController
 from PIL import Image, ImageDraw, ImageFont
-from st7789_driver import ST7789_Driver
-from face_system import FaceRecognizer
+from hardware.st7789_driver import ST7789_Driver
+from hardware.face_system import FaceRecognizer
 
 # --- 配置 ---
 SERIAL_PORT = "/dev/ttyAMA0"  # Pi 5 专用端口

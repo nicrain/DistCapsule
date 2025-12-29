@@ -1,12 +1,16 @@
 import time
 import sys
+import os
 import serial
 import adafruit_fingerprint
 from PIL import Image, ImageDraw, ImageFont
 
+# 将项目根目录添加到 python 路径，以便导入 hardware 包
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 # 导入项目驱动
-from servo_control import ServoController
-from st7789_driver import ST7789_Driver
+from hardware.servo_control import ServoController
+from hardware.st7789_driver import ST7789_Driver
 
 # 配置
 SERIAL_PORT = "/dev/ttyAMA0"
