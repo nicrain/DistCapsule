@@ -85,9 +85,9 @@ def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None):
     
     # 绘制进度条 (如果有)
     if progress is not None:
-        # 进度条位置: 底部上方一点
+        # 进度条位置: 下移到 180 像素处，避免遮挡文字
         bar_x = 20
-        bar_y = 160
+        bar_y = 180
         bar_w = 200
         bar_h = 10
         # 绘制背景框
@@ -99,7 +99,7 @@ def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None):
 
     # 底部时间
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
-    draw.text((60, 190), current_time, font=font_small, fill="YELLOW")
+    draw.text((60, 205), current_time, font=font_small, fill="YELLOW")
     
     disp.display(image)
 
