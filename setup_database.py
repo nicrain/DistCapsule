@@ -5,27 +5,31 @@ DATABASE_NAME = "capsule_dispenser.db"
 
 def setup_database():
     """连接数据库并创建所有必需的表。"""
-    # 如果为了开发方便，可以先删除旧库(慎用)
-    # if os.path.exists(DATABASE_NAME):
-    #     os.remove(DATABASE_NAME)
     
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
     # 1. 创建 Users 表
-    # 更新：加入 assigned_channel (1-5) 用于分配舵机
-    # auth_level: 1=Admin, 2=User
-    # user_id 实际上应该对应指纹模块里的 ID (0-127)，所以我们手动指定 user_id 而不是 AUTOINCREMENT
+    # 更新：加入 face_encoding 用于人脸识别
+    # face_encoding 将存储为 TEXT (JSON string of list[float])
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Users (
         user_id INTEGER PRIMARY KEY, 
         name TEXT NOT NULL,
         auth_level INTEGER NOT NULL DEFAULT 2,
         assigned_channel INTEGER,
+        face_encoding TEXT,
         created_at TEXT,
         is_active INTEGER NOT NULL DEFAULT 1
     );
     """)
+
+    # 检查 face_encoding 列是否存在 (针对旧库升级)
+    cursor.execute("PRAGMA table_info(Users)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if "face_encoding" not in columns:
+        print("⚡️ 检测到旧表结构，正在添加 face_encoding 列...")
+        cursor.execute("ALTER TABLE Users ADD COLUMN face_encoding TEXT")
 
     # 2. 创建 Access_Logs 表
     cursor.execute("""
