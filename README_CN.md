@@ -62,7 +62,10 @@ sudo apt install python3-opencv python3-face-recognition
 **方法 B: 使用 PIP (如 APT 安装失败)**
 ```bash
 # 在非虚拟环境下，必须添加 --break-system-packages 参数
-pip3 install opencv-python face_recognition --break-system-packages
+pip3 install opencv-python face_recognition setuptools --break-system-packages
+
+# ⚠️ 如果遇到 "Please install `face_recognition_models`" 错误：
+pip install git+https://github.com/ageitgey/face_recognition_models --break-system-packages
 ```
 
 ### 4. 硬件配置

@@ -47,17 +47,33 @@ def enroll_face():
         return
 
     # 初始化摄像头
-    print("正在打开摄像头 (Libcamera/V4L2)...")
-    # Pi 5 通常使用 index 0，配合 V4L2 后端
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    print("正在搜索可用摄像头 (Libcamera/V4L2)...")
+    cap = None
     
+    # 在 Pi 5 上，video0 通常是元数据，真实的视频流可能在 video1, video2 等
+    # 我们尝试遍历索引 0 到 10
+    found_index = -1
+    for i in range(10):
+        temp_cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
+        if temp_cap.isOpened():
+            # 尝试读取一帧以确认真的可用
+            ret, _ = temp_cap.read()
+            if ret:
+                cap = temp_cap
+                found_index = i
+                print(f"✅ 成功打开摄像头 (Index: {i})")
+                break
+            else:
+                temp_cap.release()
+    
+    if cap is None:
+        print("❌ 无法打开任何摄像头。")
+        print("请尝试运行 'libcamera-hello' 检查摄像头硬件是否正常。")
+        return
+
     # 设置分辨率，太高会卡，320x240 足够识别
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-    if not cap.isOpened():
-        print("❌ 无法打开摄像头。请检查连接或是否被占用。\n")
-        return
 
     print("\n--- 操作指南 ---")
     print("1. 确保光线充足，正对摄像头。")
