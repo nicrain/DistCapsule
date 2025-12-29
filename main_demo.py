@@ -160,6 +160,7 @@ def main():
 
     # 休眠相关变量
     last_activity_time = time.time()
+    last_clock_update = 0
     is_screen_on = True
 
     while True:
@@ -172,6 +173,12 @@ def main():
 
             # 2. 尝试读取指纹图像 (这是最耗时的操作，也是唤醒源)
             if finger.get_image() != adafruit_fingerprint.OK:
+                
+                # --- 新增: 空闲时更新时钟 (每秒一次) ---
+                if is_screen_on and (time.time() - last_clock_update > 1.0):
+                    update_screen("READY", "Waiting...", (0, 0, 0))
+                    last_clock_update = time.time()
+                
                 # 关键修改: 增加延时以降低 CPU 占用
                 time.sleep(0.1) 
                 continue
