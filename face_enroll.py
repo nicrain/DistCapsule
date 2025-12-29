@@ -4,6 +4,12 @@ import sqlite3
 import json
 import numpy as np
 import time
+import warnings
+
+# 屏蔽 pkg_resources 过时警告
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
+# 或者更通用的屏蔽方式
+warnings.filterwarnings("ignore", category=UserWarning, module="face_recognition_models")
 
 DATABASE_NAME = "capsule_dispenser.db"
 
