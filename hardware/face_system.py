@@ -21,7 +21,8 @@ class FaceRecognizer:
         self.known_face_ids = []
         self.cap = None
         self.last_scan_time = 0
-        self.scan_interval = 0.5  # 限制识别频率，每 0.5 秒一次，防止 CPU 满载
+        self.scan_interval = 0.5  # 限制识别频率
+        self.no_face_count = 0    # 调试计数器
         
         # 1. 加载已知人脸
         self.load_faces_from_db()
@@ -134,34 +135,43 @@ class FaceRecognizer:
             # 尝试重连逻辑可以在这里添加
             return None
 
-        # 优化策略: Pi 5 性能足够，不再缩小图像，以提高暗光/远距离检测率
-        # small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5) 
-        
-        # 1. 转换为灰度图用于增强 (Detection 需要)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # 优化策略: 强制图像增强
+        # 1. 转为 LAB 颜色空间 (L=亮度, A/B=颜色)
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
 
-        # 2. 图像增强: CLAHE (限制对比度自适应直方图均衡化)
-        # 这能显著改善暗光下的人脸可见度
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        enhanced_gray = clahe.apply(gray)
-        
-        # 将增强后的灰度图转回 RGB (face_recognition 需要 RGB，但其实它内部也会转灰度，
-        # 不过我们用增强过的通道替换原始亮度，能辅助检测)
-        # 这里为了简单兼容，我们直接用原图转 RGB 用于特征提取，
-        # 但用增强图做检测可能会更复杂 (库接口限制)。
-        # 
-        # 修正方案: face_recognition 库主要依赖 HOG。
-        # 我们直接把原图转 RGB，不缩小。
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # 2. 对 L (亮度) 通道应用 CLAHE
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        cl = clahe.apply(l)
 
-        # 3. 检测人脸 (使用原分辨率 640x480)
-        face_locations = face_recognition.face_locations(rgb_frame)
+        # 3. 合并通道并转回 RGB
+        limg = cv2.merge((cl, a, b))
+        enhanced_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+
+        # 3. 检测人脸 (使用增强后的图像)
+        face_locations = face_recognition.face_locations(enhanced_frame)
+        
         if not face_locations:
-            # 没人脸时保持静默
+            self.no_face_count += 1
+            # 每连续 10 次没检测到人脸(约5秒)，保存一张图看看摄像头看到了什么
+            if self.no_face_count % 10 == 0:
+                debug_file = "debug_view.jpg"
+                # 把增强前后的图拼在一起保存，方便对比
+                # 左边原图，右边增强图
+                combined = np.hstack((frame, cv2.cvtColor(enhanced_frame, cv2.COLOR_RGB2BGR)))
+                cv2.imwrite(debug_file, combined)
+                print(f"⚠️ [Face] 连续 {self.no_face_count} 次未检测到人脸，已保存调试图: {debug_file}")
             return None 
+        
+        # 如果检测到了，重置计数器
+        self.no_face_count = 0
 
         # 4. 提取特征
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+        # 注意：虽然用增强图检测到了位置，但为了特征准确性，建议：
+        # 方案A: 用增强图提取特征 (暗光下可能更好)
+        # 方案B: 用原图提取特征 (颜色更自然)
+        # 这里我们选择方案 A，因为原图可能太暗根本提不出特征
+        face_encodings = face_recognition.face_encodings(enhanced_frame, face_locations)
         
         print(f"👀 [Face] 捕获到 {len(face_encodings)} 张人脸")
 
