@@ -134,18 +134,34 @@ class FaceRecognizer:
             # 尝试重连逻辑可以在这里添加
             return None
 
-        # 1. 图像预处理
-        small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-        rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+        # 优化策略: Pi 5 性能足够，不再缩小图像，以提高暗光/远距离检测率
+        # small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5) 
+        
+        # 1. 转换为灰度图用于增强 (Detection 需要)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # 2. 检测人脸
-        face_locations = face_recognition.face_locations(rgb_small_frame)
+        # 2. 图像增强: CLAHE (限制对比度自适应直方图均衡化)
+        # 这能显著改善暗光下的人脸可见度
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        enhanced_gray = clahe.apply(gray)
+        
+        # 将增强后的灰度图转回 RGB (face_recognition 需要 RGB，但其实它内部也会转灰度，
+        # 不过我们用增强过的通道替换原始亮度，能辅助检测)
+        # 这里为了简单兼容，我们直接用原图转 RGB 用于特征提取，
+        # 但用增强图做检测可能会更复杂 (库接口限制)。
+        # 
+        # 修正方案: face_recognition 库主要依赖 HOG。
+        # 我们直接把原图转 RGB，不缩小。
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # 3. 检测人脸 (使用原分辨率 640x480)
+        face_locations = face_recognition.face_locations(rgb_frame)
         if not face_locations:
-            # 没人脸时保持静默，以免刷屏
+            # 没人脸时保持静默
             return None 
 
-        # 3. 提取特征
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        # 4. 提取特征
+        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
         
         print(f"👀 [Face] 捕获到 {len(face_encodings)} 张人脸")
 
