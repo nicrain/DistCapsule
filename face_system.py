@@ -111,31 +111,41 @@ class FaceRecognizer:
 
         ret, frame = self.cap.read()
         if not ret:
+            print("⚠️ [Face] 无法读取视频帧")
             return None
 
-        # 1. 图像预处理: 缩小以加速 (640x480 -> 320x240)
+        # 1. 图像预处理
         small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-        # BGR -> RGB
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
         # 2. 检测人脸
         face_locations = face_recognition.face_locations(rgb_small_frame)
         if not face_locations:
-            return None # 没人
+            # 没人脸时保持静默，以免刷屏
+            return None 
 
         # 3. 提取特征
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        
+        # print(f"👀 [Face] 检测到 {len(face_encodings)} 张人脸，正在分析...")
 
-        # 4. 比对 (只看第一张脸)
+        # 4. 比对
         for face_encoding in face_encodings:
-            # 默认为 0.6 的容差
-            matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.5)
+            # 计算与数据库中所有人脸的欧氏距离
+            # 距离越小越相似。通常 0.6 是分界线。
+            face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
             
-            if True in matches:
-                first_match_index = matches.index(True)
-                user_id = self.known_face_ids[first_match_index]
-                # print(f"👤 [Face] 识别成功: User ID {user_id}")
+            # 找到最相似的那个
+            best_match_index = np.argmin(face_distances)
+            min_distance = face_distances[best_match_index]
+
+            if min_distance < 0.6: # 放宽阈值到 0.6
+                user_id = self.known_face_ids[best_match_index]
+                print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
                 return user_id
+            else:
+                pass
+                # print(f"🤔 [Face] 未知用户 (最近距离: {min_distance:.2f})")
         
         return None
 
