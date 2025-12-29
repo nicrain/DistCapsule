@@ -155,7 +155,10 @@ class FaceRecognizer:
             best_match_index = np.argmin(face_distances)
             min_distance = face_distances[best_match_index]
 
-            if min_distance < 0.6: # 放宽阈值到 0.6
+            # 阈值调整说明:
+            # 0.60: 标准严格阈值 (误识率极低，但拒识率高)
+            # 0.72: 宽松阈值 (适合树莓派摄像头及非受控光线，体验更好)
+            if min_distance < 0.72: 
                 user_id = self.known_face_ids[best_match_index]
                 print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
                 return user_id
