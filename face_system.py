@@ -60,36 +60,51 @@ class FaceRecognizer:
         """使用 Pi 5 兼容策略初始化摄像头"""
         print("📷 [Face] 初始化摄像头...")
         
-        # 定义多种 GStreamer 管道尝试策略 (同 face_enroll.py)
-        pipelines = [
+        # 1. 尝试 GStreamer 策略
+        gst_pipelines = [
             (
                 "libcamerasrc ! video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! videoconvert ! video/x-raw,format=BGR ! appsink drop=1",
-                "GStreamer (NV12 640x480)"
+                "GStreamer (NV12)"
             ),
             (
                 "libcamerasrc ! video/x-raw,width=640,height=480 ! videoconvert ! video/x-raw,format=BGR ! appsink drop=1",
-                "GStreamer (Auto 640x480)"
-            ),
-            # 兼容非 Pi 5 环境
-            (0, "V4L2 Index 0") 
+                "GStreamer (Auto)"
+            )
         ]
 
-        for source, name in pipelines:
+        for pipeline, name in gst_pipelines:
             try:
-                if isinstance(source, int):
-                    self.cap = cv2.VideoCapture(source)
-                else:
-                    self.cap = cv2.VideoCapture(source, cv2.CAP_GSTREAMER)
-                
-                if self.cap.isOpened():
-                    # 尝试读一帧
-                    ret, _ = self.cap.read()
-                    if ret:
+                # print(f"  -> 尝试 {name}...")
+                cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+                if cap.isOpened():
+                    ret, frame = cap.read()
+                    if ret and frame is not None and frame.size > 0:
                         print(f"✅ [Face] 摄像头就绪: {name}")
+                        self.cap = cap
                         return
                     else:
-                        self.cap.release()
+                        cap.release()
             except Exception:
+                pass
+
+        # 2. 如果 GStreamer 失败，遍历搜索 V4L2 设备 (0-20)
+        print("⚠️ [Face] GStreamer 失败，正在搜索 V4L2 设备...")
+        for i in range(20):
+            try:
+                cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
+                if cap.isOpened():
+                    ret, frame = cap.read()
+                    if ret and frame is not None and frame.size > 0:
+                        print(f"✅ [Face] 成功连接 V4L2 设备 (Index: {i})")
+                        self.cap = cap
+                        
+                        # 保存一张调试图，确保画面正常
+                        cv2.imwrite("debug_camera_view.jpg", frame)
+                        print(f"   [Debug] 已保存测试图到 debug_camera_view.jpg")
+                        return
+                    else:
+                        cap.release()
+            except:
                 pass
         
         print("❌ [Face] 无法初始化任何摄像头，人脸识别将不可用")
@@ -111,7 +126,8 @@ class FaceRecognizer:
 
         ret, frame = self.cap.read()
         if not ret:
-            print("⚠️ [Face] 无法读取视频帧")
+            print("⚠️ [Face] 无法读取视频帧 (Stream broken)")
+            # 尝试重连逻辑可以在这里添加
             return None
 
         # 1. 图像预处理
@@ -127,7 +143,7 @@ class FaceRecognizer:
         # 3. 提取特征
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
         
-        # print(f"👀 [Face] 检测到 {len(face_encodings)} 张人脸，正在分析...")
+        print(f"👀 [Face] 捕获到 {len(face_encodings)} 张人脸")
 
         # 4. 比对
         for face_encoding in face_encodings:
@@ -144,8 +160,7 @@ class FaceRecognizer:
                 print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
                 return user_id
             else:
-                pass
-                # print(f"🤔 [Face] 未知用户 (最近距离: {min_distance:.2f})")
+                print(f"🤔 [Face] 陌生人 (最近距离: {min_distance:.2f})")
         
         return None
 
