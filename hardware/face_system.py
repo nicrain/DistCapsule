@@ -153,18 +153,16 @@ class FaceRecognizer:
         
         if not face_locations:
             self.no_face_count += 1
-            # 每连续 10 次没检测到人脸(约5秒)，保存一张图看看摄像头看到了什么
-            if self.no_face_count % 10 == 0:
-                debug_file = "debug_view.jpg"
-                # 把增强前后的图拼在一起保存，方便对比
-                # 左边原图，右边增强图
-                combined = np.hstack((frame, cv2.cvtColor(enhanced_frame, cv2.COLOR_RGB2BGR)))
-                cv2.imwrite(debug_file, combined)
-                print(f"⚠️ [Face] 连续 {self.no_face_count} 次未检测到人脸，已保存调试图: {debug_file}")
+            # 连续未检测到人脸时，仅在控制台提示（不再保存图片）
+            if self.no_face_count % 20 == 0: # 降低频率到约 10秒一次
+                # print(f"⚠️ [Face] 连续 {self.no_face_count} 次未检测到人脸 (请检查光线或距离)")
+                pass
             return None 
         
         # 如果检测到了，重置计数器
-        self.no_face_count = 0
+        if self.no_face_count > 0:
+            # print("✨ [Face] 重新捕捉到人脸")
+            self.no_face_count = 0
 
         # 4. 提取特征
         # 注意：虽然用增强图检测到了位置，但为了特征准确性，建议：
