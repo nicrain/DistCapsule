@@ -67,15 +67,31 @@
 | :--- | :--- | :--- | :--- |
 | VCC (红) | Pin 1 | 3.3V Power | 供电 (3.3V) |
 | GND (黑) | Pin 6 | Ground | 接地 |
-| TX (绿/黄) | Pin 10 | GPIO 15 (RXD) | 数据接收 |
+    | TX (绿/黄) | Pin 10 | GPIO 15 (RXD) | 数据接收 |
 | RX (白/蓝) | Pin 8 | GPIO 14 (TXD) | 数据发送 |
 | WAK (选) | - | - | 唤醒 (暂不使用) |
 | VT (选) | - | - | 触摸感应 (暂不使用) |
 
 ---
 
-## 4. 软件配置检查
+## 5. 摄像头模块 (Camera Module 3)
+**型号：** Raspberry Pi Camera Module 3 (IMX708)
+**接口：** CSI (22-pin Mini CSI on Pi 5)
 
+**⚠️ 连接注意 (Pi 5 专用)：**
+*   **排线方向**：在树莓派端，排线的**金属触点（银色面）必须朝向 PCB 主板**（即朝下），**蓝色/黑色绝缘面朝上**（朝向卡扣）。
+*   **接口选择**：可以使用 `CAM/DISP 0` 或 `CAM/DISP 1`。推荐使用 `CAM/DISP 1` (靠近 USB 接口一侧)，或者 `CAM 0` (靠近电源)。
+*   **排线规格**：Pi 5 使用更窄的 22-pin 排线 (Mini CSI)，与 Pi 3/4 的标准 CSI 不通用。
+
+**测试命令：**
+```bash
+rpicam-hello -t 5000
+```
+如果你看到 "Fixed dependency cycle" 或 Error -5，请首先检查排线是否插反。
+
+---
+
+## 6. 软件配置检查
 ### 4.1 启用串口 (指纹)
 确保 Raspberry Pi 的串口未被控制台占用：
 1. 运行 `sudo raspi-config`

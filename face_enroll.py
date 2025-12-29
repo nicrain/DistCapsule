@@ -47,24 +47,45 @@ def enroll_face():
         return
 
     # 初始化摄像头
-    print("正在搜索可用摄像头 (Libcamera/V4L2)...")
+    print("正在搜索可用摄像头...")
     cap = None
-    
-    # 在 Pi 5 上，video0 通常是元数据，真实的视频流可能在 video1, video2 等
-    # 我们尝试遍历索引 0 到 10
-    found_index = -1
-    for i in range(10):
-        temp_cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
-        if temp_cap.isOpened():
-            # 尝试读取一帧以确认真的可用
-            ret, _ = temp_cap.read()
+
+    # 方案 1: 尝试 GStreamer (针对 Raspberry Pi 5 / libcamera)
+    # 注意: 需要安装 GStreamer 库支持
+    try:
+        gst_pipeline = (
+            "libcamerasrc ! "
+            "video/x-raw, width=640, height=480, framerate=30/1 ! "
+            "videoconvert ! "
+            "appsink"
+        )
+        # print(f"尝试 GStreamer 管道: {gst_pipeline}")
+        cap_gst = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
+        if cap_gst.isOpened():
+            ret, _ = cap_gst.read()
             if ret:
-                cap = temp_cap
-                found_index = i
-                print(f"✅ 成功打开摄像头 (Index: {i})")
-                break
+                cap = cap_gst
+                print("✅ 成功通过 GStreamer (Libcamera) 打开摄像头")
             else:
-                temp_cap.release()
+                cap_gst.release()
+    except Exception as e:
+        print(f"GStreamer 初始化尝试失败: {e}")
+
+    # 方案 2: 如果 GStreamer 失败，尝试遍历 V4L2 设备
+    if cap is None:
+        print("尝试 V4L2 模式 (可能不稳定)...")
+        for i in range(20): # 扩大搜索范围
+            # print(f"尝试 index {i}...")
+            temp_cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
+            if temp_cap.isOpened():
+                # 尝试读取一帧以确认真的可用
+                ret, _ = temp_cap.read()
+                if ret:
+                    cap = temp_cap
+                    print(f"✅ 成功打开 V4L2 设备 (Index: {i})")
+                    break
+                else:
+                    temp_cap.release()
     
     if cap is None:
         print("❌ 无法打开任何摄像头。")

@@ -101,7 +101,17 @@ sudo python3 hardware_test.py
 *   Sélectionnez '2' pour tester les couleurs de l'écran.
 *   Sélectionnez '3' pour vérifier la connexion du capteur d'empreintes digitales et la capture d'image.
 
-### 4. Lancer le Programme Principal
+### 4. Enrôlement Visage (Nouveau)
+Pour enregistrer le visage d'un utilisateur pour la reconnaissance faciale :
+
+```bash
+python3 face_enroll.py
+```
+*   Assurez-vous que l'utilisateur existe déjà (ID créé via l'étape 2 ou `add_user.py`).
+*   Suivez les instructions à l'écran pour capturer le visage.
+*   **Note Pi 5**: Le script utilise GStreamer/Libcamera automatiquement.
+
+### 5. Lancer le Programme Principal
 Démarrer le système de distribution. Cela lance la boucle d'écoute des empreintes digitales, met à jour l'affichage et contrôle les servomoteurs en fonction de l'authentification.
 
 ```bash
