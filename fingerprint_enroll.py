@@ -217,149 +217,46 @@ def list_users():
 
 
 def enroll_new_user(is_admin=False):
-
     """注册新用户主逻辑"""
-
     # 1. 先列出当前用户
-
     list_users()
 
-
-
     print("\n--- 新用户注册 ---")
-
     
+    # 2. 基本信息录入
+    name_input = input("请输入用户名 (例: Tom): ").strip()
+    if not name_input:
+        print("❌ 用户名不能为空")
+        return
 
-        # 2. 基本信息录入
-
+    # 手指选择菜单
+    finger_options = {
+        "1": "Right Thumb",
+        "2": "Right Index",
+        "3": "Right Middle",
+        "4": "Left Thumb",
+        "5": "Left Index",
+        "6": "Left Middle",
+        "7": "Other"
+    }
     
-
-        name_input = input("请输入用户名 (例: Tom): ").strip()
-
+    print("\nSelect Finger:")
+    for key, val in finger_options.items():
+        print(f"{key}. {val}")
     
-
-        if not name_input:
-
+    f_choice = input("Select finger (1-7): ").strip()
+    finger_desc = finger_options.get(f_choice, "Unknown Finger")
     
+    # 如果选择 Other，允许手动输入
+    if f_choice == "7":
+        custom = input("Enter custom finger description: ").strip()
+        if custom:
+            finger_desc = custom
 
-            print("❌ 用户名不能为空")
-
-    
-
-            return
-
-    
-
-    
-
-    
-
-        # 手指选择菜单
-
-    
-
-        finger_options = {
-
-    
-
-            "1": "Right Thumb",
-
-    
-
-            "2": "Right Index",
-
-    
-
-            "3": "Right Middle",
-
-    
-
-            "4": "Left Thumb",
-
-    
-
-            "5": "Left Index",
-
-    
-
-            "6": "Left Middle",
-
-    
-
-            "7": "Other"
-
-    
-
-        }
-
-    
-
-        
-
-    
-
-        print("\nSelect Finger:")
-
-    
-
-        for key, val in finger_options.items():
-
-    
-
-            print(f"{key}. {val}")
-
-    
-
-        
-
-    
-
-        f_choice = input("Select finger (1-7): ").strip()
-
-    
-
-        finger_desc = finger_options.get(f_choice, "Unknown Finger")
-
-    
-
-        
-
-    
-
-        # 如果选择 Other，允许手动输入
-
-    
-
-        if f_choice == "7":
-
-    
-
-            custom = input("Enter custom finger description: ").strip()
-
-    
-
-            if custom:
-
-    
-
-                finger_desc = custom
-
-    
-
-    
-
-    
-
-        # 将手指信息合并到名字中显示，方便查看
-
-    
-
-        final_name = f"{name_input} ({finger_desc})"
-
-
+    # 将手指信息合并到名字中显示，方便查看
+    final_name = f"{name_input} ({finger_desc})"
 
     # 3. 通道分配 (仅普通用户)
-
     assigned_channel = None
     if not is_admin:
         available = get_available_channels()
@@ -396,29 +293,19 @@ def enroll_new_user(is_admin=False):
         print("❌ 录入中断")
         return
 
-        # 5. 保存数据库
-
-        try:
-
-            conn = get_db_connection()
-
-            cursor = conn.cursor()
-
-            auth_level = 1 if is_admin else 2
-
-            cursor.execute("""
-
-                INSERT INTO Users (user_id, name, auth_level, assigned_channel, created_at)
-
-                VALUES (?, ?, ?, ?, ?)
-
-            """, (new_id, final_name, auth_level, assigned_channel, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
-            conn.commit()
-
-            conn.close()
-
-            print(f"✅ 用户 '{final_name}' 注册成功！")
+    # 5. 保存数据库
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        auth_level = 1 if is_admin else 2
+        cursor.execute("""
+            INSERT INTO Users (user_id, name, auth_level, assigned_channel, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (new_id, final_name, auth_level, assigned_channel, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        conn.commit()
+        conn.close()
+        print(f"✅ 用户 '{final_name}' 注册成功！")
+        
         if assigned_channel:
             print(f"🚀 已分配通道: #{assigned_channel}")
         else:
