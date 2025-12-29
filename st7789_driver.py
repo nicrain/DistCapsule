@@ -96,3 +96,7 @@ class ST7789_Driver:
     def clear(self, color=(0,0,0)):
         img = Image.new("RGB", (self.width, self.height), color)
         self.display(img)
+
+    def set_backlight(self, val):
+        """控制背光: True=亮, False=灭"""
+        GPIO.output(self.blk_pin, GPIO.HIGH if val else GPIO.LOW)
