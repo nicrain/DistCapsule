@@ -50,7 +50,22 @@ sudo apt-get install python3-serial python3-pip python3-lgpio python3-pil python
 sudo pip3 install adafruit-circuitpython-fingerprint st7789
 ```
 
-### 3. Configuration Matérielle
+### 3. Environnement de Reconnaissance Faciale (Pi 5 Bookworm)
+Le système d'exploitation Raspberry Pi OS Bookworm empêche l'installation directe via `pip`. Utilisez l'une des méthodes suivantes :
+
+**Méthode A : APT (Recommandé)**
+```bash
+sudo apt update
+sudo apt install python3-opencv python3-face-recognition
+```
+
+**Méthode B : PIP (Si APT échoue)**
+```bash
+# L'option --break-system-packages est requise hors d'un environnement virtuel
+pip3 install opencv-python face_recognition --break-system-packages
+```
+
+### 4. Configuration Matérielle
 *   **UART**: Activez le matériel du port série via `sudo raspi-config`, mais désactivez le shell de connexion. Le module d'empreintes digitales utilise `/dev/ttyAMA0` (GPIO 14/15) sur le Pi 5.
 *   **SPI**: Activez l'interface SPI via `sudo raspi-config` pour l'écran.
 

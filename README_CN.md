@@ -50,7 +50,22 @@ sudo apt-get install python3-serial python3-pip python3-lgpio python3-pil python
 sudo pip3 install adafruit-circuitpython-fingerprint st7789
 ```
 
-### 3. 硬件配置
+### 3. 人脸识别环境 (Pi 5 Bookworm)
+Raspberry Pi OS Bookworm 系统默认禁止直接使用 `pip` 安装系统级包。请选择以下一种方法：
+
+**方法 A: 使用 APT (推荐)**
+```bash
+sudo apt update
+sudo apt install python3-opencv python3-face-recognition
+```
+
+**方法 B: 使用 PIP (如 APT 安装失败)**
+```bash
+# 在非虚拟环境下，必须添加 --break-system-packages 参数
+pip3 install opencv-python face_recognition --break-system-packages
+```
+
+### 4. 硬件配置
 *   **UART**: 通过 `sudo raspi-config` 启用串行端口硬件，但禁用登录 shell。Pi 5 上指纹模块使用 `/dev/ttyAMA0` (GPIO 14/15)。
 *   **SPI**: 通过 `sudo raspi-config` 启用 SPI 接口用于显示屏。
 
