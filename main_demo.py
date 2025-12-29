@@ -165,8 +165,10 @@ def main():
 
     while True:
         try:
+            current_ts = time.time()
+            
             # 1. 检查是否需要休眠
-            if is_screen_on and (time.time() - last_activity_time > SCREEN_TIMEOUT):
+            if is_screen_on and (current_ts - last_activity_time > SCREEN_TIMEOUT):
                 print("💤 系统闲置，关闭屏幕")
                 if disp: disp.set_backlight(False)
                 is_screen_on = False
@@ -174,10 +176,11 @@ def main():
             # 2. 尝试读取指纹图像 (这是最耗时的操作，也是唤醒源)
             if finger.get_image() != adafruit_fingerprint.OK:
                 
-                # --- 新增: 空闲时更新时钟 (每秒一次) ---
-                if is_screen_on and (time.time() - last_clock_update > 1.0):
+                # --- 新增: 空闲时更新时钟 (检测秒数变化) ---
+                # 使用 int(current_ts) != int(last_clock_update) 确保每秒只跳动一次，且不丢秒
+                if is_screen_on and int(current_ts) != int(last_clock_update):
                     update_screen("READY", "Waiting...", (0, 0, 0))
-                    last_clock_update = time.time()
+                    last_clock_update = current_ts
                 
                 # 关键修改: 增加延时以降低 CPU 占用
                 time.sleep(0.1) 
@@ -283,8 +286,8 @@ def main():
         except KeyboardInterrupt:
             print("\n用户退出")
             if disp:
-                disp.set_backlight(True) # 退出前点亮
-                disp.clear()
+                disp.clear() # 先清空显存
+                disp.set_backlight(False) # 再彻底关闭背光
             break
         except Exception as e:
             print(f"运行错误: {e}")
