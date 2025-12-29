@@ -2,6 +2,12 @@
 
 本文档详细记录了 **智能胶囊分配器** 项目中所有硬件模块与 Raspberry Pi 5 的连接方式。
 
+## Raspberry Pi 5 GPIO 引脚图 (Pinout Diagram)
+
+![Raspberry Pi 5 GPIO Pinout](https://www.raspberrypi.com/documentation/computers/images/GPIO-Pinout-Diagram-2.png?hash=df7d7847c57a1ca6d5b2617695de6d46)
+
+---
+
 **最后更新日期：** 2025-12-17
 **主控板：** Raspberry Pi 5
 **控制库：** `lgpio` (软件模拟 PWM)
