@@ -250,9 +250,11 @@ def main():
                 # 执行开锁
                 servos[assigned_channel].unlock()
                 
-                # 倒计时
+                # 倒计时逻辑：合并显示用户信息和倒计时
                 for i in range(UNLOCK_TIME, 0, -1):
-                    update_screen("OPEN", f"Closing in {i}s...", bg_color)
+                    # 组合消息：角色+通道、用户名、倒计时
+                    combined_msg = f"{role_title} Open #{assigned_channel}\n{user_name}\nClosing in {i}s..."
+                    update_screen("OPENING", combined_msg, bg_color)
                     time.sleep(1)
                 
                 print(f"🔒 关闭通道 #{assigned_channel}")
