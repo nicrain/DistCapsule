@@ -5,11 +5,15 @@ import json
 import numpy as np
 import time
 import warnings
+import os
 
 # 屏蔽无关紧要的警告
 warnings.filterwarnings("ignore", category=UserWarning, module="face_recognition_models")
 
-DATABASE_NAME = "capsule_dispenser.db"
+# 使用绝对路径定位数据库 (当前文件所在目录的上一级 -> 根目录)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+DATABASE_NAME = os.path.join(PROJECT_ROOT, "capsule_dispenser.db")
 
 class FaceRecognizer:
     def __init__(self):

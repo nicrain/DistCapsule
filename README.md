@@ -88,14 +88,14 @@ pip install git+https://github.com/ageitgey/face_recognition_models --break-syst
 Créer les tables de base de données pour les utilisateurs et les journaux (ne supprime pas les utilisateurs sauf suppression manuelle du .db).
 
 ```bash
-python3 setup_database.py
+python3 tools/setup_database.py
 ```
 
 ### 2. Gérer Utilisateurs & Empreintes
 Lancez l'outil de gestion pour lister, enrôler des admins ou des utilisateurs avec allocation de canal (Box 1-5).
 
 ```bash
-sudo python3 fingerprint_enroll.py
+sudo python3 tools/fingerprint_enroll.py
 ```
 *   *Remarque : Assurez-vous d'abord que la base de données est initialisée.*
 
@@ -103,7 +103,7 @@ sudo python3 fingerprint_enroll.py
 Pour vérifier que tous les composants (Servos, Écran, Empreinte) sont connectés et fonctionnent correctement, exécutez l'outil de test intégré.
 
 ```bash
-sudo python3 hardware_test.py
+sudo python3 tools/hardware_test.py
 ```
 *   Sélectionnez '1' pour tester tous les servomoteurs.
 *   Sélectionnez '2' pour tester les couleurs de l'écran.
@@ -113,7 +113,7 @@ sudo python3 hardware_test.py
 Pour enregistrer le visage d'un utilisateur pour la reconnaissance faciale :
 
 ```bash
-python3 face_enroll.py
+python3 tools/face_enroll.py
 ```
 *   Assurez-vous que l'utilisateur existe déjà (ID créé via l'étape 2 ou `add_user.py`).
 *   Suivez les instructions à l'écran pour capturer le visage.
@@ -123,22 +123,27 @@ python3 face_enroll.py
 Démarrer le système de distribution. Cela lance la boucle d'écoute des empreintes digitales, met à jour l'affichage et contrôle les servomoteurs en fonction de l'authentification.
 
 ```bash
-sudo python3 main_demo.py
+sudo python3 main.py
+```
+
+### 6. Service Automatique (Démarrage)
+Pour installer le service systemd afin que le programme se lance au démarrage :
+
+```bash
+./tools/install_service.sh
 ```
 
 ---
 
 ## 📂 Structure du Projet
 
-| Fichier | Description |
+| Fichier/Dossier | Description |
 | :--- | :--- |
-| `main_demo.py` | **Application Principale**. Gère la boucle d'authentification, les mises à jour de l'interface utilisateur et le déclenchement des servomoteurs. |
-| `fingerprint_enroll.py` | **Outil de Gestion**. Script autonome pour enregistrer de nouvelles empreintes digitales et gérer les utilisateurs. |
-| `servo_control.py` | **Pilote**. Wrapper pour `lgpio` afin de contrôler les servos SG90 via PWM logiciel. |
-| `st7789_driver.py` | **Pilote**. Pilote SPI personnalisé pour l'écran IPS. |
-| `setup_database.py` | **Outil**. Initialise le schéma de la base de données SQLite. |
-| `WIRING_GUIDE.md` | **Documentation**. Schémas détaillés du brochage et du câblage. |
-| `capsule_dispenser.db` | **Données**. Base de données SQLite locale (créée après la configuration). |
+| `main.py` | **Application Principale**. Gère la boucle d'authentification et la logique métier. |
+| `hardware/` | **Pilotes**. Contient les drivers (`servo_control`, `st7789`, `face_system`). |
+| `tools/` | **Outils**. Scripts d'installation, de test et d'enrôlement (`xxx_enroll.py`). |
+| `docs/` | **Documentation**. Guides de câblage et archives. |
+| `capsule_dispenser.db` | **Données**. Base de données SQLite locale. |
 
 ---
 
