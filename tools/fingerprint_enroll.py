@@ -3,12 +3,17 @@ import serial
 import sqlite3
 import datetime
 import adafruit_fingerprint
+import os
 
 # --- 配置 ---
 # 根据实际情况调整端口，Pi 5 通常是 /dev/ttyAMA0
 SERIAL_PORT = "/dev/ttyAMA0"
 BAUD_RATE = 57600
-DATABASE_NAME = "../capsule_dispenser.db"
+
+# 动态获取数据库绝对路径
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+DATABASE_NAME = os.path.join(PROJECT_ROOT, "capsule_dispenser.db")
 
 # 初始化串口和指纹模块
 try:

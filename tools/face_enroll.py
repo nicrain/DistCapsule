@@ -5,13 +5,18 @@ import json
 import numpy as np
 import time
 import warnings
+import os
 
 # 屏蔽 pkg_resources 过时警告
 warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
 # 或者更通用的屏蔽方式
 warnings.filterwarnings("ignore", category=UserWarning, module="face_recognition_models")
 
-DATABASE_NAME = "../capsule_dispenser.db"
+# 动态获取数据库绝对路径
+# 脚本在 tools/，数据库在根目录 (tools 的上一级)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+DATABASE_NAME = os.path.join(PROJECT_ROOT, "capsule_dispenser.db")
 
 def get_db_connection():
     return sqlite3.connect(DATABASE_NAME)

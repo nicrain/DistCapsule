@@ -1,7 +1,10 @@
 import sqlite3
 import os
 
-DATABASE_NAME = "../capsule_dispenser.db"
+# 动态获取数据库绝对路径
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+DATABASE_NAME = os.path.join(PROJECT_ROOT, "capsule_dispenser.db")
 
 def setup_database():
     """连接数据库并创建所有必需的表。"""
