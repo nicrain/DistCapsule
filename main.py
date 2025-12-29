@@ -295,11 +295,9 @@ def main():
 
             # --- C. 空闲时钟更新 ---
             if is_screen_on and int(current_ts) != int(last_clock_update):
-                # 只有在没有提示信息时才更新 "Ready" 状态下的时钟
-                # 这里简单起见，假设当前是 READY 状态就刷新
-                # update_screen 会刷新底部时间
-                # update_screen("READY", "Face/Finger Ready", (0, 0, 0)) 
-                # (频繁刷新可能会闪烁，根据 update_screen 实现逻辑决定)
+                # 每秒刷新一次屏幕以更新底部时间
+                # 保持与 perform_unlock 结束时一致的状态文本
+                update_screen("READY", "Waiting...", (0, 0, 0)) 
                 last_clock_update = current_ts
             
             # 短暂休眠，防止 CPU 100%
