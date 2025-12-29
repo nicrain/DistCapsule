@@ -15,18 +15,14 @@ Un système de distribution de capsules sécurisé et activé par biométrie. Il
 ### [中文]
 *   **多用户角色管理**: 支持 1 个超级管理员和无限候补用户。物理通道（舵机）仅分配给活跃用户（最多 5 人）。
 *   **指纹录入引导**: 交互式 CLI 工具，支持手指部位选择（如 Right Thumb）并自动列出当前用户状态。
-*   **精确权限控制**: 认证后，系统仅解锁分配给该用户的特定舵机；管理员认证仅显示欢迎界面，不触发硬件动作。
+*   **精确权限控制**: 认证后，普通用户解锁专属舵机；管理员仅显示欢迎界面，**不触发**任何硬件动作（用于维护/管理）。
 *   **生物识别安全**: 集成 DY-50 (兼容 R307) 光学指纹传感器，实现快速识别。
-*   **交互式 UI**: 1.3" IPS 屏实时显示用户姓名、分配的箱号及操作状态。
-*   **本地数据库**: 基于 SQLite 存储用户信息、权限、分配通道及访问日志。
 
 ### [Français]
-*   **Gestion des Rôles Multi-utilisateurs**: Prend en charge 1 super-administrateur et des utilisateurs en liste d'attente illimités. Les canaux physiques (servos) ne sont alloués qu'aux utilisateurs actifs (max 5).
+*   **Gestion des Rôles Multi-utilisateurs**: Prend en charge 1 super-administrateur et des utilisateurs en liste d'attente illimités。 Les canaux physiques (servos) ne sont alloués qu'aux utilisateurs actifs (max 5).
 *   **Guide d'Enrôlement**: Outil CLI interactif avec sélection du doigt (ex: Right Thumb) et affichage automatique de l'état des utilisateurs actuels.
-*   **Contrôle de Précision**: Après authentification, le système ne déverrouille que le servo spécifique alloué à l'utilisateur ; l'admin ne déclenche aucune action matérielle.
+*   **Contrôle de Précision**: Après authentification, l'utilisateur déverrouille son servo dédié ; l'administrateur voit un écran de bienvenue mais ne déclenche **aucune** action matérielle.
 *   **Sécurité Biométrique**: Capteur optique DY-50 (compatible R307) pour une identification rapide.
-*   **Interface Interactive**: Écran IPS 1,3" affichant le nom de l'utilisateur, le numéro de boîte alloué et l'état de l'opération.
-*   **Base de Données Locale**: Stockage SQLite pour les infos utilisateurs, permissions, canaux alloués et journaux d'accès.
 
 ---
 

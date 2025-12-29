@@ -56,15 +56,26 @@ def update_screen(status_type, message, bg_color=(0, 0, 0)):
     # 绘制标题
     draw.text((10, 30), status_type, font=font_large, fill="WHITE")
     
-    # 绘制消息 (自动换行简单处理)
-    # 调整坐标以适应更大的字体
-    if len(message) > 18: 
-        msg1 = message[:18]
-        msg2 = message[18:]
-        draw.text((10, 80), msg1, font=font_small, fill="WHITE")
-        draw.text((10, 110), msg2, font=font_small, fill="WHITE")
-    else:
-        draw.text((10, 80), message, font=font_small, fill="WHITE")
+    # 绘制消息 (改进的换行逻辑)
+    y_pos = 80
+    line_height = 30  # 增加行高以防止重叠 (22pt font)
+    
+    # 1. 先按显式换行符分割
+    raw_lines = message.split('\n')
+    
+    for raw_line in raw_lines:
+        # 2. 如果单行太长 (>18字符)，强制切分
+        # 注意: 简单切分可能截断单词，但在嵌入式屏上比溢出好
+        while len(raw_line) > 18:
+            sub_line = raw_line[:18]
+            draw.text((10, y_pos), sub_line, font=font_small, fill="WHITE")
+            y_pos += line_height
+            raw_line = raw_line[18:]
+        
+        # 绘制剩余部分 (或原短行)
+        if raw_line:
+            draw.text((10, y_pos), raw_line, font=font_small, fill="WHITE")
+            y_pos += line_height
         
     # 底部时间
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
@@ -185,33 +196,44 @@ def main():
             log_access(finger_id, "FINGERPRINT_UNLOCK", "SUCCESS", f"Lvl:{auth_level} Ch:{assigned_channel}")
             
             # 逻辑分支
-            if auth_level == 1:
-                # --- 管理员模式 ---
-                print("👑 管理员访问")
-                update_screen("ADMIN", f"Welcome Admin\n{user_name}", (100, 0, 100)) # 紫色
-                time.sleep(3)
-                # 管理员不自动开锁，仅显示欢迎
             
+            # 1. 准备显示信息
+            role_title = "User"
+            bg_color = (0, 150, 0) # 默认绿色
+            
+            if auth_level == 1:
+                role_title = "Admin"
+                bg_color = (100, 0, 100) # 管理员紫色
+                print("👑 管理员识别")
+
+            # 2. 核心动作：开锁 (无论角色，只要有通道就开)
+            if assigned_channel and assigned_channel in servos:
+                print(f"🔓 打开通道 #{assigned_channel}")
+                
+                # 组合显示: "Admin Open #1" 或 "Open Box #1"
+                display_msg = f"{role_title} Open #{assigned_channel}\n{user_name}"
+                update_screen("GRANTED", display_msg, bg_color)
+                
+                # 执行开锁
+                servos[assigned_channel].unlock()
+                
+                # 倒计时
+                for i in range(UNLOCK_TIME, 0, -1):
+                    # update_screen("OPEN", f"Closing in {i}s...", (0, 150, 0))
+                    time.sleep(1)
+                
+                print(f"🔒 关闭通道 #{assigned_channel}")
+                servos[assigned_channel].lock()
+                update_screen("LOCKED", "Dispense Complete", (0, 0, 100))
+                
             else:
-                # --- 普通用户模式 ---
-                if assigned_channel and assigned_channel in servos:
-                    print(f"🔓 打开通道 #{assigned_channel}")
-                    update_screen("GRANTED", f"Open Box #{assigned_channel}\nHi, {user_name}", (0, 150, 0)) # 绿色
-                    
-                    # 执行开锁
-                    servos[assigned_channel].unlock()
-                    
-                    # 倒计时
-                    for i in range(UNLOCK_TIME, 0, -1):
-                        # update_screen("OPEN", f"Closing in {i}s...", (0, 150, 0))
-                        time.sleep(1)
-                    
-                    print(f"🔒 关闭通道 #{assigned_channel}")
-                    servos[assigned_channel].lock()
-                    update_screen("LOCKED", "Dispense Complete", (0, 0, 100))
-                    
+                # 3. 无通道情况
+                if auth_level == 1:
+                    # 管理员无通道 -> 仅显示欢迎
+                    update_screen("ADMIN", f"Welcome Admin\n{user_name}", bg_color)
+                    time.sleep(3)
                 else:
-                    # --- 无通道/候补 ---
+                    # 普通用户无通道 -> 候补提示
                     print("⚠️  用户未分配通道")
                     update_screen("WAITLIST", f"No Box Assigned\nHi, {user_name}", (200, 100, 0)) # 橙色
                     time.sleep(3)
