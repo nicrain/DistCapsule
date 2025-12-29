@@ -38,12 +38,13 @@ def init_display_system():
     except Exception as e:
         print(f"⚠️ 屏幕初始化失败: {e}")
 
-def update_screen(status_type, message, bg_color=(0, 0, 0)):
+def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None):
     """
     更新屏幕显示
     status_type: 状态标题 (如 "READY", "SUCCESS", "ERROR")
     message: 详细信息
     bg_color: 背景颜色 (R, G, B)
+    progress: 进度条 (0.0 - 1.0), None 则不显示
     """
     if disp is None:
         return
@@ -79,7 +80,21 @@ def update_screen(status_type, message, bg_color=(0, 0, 0)):
         if raw_line:
             draw.text((10, y_pos), raw_line, font=font_small, fill="WHITE")
             y_pos += line_height
-        
+    
+    # 绘制进度条 (如果有)
+    if progress is not None:
+        # 进度条位置: 底部上方一点
+        bar_x = 20
+        bar_y = 160
+        bar_w = 200
+        bar_h = 10
+        # 绘制背景框
+        draw.rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + bar_h), outline="WHITE", width=1)
+        # 绘制进度填充
+        fill_w = int(bar_w * progress)
+        if fill_w > 0:
+            draw.rectangle((bar_x + 1, bar_y + 1, bar_x + fill_w, bar_y + bar_h - 1), fill="WHITE")
+
     # 底部时间
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
     draw.text((60, 190), current_time, font=font_small, fill="YELLOW")
@@ -243,18 +258,21 @@ def main():
             if assigned_channel and assigned_channel in servos:
                 print(f"🔓 打开通道 #{assigned_channel}")
                 
-                # 组合显示: "Admin Open #1" 或 "Open Box #1"
-                display_msg = f"{role_title} Open #{assigned_channel}\n{user_name}"
-                update_screen("GRANTED", display_msg, bg_color)
+                # 简化显示: 将通道号移到用户名后，移除独立的 "User Open #1" 文本
+                # 例如: "Tom (Left Thumb) #1"
+                display_msg = f"{user_name} #{assigned_channel}" 
+                
+                # 初始显示 (满进度)
+                update_screen("GRANTED", display_msg, bg_color, progress=1.0)
                 
                 # 执行开锁
                 servos[assigned_channel].unlock()
                 
-                # 倒计时逻辑：合并显示用户信息和倒计时
+                # 倒计时逻辑：更新进度条
                 for i in range(UNLOCK_TIME, 0, -1):
-                    # 组合消息：角色+通道、用户名、倒计时
-                    combined_msg = f"{role_title} Open #{assigned_channel}\n{user_name}\nClosing in {i}s..."
-                    update_screen("OPENING", combined_msg, bg_color)
+                    # 计算剩余进度 (0.0 - 1.0)
+                    prog = i / UNLOCK_TIME
+                    update_screen("OPENING", display_msg, bg_color, progress=prog)
                     time.sleep(1)
                 
                 print(f"🔒 关闭通道 #{assigned_channel}")
