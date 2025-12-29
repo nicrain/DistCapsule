@@ -13,6 +13,7 @@ SERIAL_PORT = "/dev/ttyAMA0"  # Pi 5 专用端口
 BAUD_RATE = 57600
 UNLOCK_TIME = 5  # 开锁保持时间 (秒)
 DATABASE_NAME = "capsule_dispenser.db"
+SCREEN_TIMEOUT = 30 # 30秒无操作自动息屏
 
 # --- 屏幕相关全局变量 ---
 disp = None
@@ -47,6 +48,9 @@ def update_screen(status_type, message, bg_color=(0, 0, 0)):
     if disp is None:
         return
 
+    # 只要更新屏幕，就确保背光是亮的
+    disp.set_backlight(True)
+
     image = Image.new("RGB", (disp.width, disp.height), bg_color)
     draw = ImageDraw.Draw(image)
     
@@ -65,7 +69,6 @@ def update_screen(status_type, message, bg_color=(0, 0, 0)):
     
     for raw_line in raw_lines:
         # 2. 如果单行太长 (>18字符)，强制切分
-        # 注意: 简单切分可能截断单词，但在嵌入式屏上比溢出好
         while len(raw_line) > 18:
             sub_line = raw_line[:18]
             draw.text((10, y_pos), sub_line, font=font_small, fill="WHITE")
@@ -155,13 +158,35 @@ def main():
     print("\n--- 系统启动完成，等待指纹 ---")
     print("(按 Ctrl+C 退出)")
 
+    # 休眠相关变量
+    last_activity_time = time.time()
+    is_screen_on = True
+
     while True:
         try:
-            # 尝试读取指纹图像
-            if finger.get_image() != adafruit_fingerprint.OK:
-                # time.sleep(0.1) 
-                continue
+            # 1. 检查是否需要休眠
+            if is_screen_on and (time.time() - last_activity_time > SCREEN_TIMEOUT):
+                print("💤 系统闲置，关闭屏幕")
+                if disp: disp.set_backlight(False)
+                is_screen_on = False
 
+            # 2. 尝试读取指纹图像 (这是最耗时的操作，也是唤醒源)
+            if finger.get_image() != adafruit_fingerprint.OK:
+                # 关键修改: 增加延时以降低 CPU 占用
+                time.sleep(0.1) 
+                continue
+            
+            # --- 检测到手指 ---
+            
+            # 唤醒屏幕
+            last_activity_time = time.time() # 更新活动时间
+            if not is_screen_on:
+                print("💡 唤醒屏幕")
+                if disp: disp.set_backlight(True)
+                is_screen_on = True
+                # 可选: 唤醒时重绘提示信息
+                update_screen("SCANNING", "Processing...", (0, 0, 100))
+            
             print("\n🔍 检测到手指，正在处理...")
             update_screen("SCANNING", "Processing...", (0, 0, 100)) # 深蓝色
 
@@ -196,8 +221,6 @@ def main():
             log_access(finger_id, "FINGERPRINT_UNLOCK", "SUCCESS", f"Lvl:{auth_level} Ch:{assigned_channel}")
             
             # 逻辑分支
-            
-            # 1. 准备显示信息
             role_title = "User"
             bg_color = (0, 150, 0) # 默认绿色
             
@@ -238,17 +261,22 @@ def main():
                     update_screen("WAITLIST", f"No Box Assigned\nHi, {user_name}", (200, 100, 0)) # 橙色
                     time.sleep(3)
             
+            # 操作完成后更新一次活动时间，确保不会马上黑屏
+            last_activity_time = time.time()
             time.sleep(1)
             print("--- 等待下一次操作 ---")
             update_screen("READY", "Waiting...", (0, 0, 0))
             
             # 等待手指移开
             while finger.get_image() != adafruit_fingerprint.NOFINGER:
-                pass
+                # 此时也更新时间，防止一直按着时息屏
+                last_activity_time = time.time()
+                time.sleep(0.1) 
 
         except KeyboardInterrupt:
             print("\n用户退出")
             if disp:
+                disp.set_backlight(True) # 退出前点亮
                 disp.clear()
             break
         except Exception as e:
@@ -256,7 +284,7 @@ def main():
             time.sleep(1)
 
     # 清理
-    # servo.cleanup() # 注意: servo_control.py 中类自行管理，或者此处不需要显式清理
+    # servo.cleanup() 
 
 if __name__ == "__main__":
     main()
