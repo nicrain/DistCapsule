@@ -53,6 +53,14 @@ sudo pip3 install adafruit-circuitpython-fingerprint st7789
 ### 3. Environnement de Reconnaissance Faciale (Pi 5 Bookworm)
 Le système d'exploitation Raspberry Pi OS Bookworm empêche l'installation directe via `pip`. Utilisez l'une des méthodes suivantes :
 
+**Pré-requis (Pi 5) : Pilotes GStreamer**
+Pour que la caméra fonctionne avec OpenCV sur le Pi 5, vous devez installer les plugins GStreamer :
+```bash
+sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+gstreamer1.0-libcamera gstreamer1.0-tools
+```
+
 **Méthode A : APT (Recommandé)**
 ```bash
 sudo apt update

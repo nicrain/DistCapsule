@@ -53,13 +53,15 @@ def enroll_face():
     # 方案 1: 尝试 GStreamer (针对 Raspberry Pi 5 / libcamera)
     # 注意: 需要安装 GStreamer 库支持
     try:
+        # 明确指定转为 BGR 格式，OpenCV 默认需要 BGR
         gst_pipeline = (
             "libcamerasrc ! "
             "video/x-raw, width=640, height=480, framerate=30/1 ! "
             "videoconvert ! "
-            "appsink"
+            "video/x-raw, format=BGR ! "
+            "appsink drop=1"
         )
-        # print(f"尝试 GStreamer 管道: {gst_pipeline}")
+        print(f"尝试 GStreamer 管道...")
         cap_gst = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
         if cap_gst.isOpened():
             ret, _ = cap_gst.read()
@@ -67,7 +69,10 @@ def enroll_face():
                 cap = cap_gst
                 print("✅ 成功通过 GStreamer (Libcamera) 打开摄像头")
             else:
+                print("⚠️ GStreamer 已打开但无法读取帧 (可能缺少插件)")
                 cap_gst.release()
+        else:
+            print("⚠️ GStreamer 无法打开 (isOpened=False)")
     except Exception as e:
         print(f"GStreamer 初始化尝试失败: {e}")
 
