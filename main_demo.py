@@ -252,7 +252,7 @@ def main():
                 
                 # 倒计时
                 for i in range(UNLOCK_TIME, 0, -1):
-                    # update_screen("OPEN", f"Closing in {i}s...", (0, 150, 0))
+                    update_screen("OPEN", f"Closing in {i}s...", bg_color)
                     time.sleep(1)
                 
                 print(f"🔒 关闭通道 #{assigned_channel}")
