@@ -50,33 +50,57 @@ def enroll_face():
     print("正在搜索可用摄像头...")
     cap = None
 
-    # 方案 1: 尝试 GStreamer (针对 Raspberry Pi 5 / libcamera)
-    # 注意: 需要安装 GStreamer 库支持
-    try:
-        # 明确指定转为 BGR 格式，OpenCV 默认需要 BGR
-        gst_pipeline = (
+    # 定义多种 GStreamer 管道尝试策略
+    pipelines = [
+        # 策略 1: 强制指定 NV12 格式和分辨率 (Pi 5 推荐)
+        (
             "libcamerasrc ! "
-            "video/x-raw, width=640, height=480, framerate=30/1 ! "
+            "video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! "
             "videoconvert ! "
-            "video/x-raw, format=BGR ! "
-            "appsink drop=1"
+            "video/x-raw,format=BGR ! "
+            "appsink drop=1",
+            "GStreamer (NV12 640x480)"
+        ),
+        # 策略 2: 仅指定分辨率，由驱动决定格式
+        (
+            "libcamerasrc ! "
+            "video/x-raw,width=640,height=480 ! "
+            "videoconvert ! "
+            "video/x-raw,format=BGR ! "
+            "appsink drop=1",
+            "GStreamer (Auto 640x480)"
+        ),
+        # 策略 3: 不指定分辨率 (使用默认/最大)，后续由 OpenCV 缩放
+        (
+            "libcamerasrc ! "
+            "video/x-raw ! "
+            "videoconvert ! "
+            "video/x-raw,format=BGR ! "
+            "appsink drop=1",
+            "GStreamer (Default Resolution)"
         )
-        print(f"尝试 GStreamer 管道...")
-        cap_gst = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
-        if cap_gst.isOpened():
-            ret, _ = cap_gst.read()
-            if ret:
-                cap = cap_gst
-                print("✅ 成功通过 GStreamer (Libcamera) 打开摄像头")
-            else:
-                print("⚠️ GStreamer 已打开但无法读取帧 (可能缺少插件)")
-                cap_gst.release()
-        else:
-            print("⚠️ GStreamer 无法打开 (isOpened=False)")
-    except Exception as e:
-        print(f"GStreamer 初始化尝试失败: {e}")
+    ]
 
-    # 方案 2: 如果 GStreamer 失败，尝试遍历 V4L2 设备
+    for pipeline, name in pipelines:
+        try:
+            print(f"尝试管道: {name}...")
+            # print(f"  -> {pipeline}")
+            cap_gst = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+            if cap_gst.isOpened():
+                ret, _ = cap_gst.read()
+                if ret:
+                    cap = cap_gst
+                    print(f"✅ 成功打开摄像头 [{name}]")
+                    break
+                else:
+                    print(f"  ❌ 管道打开但无法读取帧")
+                    cap_gst.release()
+            else:
+                print(f"  ❌ 管道无法打开")
+        except Exception as e:
+            print(f"  ⚠️ 异常: {e}")
+
+    # 方案 4: 如果 GStreamer 全部失败，尝试遍历 V4L2 设备
     if cap is None:
         print("尝试 V4L2 模式 (可能不稳定)...")
         for i in range(20): # 扩大搜索范围
