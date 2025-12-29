@@ -7,6 +7,7 @@ import adafruit_fingerprint
 from servo_control import ServoController
 from PIL import Image, ImageDraw, ImageFont
 from st7789_driver import ST7789_Driver
+from face_system import FaceRecognizer
 
 # --- 配置 ---
 SERIAL_PORT = "/dev/ttyAMA0"  # Pi 5 专用端口
@@ -19,6 +20,7 @@ SCREEN_TIMEOUT = 30 # 30秒无操作自动息屏
 disp = None
 font_large = None
 font_small = None
+servos = {} # 全局舵机字典
 
 def init_display_system():
     global disp, font_large, font_small
@@ -131,15 +133,71 @@ def get_user_info(user_id):
     except Exception:
         return ("Unknown", 0, None)
 
+def perform_unlock(user_id, method="Fingerprint"):
+    """
+    统一的开锁逻辑
+    method: 'Fingerprint' 或 'Face'
+    """
+    user_name, auth_level, assigned_channel = get_user_info(user_id)
+    
+    print(f"✅ [{method}] 验证通过！用户: {user_name} (ID: #{user_id})")
+    print(f"   权限: {auth_level}, 通道: {assigned_channel}")
+    
+    # 记录日志
+    log_access(user_id, f"{method.upper()}_UNLOCK", "SUCCESS", f"Lvl:{auth_level} Ch:{assigned_channel}")
+    
+    # 逻辑分支
+    bg_color = (0, 150, 0) # 默认绿色
+    
+    if auth_level == 1:
+        bg_color = (100, 0, 100) # 管理员紫色
+        print("👑 管理员识别")
+
+    # 核心动作：开锁
+    if assigned_channel and assigned_channel in servos:
+        print(f"🔓 打开通道 #{assigned_channel}")
+        
+        display_msg = f"{user_name} #{assigned_channel}\n({method})"
+        
+        # 初始显示 (满进度)
+        update_screen("GRANTED", display_msg, bg_color, progress=1.0)
+        
+        # 执行开锁
+        servos[assigned_channel].unlock()
+        
+        # 倒计时逻辑
+        steps = UNLOCK_TIME * 20
+        for i in range(steps, 0, -1):
+            prog = i / steps
+            update_screen("OPENING", display_msg, bg_color, progress=prog)
+            time.sleep(0.05)
+        
+        print(f"🔒 关闭通道 #{assigned_channel}")
+        servos[assigned_channel].lock()
+        update_screen("LOCKED", "Dispense Complete", (0, 0, 100))
+        
+    else:
+        # 无通道情况
+        if auth_level == 1:
+            update_screen("ADMIN", f"Welcome Admin\n{user_name}", bg_color)
+            time.sleep(3)
+        else:
+            print("⚠️  用户未分配通道")
+            update_screen("WAITLIST", f"No Box Assigned\nHi, {user_name}", (200, 100, 0))
+            time.sleep(3)
+    
+    print("--- 等待下一次操作 ---")
+    update_screen("READY", "Waiting...", (0, 0, 0))
+
 def main():
-    print("--- 智能胶囊分配器 (Demo v2) ---")
+    global servos
+    print("--- 智能胶囊分配器 (Demo v2.1) ---")
     print("初始化硬件...")
 
     # 0. 初始化屏幕
     init_display_system()
 
     # 1. 初始化舵机 (5个通道)
-    servos = {}
     try:
         # 映射: 胶囊仓ID -> ServoController
         # 恢复 5 个仓位 (软件 PWM 模式下无冲突)
@@ -155,25 +213,30 @@ def main():
         return
 
     # 2. 初始化指纹模块
+    finger = None
     try:
         uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
         finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
-        
         if finger.read_sysparam() != adafruit_fingerprint.OK:
             raise RuntimeError("无法读取指纹模块参数")
-            
         print(f"✅ 指纹模块已就绪 (容量: {finger.library_size})")
-        update_screen("READY", "Waiting for Finger...", (0, 0, 0))
-        
     except Exception as e:
         print(f"❌ 指纹模块初始化失败: {e}")
         update_screen("ERROR", "Fingerprint Error", (255, 0, 0))
-        return
+        # 指纹失败不一定终止，可能还能用人脸
 
-    print("\n--- 系统启动完成，等待指纹 ---")
+    # 3. 初始化人脸系统
+    face_rec = None
+    try:
+        face_rec = FaceRecognizer()
+    except Exception as e:
+        print(f"❌ 人脸模块初始化失败: {e}")
+
+    update_screen("READY", "Face/Finger Ready", (0, 0, 0))
+
+    print("\n--- 系统启动完成，等待验证 ---")
     print("(按 Ctrl+C 退出)")
 
-    # 休眠相关变量
     last_activity_time = time.time()
     last_clock_update = 0
     is_screen_on = True
@@ -182,140 +245,77 @@ def main():
         try:
             current_ts = time.time()
             
-            # 1. 检查是否需要休眠
+            # --- 休眠检查 ---
             if is_screen_on and (current_ts - last_activity_time > SCREEN_TIMEOUT):
                 print("💤 系统闲置，关闭屏幕")
                 if disp: disp.set_backlight(False)
                 is_screen_on = False
 
-            # 2. 尝试读取指纹图像 (这是最耗时的操作，也是唤醒源)
-            if finger.get_image() != adafruit_fingerprint.OK:
-                
-                # --- 新增: 空闲时更新时钟 (检测秒数变化) ---
-                # 使用 int(current_ts) != int(last_clock_update) 确保每秒只跳动一次，且不丢秒
-                if is_screen_on and int(current_ts) != int(last_clock_update):
-                    update_screen("READY", "Waiting...", (0, 0, 0))
-                    last_clock_update = current_ts
-                
-                # 关键修改: 增加延时以降低 CPU 占用
-                time.sleep(0.1) 
-                continue
-            
-            # --- 检测到手指 ---
-            
-            # 唤醒屏幕
-            last_activity_time = time.time() # 更新活动时间
-            if not is_screen_on:
-                print("💡 唤醒屏幕")
-                if disp: disp.set_backlight(True)
-                is_screen_on = True
-                # 可选: 唤醒时重绘提示信息
-                update_screen("SCANNING", "Processing...", (0, 0, 100))
-            
-            print("\n🔍 检测到手指，正在处理...")
-            update_screen("SCANNING", "Processing...", (0, 0, 100)) # 深蓝色
+            # --- A. 人脸识别检查 (非阻塞, 内部有频率控制) ---
+            if face_rec:
+                face_uid = face_rec.scan()
+                if face_uid:
+                    # 唤醒屏幕
+                    last_activity_time = current_ts
+                    if not is_screen_on:
+                        if disp: disp.set_backlight(True)
+                        is_screen_on = True
+                    
+                    perform_unlock(face_uid, method="Face")
+                    continue # 开锁后重新开始循环
 
-            # 将图像转换为特征
-            if finger.image_2_tz(1) != adafruit_fingerprint.OK:
-                print("❌ 图像模糊，请重试")
-                update_screen("RETRY", "Bad Image", (200, 100, 0)) # 橙色
-                time.sleep(1)
-                update_screen("READY", "Waiting...", (0, 0, 0))
-                continue
-
-            # 搜索指纹库
-            print(" -> 正在比对...")
-            if finger.finger_search() != adafruit_fingerprint.OK:
-                print("🚫 验证失败：未注册的指纹")
-                update_screen("DENIED", "Unknown Finger", (255, 0, 0)) # 红色
-                time.sleep(2)
-                update_screen("READY", "Waiting...", (0, 0, 0))
-                continue
-
-            # --- 验证通过 ---
-            finger_id = finger.finger_id
-            confidence = finger.confidence
-            
-            # 获取用户信息
-            user_name, auth_level, assigned_channel = get_user_info(finger_id)
-            
-            print(f"✅ 验证通过！用户: {user_name} (ID: #{finger_id})")
-            print(f"   权限: {auth_level}, 通道: {assigned_channel}")
-            
-            # 记录日志
-            log_access(finger_id, "FINGERPRINT_UNLOCK", "SUCCESS", f"Lvl:{auth_level} Ch:{assigned_channel}")
-            
-            # 逻辑分支
-            role_title = "User"
-            bg_color = (0, 150, 0) # 默认绿色
-            
-            if auth_level == 1:
-                role_title = "Admin"
-                bg_color = (100, 0, 100) # 管理员紫色
-                print("👑 管理员识别")
-
-            # 2. 核心动作：开锁 (无论角色，只要有通道就开)
-            if assigned_channel and assigned_channel in servos:
-                print(f"🔓 打开通道 #{assigned_channel}")
+            # --- B. 指纹检查 ---
+            if finger and finger.get_image() == adafruit_fingerprint.OK:
+                # 唤醒屏幕
+                last_activity_time = current_ts
+                if not is_screen_on:
+                    if disp: disp.set_backlight(True)
+                    is_screen_on = True
+                    update_screen("SCANNING", "Processing...", (0, 0, 100))
                 
-                # 简化显示: 将通道号移到用户名后，移除独立的 "User Open #1" 文本
-                # 例如: "Tom (Left Thumb) #1"
-                display_msg = f"{user_name} #{assigned_channel}" 
-                
-                # 初始显示 (满进度)
-                update_screen("GRANTED", display_msg, bg_color, progress=1.0)
-                
-                # 执行开锁
-                servos[assigned_channel].unlock()
-                
-                # 倒计时逻辑：平滑进度条 (20 FPS)
-                steps = UNLOCK_TIME * 20
-                for i in range(steps, 0, -1):
-                    # 计算剩余进度 (0.0 - 1.0)
-                    prog = i / steps
-                    update_screen("OPENING", display_msg, bg_color, progress=prog)
-                    time.sleep(0.05)
-                
-                print(f"🔒 关闭通道 #{assigned_channel}")
-                servos[assigned_channel].lock()
-                update_screen("LOCKED", "Dispense Complete", (0, 0, 100))
-                
-            else:
-                # 3. 无通道情况
-                if auth_level == 1:
-                    # 管理员无通道 -> 仅显示欢迎
-                    update_screen("ADMIN", f"Welcome Admin\n{user_name}", bg_color)
-                    time.sleep(3)
+                print("\n🔍 检测到手指...")
+                if finger.image_2_tz(1) == adafruit_fingerprint.OK:
+                    if finger.finger_search() == adafruit_fingerprint.OK:
+                        # 指纹验证成功
+                        perform_unlock(finger.finger_id, method="Fingerprint")
+                        
+                        # 等待手指移开，防止重复触发
+                        while finger.get_image() != adafruit_fingerprint.NOFINGER:
+                            last_activity_time = time.time()
+                            time.sleep(0.1)
+                        continue
+                    else:
+                        print("🚫 未知指纹")
+                        update_screen("DENIED", "Unknown Finger", (255, 0, 0))
+                        time.sleep(1)
+                        update_screen("READY", "Face/Finger Ready", (0, 0, 0))
                 else:
-                    # 普通用户无通道 -> 候补提示
-                    print("⚠️  用户未分配通道")
-                    update_screen("WAITLIST", f"No Box Assigned\nHi, {user_name}", (200, 100, 0)) # 橙色
-                    time.sleep(3)
+                    print("❌ 图像模糊")
+                    update_screen("RETRY", "Bad Image", (200, 100, 0))
+
+            # --- C. 空闲时钟更新 ---
+            if is_screen_on and int(current_ts) != int(last_clock_update):
+                # 只有在没有提示信息时才更新 "Ready" 状态下的时钟
+                # 这里简单起见，假设当前是 READY 状态就刷新
+                # update_screen 会刷新底部时间
+                # update_screen("READY", "Face/Finger Ready", (0, 0, 0)) 
+                # (频繁刷新可能会闪烁，根据 update_screen 实现逻辑决定)
+                last_clock_update = current_ts
             
-            # 操作完成后更新一次活动时间，确保不会马上黑屏
-            last_activity_time = time.time()
-            time.sleep(1)
-            print("--- 等待下一次操作 ---")
-            update_screen("READY", "Waiting...", (0, 0, 0))
-            
-            # 等待手指移开
-            while finger.get_image() != adafruit_fingerprint.NOFINGER:
-                # 此时也更新时间，防止一直按着时息屏
-                last_activity_time = time.time()
-                time.sleep(0.1) 
+            # 短暂休眠，防止 CPU 100%
+            time.sleep(0.05)
 
         except KeyboardInterrupt:
             print("\n用户退出")
             if disp:
-                disp.clear() # 先清空显存
-                disp.set_backlight(False) # 再彻底关闭背光
+                disp.clear()
+                disp.set_backlight(False)
+            if face_rec:
+                face_rec.close()
             break
         except Exception as e:
             print(f"运行错误: {e}")
             time.sleep(1)
-
-    # 清理
-    # servo.cleanup() 
 
 if __name__ == "__main__":
     main()
