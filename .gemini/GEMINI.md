@@ -26,10 +26,15 @@
 - **Silent Mode**: No gateway assigned in DHCP to allow phones to keep 4G/5G internet access while connected to the Pi.
 
 ## 🚀 Recent Accomplishments
-- Fixed `RuntimeError` on fingerprint initialization by migrating button logic to `lgpio`.
 - Refactored `main.py` into a threaded state-machine.
 - Implemented real-time dynamic clock and countdown UI.
 - **Optimized Input**: Using efficient polling (lgpio) for button handling to maintain code simplicity.
+
+## 🎓 Learning Progress (Python Study)
+- **Status**: Phase 1 (Classes & Encapsulation) - Started.
+- **Completed**: Breakdown of `hardware/servo_control.py`.
+- **Next Lesson**: SQLite Database logic (`main.py` functions).
+- **Pending Exercise**: Implement `slow_lock()` in `ServoController`.
 
 ## 🔮 Next Steps
 - Implement MQTT client in `main.py` for remote control.
