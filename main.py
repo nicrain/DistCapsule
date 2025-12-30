@@ -352,14 +352,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    except KeyboardInterrupt:
-        print("\n用户退出")
-    finally:
-        if disp: disp.set_backlight(False)
-        if h_gpio is not None:
-            lgpio.gpiochip_close(h_gpio)
-        if face_rec: face_rec.close()
-
-if __name__ == "__main__":
-    main()
