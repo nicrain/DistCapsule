@@ -261,8 +261,8 @@ def main():
                 if face_running_event.is_set():
                     face_running_event.clear()
 
-                # 检查中断标志位
-                if button_event_flag:
+                # 双重检查：中断标志位 OR 实时电平 (兜底)
+                if button_event_flag or lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN) == 1:
                     button_event_flag = False # 复位标志
                     print("🔔 按钮按下！系统唤醒...")
                     system_state = "ACTIVE"
@@ -300,8 +300,8 @@ def main():
                     face_running_event.clear()
                     continue
                 
-                # 2. 按钮续命检测 (中断标志位检查)
-                if button_event_flag:
+                # 2. 按钮续命检测 (双重检查)
+                if button_event_flag or lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN) == 1:
                     button_event_flag = False # 复位标志
                     last_activity_time = current_ts
                     remaining = SCREEN_TIMEOUT
