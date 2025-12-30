@@ -80,6 +80,16 @@ pip install git+https://github.com/ageitgey/face_recognition_models --break-syst
 *   **UART**: Activez le matériel du port série via `sudo raspi-config`, mais désactivez le shell de connexion. Le module d'empreintes digitales utilise `/dev/ttyAMA0` (GPIO 14/15) sur le Pi 5.
 *   **SPI**: Activez l'interface SPI via `sudo raspi-config` pour l'écran.
 
+### 5. Configuration Réseau (Hotspot hors ligne)
+Pour permettre à l'application Android de contrôler le Pi tout en conservant sa connexion 4G/5G (sans Internet via le Pi), configurez le hotspot en mode "sans passerelle" :
+
+```bash
+sudo chmod +x tools/setup_manual_hotspot.sh
+sudo ./tools/setup_manual_hotspot.sh
+```
+*   Cela crée un réseau Wi-Fi `DistCapsule_Box` (IP: 192.168.4.1).
+*   **Important** : Le téléphone utilisera ce Wi-Fi pour MQTT mais gardera la 4G pour Internet.
+
 ---
 
 ## 📖 Guide d'Utilisation
