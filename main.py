@@ -4,7 +4,7 @@ import sqlite3
 import datetime
 import threading
 import adafruit_fingerprint
-import RPi.GPIO as GPIO
+import lgpio
 from hardware.servo_control import ServoController
 from PIL import Image, ImageDraw, ImageFont
 from hardware.st7789_driver import ST7789_Driver
@@ -23,6 +23,7 @@ disp = None
 font_large = None
 font_small = None
 servos = {}
+h_gpio = None # lgpio handle
 
 def init_display_system():
     global disp, font_large, font_small
@@ -134,18 +135,19 @@ def perform_unlock(user_id, method="Fingerprint"):
     update_screen("READY", "System Active", (0, 0, 0))
 
 def main():
-    global servos
-    print("--- 智能胶囊分配器 (Button Wakeup) ---")
+    global servos, h_gpio
+    print("--- 智能胶囊分配器 (Button Wakeup / lgpio) ---")
     
     # 1. 硬件初始化
     init_display_system()
     
     try:
-        # GPIO 初始化 (BCM 模式)
-        GPIO.setmode(GPIO.BCM)
-        # 设置唤醒按钮 (下拉电阻，按下为 HIGH)
-        GPIO.setup(WAKE_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        print(f"✅ 唤醒按钮监听 GPIO {WAKE_BUTTON_PIN}")
+        # GPIO 初始化 (使用 lgpio)
+        h_gpio = lgpio.gpiochip_open(0)
+        # 设置唤醒按钮 (输入，下拉电阻)
+        # 注意: Pi 5 的 lgpio 默认下拉可能需要特定设置，这里使用基本输入
+        lgpio.gpio_claim_input(h_gpio, WAKE_BUTTON_PIN, lgpio.SET_PULL_DOWN)
+        print(f"✅ 唤醒按钮监听 GPIO {WAKE_BUTTON_PIN} (lgpio)")
 
         servos[1] = ServoController(channel=2)
         servos[2] = ServoController(channel=0)
@@ -157,9 +159,22 @@ def main():
         print(f"❌ 硬件初始化失败: {e}")
         return
 
-    # 指纹与人脸
-    uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
-    finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
+    # 指纹与人脸 (放在 GPIO 初始化之后)
+    # 增加一点延时，让电气状态稳定
+    time.sleep(0.5)
+
+    try:
+        uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
+        finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
+        if finger.read_sysparam() != adafruit_fingerprint.OK:
+             print("⚠️ 指纹模块连接不稳定，尝试重试...")
+             time.sleep(1)
+             if finger.read_sysparam() != adafruit_fingerprint.OK:
+                 raise RuntimeError("无法读取指纹模块参数")
+        print(f"✅ 指纹模块已就绪 (容量: {finger.library_size})")
+    except Exception as e:
+        print(f"❌ 指纹模块初始化失败: {e}")
+        finger = None
     
     face_rec = None
     try:
@@ -174,7 +189,6 @@ def main():
     # 启动时先黑屏
     if disp: 
         disp.set_backlight(False)
-        # 清屏
         image = Image.new("RGB", (disp.width, disp.height), "BLACK")
         disp.display(image)
 
@@ -187,7 +201,8 @@ def main():
             if system_state == "SLEEP":
                 # 休眠模式下只检测按钮
                 # 防抖动检测
-                if GPIO.input(WAKE_BUTTON_PIN) == GPIO.HIGH:
+                btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
+                if btn_val == 1:
                     print("🔔 按钮按下！系统唤醒...")
                     system_state = "ACTIVE"
                     last_activity_time = time.time()
@@ -195,7 +210,6 @@ def main():
                     time.sleep(0.5) # 消除按键抖动
                     update_screen("READY", "Face/Finger Ready", (0, 0, 0))
                 else:
-                    # 极低功耗循环
                     time.sleep(0.1)
 
             elif system_state == "ACTIVE":
@@ -217,37 +231,40 @@ def main():
                         continue
 
                 # 3. 指纹识别
-                if finger.read_sysparam() == adafruit_fingerprint.OK:
-                    if finger.get_image() == adafruit_fingerprint.OK:
-                        last_activity_time = current_ts # 重置计时
-                        update_screen("SCANNING", "Processing...", (0, 0, 100))
-                        
-                        if finger.image_2_tz(1) == adafruit_fingerprint.OK:
-                            if finger.finger_search() == adafruit_fingerprint.OK:
-                                perform_unlock(finger.finger_id, method="Fingerprint")
-                                # 等手指拿开
-                                while finger.get_image() != adafruit_fingerprint.NOFINGER:
-                                    time.sleep(0.1)
-                                    last_activity_time = time.time()
+                if finger:
+                    try:
+                        if finger.get_image() == adafruit_fingerprint.OK:
+                            last_activity_time = current_ts
+                            update_screen("SCANNING", "Processing...", (0, 0, 100))
+                            
+                            if finger.image_2_tz(1) == adafruit_fingerprint.OK:
+                                if finger.finger_search() == adafruit_fingerprint.OK:
+                                    perform_unlock(finger.finger_id, method="Fingerprint")
+                                    while finger.get_image() != adafruit_fingerprint.NOFINGER:
+                                        time.sleep(0.1)
+                                        last_activity_time = time.time()
+                                else:
+                                    update_screen("DENIED", "Unknown Finger", (255, 0, 0))
+                                    time.sleep(1)
+                                    update_screen("READY", "Try Again", (0, 0, 0))
                             else:
-                                update_screen("DENIED", "Unknown Finger", (255, 0, 0))
-                                time.sleep(1)
-                                update_screen("READY", "Try Again", (0, 0, 0))
-                        else:
-                            update_screen("RETRY", "Bad Image", (200, 100, 0))
+                                update_screen("RETRY", "Bad Image", (200, 100, 0))
+                    except Exception as fp_err:
+                        print(f"⚠️ 指纹读取错误: {fp_err}")
+                        # 尝试重置串口连接? 不，通常只需忽略这次错误
 
-                # 4. 刷新时间 (降低刷新率避免闪烁)
+                # 4. 刷新时间
                 if int(current_ts * 10) % 10 == 0: 
-                     # 可以在这里更新时钟，但为了效率略过频繁重绘
                      pass
                 
-                time.sleep(0.01) # 活跃模式稍微快一点的循环
+                time.sleep(0.01)
 
     except KeyboardInterrupt:
         print("\n用户退出")
     finally:
         if disp: disp.set_backlight(False)
-        GPIO.cleanup()
+        if h_gpio is not None:
+            lgpio.gpiochip_close(h_gpio)
         if face_rec: face_rec.close()
 
 if __name__ == "__main__":
