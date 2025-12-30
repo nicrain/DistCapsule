@@ -185,6 +185,7 @@ def main():
     # 初始状态
     system_state = "SLEEP" # "SLEEP" 或 "ACTIVE"
     last_activity_time = 0
+    last_clock_update = 0
     
     # 启动时先黑屏
     if disp: 
@@ -206,6 +207,7 @@ def main():
                     print("🔔 按钮按下！系统唤醒...")
                     system_state = "ACTIVE"
                     last_activity_time = time.time()
+                    last_clock_update = time.time() # 初始化时钟基准
                     update_screen("HELLO", "System Waking Up...", (0, 0, 100))
                     time.sleep(0.5) # 消除按键抖动
                     update_screen("READY", "Face/Finger Ready", (0, 0, 0))
@@ -228,6 +230,7 @@ def main():
                     if face_uid:
                         last_activity_time = current_ts # 重置计时
                         perform_unlock(face_uid, method="Face")
+                        last_clock_update = time.time() # 动作后重置时钟基准
                         continue
 
                 # 3. 指纹识别
@@ -240,6 +243,7 @@ def main():
                             if finger.image_2_tz(1) == adafruit_fingerprint.OK:
                                 if finger.finger_search() == adafruit_fingerprint.OK:
                                     perform_unlock(finger.finger_id, method="Fingerprint")
+                                    last_clock_update = time.time() # 动作后重置时钟基准
                                     while finger.get_image() != adafruit_fingerprint.NOFINGER:
                                         time.sleep(0.1)
                                         last_activity_time = time.time()
@@ -251,11 +255,11 @@ def main():
                                 update_screen("RETRY", "Bad Image", (200, 100, 0))
                     except Exception as fp_err:
                         print(f"⚠️ 指纹读取错误: {fp_err}")
-                        # 尝试重置串口连接? 不，通常只需忽略这次错误
 
-                # 4. 刷新时间
-                if int(current_ts * 10) % 10 == 0: 
-                     pass
+                # 4. 刷新时间 (每秒刷新一次屏幕以更新时钟)
+                if int(current_ts) != int(last_clock_update):
+                    update_screen("READY", "Face/Finger Ready", (0, 0, 0))
+                    last_clock_update = current_ts
                 
                 time.sleep(0.01)
 
