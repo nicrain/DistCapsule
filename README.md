@@ -11,11 +11,14 @@ Un système de distribution de capsules sécurisé et activé par biométrie. Il
 ## ✨ Fonctionnalités Clés
 
 *   **Gestion des Rôles Multi-utilisateurs**: Prend en charge 1 super-administrateur et des utilisateurs en liste d'attente illimités. Les canaux physiques (servos) ne sont alloués qu'aux utilisateurs actifs (max 5).
-*   **Mode Éco Intelligent**: Éteint automatiquement le rétroéclairage après 30s d'inactivité ; réveil instantané au toucher du capteur. Réduit considérablement l'utilisation du CPU et la consommation d'énergie.
-*   **Horloge en Temps Réel**: Affiche l'heure du système mise à jour dynamiquement en mode veille, mise en pause pendant le sommeil.
+*   **Architecture Multi-threadée**: Utilise des threads séparés pour la reconnaissance faciale et l'interface utilisateur, garantissant une **mise à jour fluide et linéaire** du compte à rebours sans saccades.
+*   **Gestion de l'Énergie & Session**: 
+    *   Mise en veille automatique après 30s.
+    *   Réveil et **extension de temps** via un bouton physique dédié.
+    *   Sécurité : limite de session maximale de 5 minutes pour éviter les blocages.
+*   **Interface Interactive**: Écran IPS 1,3" affichant l'heure, le statut et un **compte à rebours en temps réel**. La couleur passe au rouge en dessous de 10s.
+*   **Horloge en Temps Réel**: Affiche l'heure du système mise à jour dynamiquement en mode actif.
 *   **Guide d'Enrôlement**: Outil CLI interactif avec sélection du doigt (ex: Right Thumb) et affichage automatique de l'état des utilisateurs actuels.
-*   **Interface Interactive**: Écran IPS 1,3" affichant le nom de l'utilisateur et le numéro de boîte. Le compte à rebours de déverrouillage utilise une **barre de progression visuelle**.
-*   **Contrôle de Précision**: Après authentification, l'utilisateur déverrouille son servo dédié ; l'administrateur voit un écran de bienvenue mais ne déclenche **aucune** action matérielle.
 *   **Sécurité Biométrique**: Capteur optique DY-50 (compatible R307) pour une identification rapide.
 
 ---
@@ -178,9 +181,12 @@ Pour installer le service systemd afin que le programme se lance au démarrage :
 ## 📜 Histoire & Décisions
 
 *   **2025-12 (S5)**: 
+    *   **Refonte Multi-threadée**: Migration vers une architecture à threads pour l'asynchronisme de l'IA (visage) et la fluidité de l'UI (compte à rebours linéaire).
+    *   **Gestion Native GPIO**: Migration complète vers `lgpio` pour tous les contrôles (舵机 et boutons) afin de garantir la stabilité sur Pi 5.
+    *   **UI Avancée**: Ajout d'un compte à rebours numérique en temps réel avec changement de couleur dynamique.
     *   **Refonte des Permissions**: Introduction des niveaux de rôle et de l'allocation des canaux physiques.
-    *   **Amélioration de l'Interaction**: Ajout d'un menu de sélection des doigts (anglais) lors de l'enrôlement et affichage des statistiques utilisateur en temps réel.
-    *   **Compatibilité Matérielle**: Migration du contrôle servo du PWM matériel vers le **PWM Logiciel (`lgpio`)**. L'horloge PWM matérielle du Raspberry Pi 5 est partagée avec le ventilateur de refroidissement, causant des conflits. Implémentation également de la logique de **Démarrage Progressif**.
+
+---
 
 *   **2024-11**: Suppression de l'Arduino de l'architecture. Le Pi 5 est assez puissant pour gérer toutes les E/S directement.
 
