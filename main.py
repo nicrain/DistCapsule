@@ -28,7 +28,6 @@ servos = {}
 h_gpio = None # lgpio handle
 face_queue = queue.Queue() # 线程通信队列
 face_running_event = threading.Event() # 控制人脸线程开关
-button_event_flag = False # 按钮中断标志位
 
 def init_display_system():
     global disp, font_large, font_small
@@ -175,30 +174,19 @@ def face_worker(face_rec):
         # 线程间歇，避免占满单核
         time.sleep(0.1)
 
-def on_gpio_event(chip, gpio, level, timestamp):
-    """GPIO 中断回调函数"""
-    global button_event_flag
-    # 当检测到信号变化时，设置标志位
-    button_event_flag = True
-
 def main():
-    global servos, h_gpio, button_event_flag
-    print("--- 智能胶囊分配器 (Multi-threaded & Interrupts) ---")
+    global servos, h_gpio
+    print("--- 智能胶囊分配器 (Polling Mode) ---")
     
     # 1. 硬件初始化
     init_display_system()
     
-    cb = None
     try:
         # GPIO 初始化 (使用 lgpio)
         h_gpio = lgpio.gpiochip_open(0)
         # 设置唤醒按钮 (输入，下拉电阻)
         lgpio.gpio_claim_input(h_gpio, WAKE_BUTTON_PIN, lgpio.SET_PULL_DOWN)
-        
-        # 注册中断回调 (上升沿触发，即按下瞬间)
-        cb = lgpio.callback(h_gpio, WAKE_BUTTON_PIN, lgpio.RISING_EDGE, on_gpio_event)
-        
-        print(f"✅ 唤醒按钮监听 GPIO {WAKE_BUTTON_PIN} (Interrupt Mode)")
+        print(f"✅ 唤醒按钮监听 GPIO {WAKE_BUTTON_PIN} (lgpio)")
 
         servos[1] = ServoController(channel=2)
         servos[2] = ServoController(channel=0)
@@ -261,9 +249,9 @@ def main():
                 if face_running_event.is_set():
                     face_running_event.clear()
 
-                # 双重检查：中断标志位 OR 实时电平 (兜底)
-                if button_event_flag or lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN) == 1:
-                    button_event_flag = False # 复位标志
+                # 简单轮询
+                btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
+                if btn_val == 1:
                     print("🔔 按钮按下！系统唤醒...")
                     system_state = "ACTIVE"
                     last_activity_time = time.time()
@@ -300,13 +288,13 @@ def main():
                     face_running_event.clear()
                     continue
                 
-                # 2. 按钮续命检测 (双重检查)
-                if button_event_flag or lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN) == 1:
-                    button_event_flag = False # 复位标志
+                # 2. 按钮续命检测 (轮询)
+                btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
+                if btn_val == 1:
                     last_activity_time = current_ts
                     remaining = SCREEN_TIMEOUT
                     update_screen("EXTEND", "Time Extended!", (0, 100, 100), countdown=remaining)
-                    time.sleep(0.2)
+                    time.sleep(0.2) # 简单防抖
                     update_screen("READY", "Face/Finger Ready", (0, 0, 0), countdown=remaining)
 
                 # 3. 检查人脸识别结果 (从队列获取，非阻塞)
@@ -316,52 +304,45 @@ def main():
                     perform_unlock(face_uid, method="Face")
                     last_activity_time = time.time()
                     last_clock_update = time.time()
-                    # 注意: perform_unlock 内部已经处理了暂停/恢复人脸线程的逻辑
                     continue
 
                 # 4. 指纹识别 (轻量级，依然在主线程)
                 if finger:
                     try:
                         if finger.get_image() == adafruit_fingerprint.OK:
-                            # 只要摸了手指，就重置计时
                             last_activity_time = current_ts
                             update_screen("SCANNING", "Processing...", (0, 0, 100))
                             
                             if finger.image_2_tz(1) == adafruit_fingerprint.OK:
                                 if finger.finger_search() == adafruit_fingerprint.OK:
                                     perform_unlock(finger.finger_id, method="Fingerprint")
-                                    # 成功开锁后，重置计时器
                                     last_activity_time = time.time()
                                     last_clock_update = time.time()
                                     
                                     while finger.get_image() != adafruit_fingerprint.NOFINGER:
                                         time.sleep(0.1)
-                                        # 按住手指时不计时
                                         last_activity_time = time.time()
                                 else:
                                     update_screen("DENIED", "Unknown Finger", (255, 0, 0))
                                     time.sleep(1)
-                                    last_activity_time = time.time() # 失败也给用户重试时间
+                                    last_activity_time = time.time()
                                     update_screen("READY", "Try Again", (0, 0, 0), countdown=SCREEN_TIMEOUT)
                             else:
                                 update_screen("RETRY", "Bad Image", (200, 100, 0))
                     except Exception:
-                        pass # 忽略指纹临时错误，保持流畅
+                        pass 
 
-                # 5. 刷新屏幕 (极速刷新，保证倒计时线性)
+                # 5. 刷新屏幕
                 if int(current_ts) != int(last_clock_update):
                     update_screen("READY", "Face/Finger Ready", (0, 0, 0), countdown=remaining)
                     last_clock_update = current_ts
                 
-                # 极短的休眠，保证主循环高频运行
                 time.sleep(0.01)
 
     except KeyboardInterrupt:
         print("\n用户退出")
     finally:
         if disp: disp.set_backlight(False)
-        if cb is not None:
-             cb.cancel() # 取消回调
         if h_gpio is not None:
             lgpio.gpiochip_close(h_gpio)
         if face_rec: face_rec.close()
