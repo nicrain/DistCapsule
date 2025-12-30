@@ -19,7 +19,7 @@ After=network.target multi-user.target
 
 [Service]
 Type=simple
-User=root
+User=$USER_NAME
 WorkingDirectory=$PROJECT_ROOT
 ExecStart=$PYTHON_EXEC $PROJECT_ROOT/main.py
 Restart=always
