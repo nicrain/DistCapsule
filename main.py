@@ -16,6 +16,7 @@ BAUD_RATE = 57600
 UNLOCK_TIME = 5
 DATABASE_NAME = "capsule_dispenser.db"
 SCREEN_TIMEOUT = 30  # 无操作几秒后自动休眠
+MAX_SESSION_TIME = 300 # 最长连续工作时间 (5分钟)，防止死锁
 WAKE_BUTTON_PIN = 26  # 唤醒按钮 GPIO 编号
 
 # --- 全局变量 ---
@@ -41,7 +42,7 @@ def init_display_system():
     except Exception as e:
         print(f"⚠️ 屏幕初始化失败: {e}")
 
-def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None):
+def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None, countdown=None):
     if disp is None:
         return
     # 强制开启背光
@@ -73,8 +74,15 @@ def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None):
         if fill_w > 0:
             draw.rectangle((bar_x + 1, bar_y + 1, bar_x + fill_w, bar_y + bar_h - 1), fill="WHITE")
 
+    # 底部时间
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
     draw.text((60, 205), current_time, font=font_small, fill="YELLOW")
+
+    # 底部右侧倒计时
+    if countdown is not None:
+        color = "RED" if countdown < 10 else "GREEN"
+        draw.text((180, 205), f"{int(countdown)}s", font=font_small, fill=color)
+
     disp.display(image)
 
 def log_access(user_id, event_type, status, message=""):
@@ -185,6 +193,7 @@ def main():
     # 初始状态
     system_state = "SLEEP" # "SLEEP" 或 "ACTIVE"
     last_activity_time = 0
+    session_start_time = 0
     last_clock_update = 0
     
     # 启动时先黑屏
@@ -207,58 +216,84 @@ def main():
                     print("🔔 按钮按下！系统唤醒...")
                     system_state = "ACTIVE"
                     last_activity_time = time.time()
+                    session_start_time = time.time()
                     last_clock_update = time.time() # 初始化时钟基准
                     update_screen("HELLO", "System Waking Up...", (0, 0, 100))
                     time.sleep(0.5) # 消除按键抖动
-                    update_screen("READY", "Face/Finger Ready", (0, 0, 0))
+                    update_screen("READY", "Face/Finger Ready", (0, 0, 0), countdown=SCREEN_TIMEOUT)
                 else:
                     time.sleep(0.1)
 
             elif system_state == "ACTIVE":
                 current_ts = time.time()
+                elapsed = current_ts - last_activity_time
+                remaining = max(0, SCREEN_TIMEOUT - elapsed)
 
-                # 1. 超时检查
-                if current_ts - last_activity_time > SCREEN_TIMEOUT:
+                # 0. 强制会话超时 (5分钟)
+                if current_ts - session_start_time > MAX_SESSION_TIME:
+                     print("🛑 达到最大会话时间 (5分钟)，强制休眠")
+                     system_state = "SLEEP"
+                     if disp: disp.set_backlight(False)
+                     continue
+
+                # 1. 自动休眠超时检查
+                if remaining == 0:
                     print("💤 超过 30秒 无操作，进入休眠")
                     system_state = "SLEEP"
                     if disp: disp.set_backlight(False)
                     continue
+                
+                # 2. 按钮续命检测
+                btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
+                if btn_val == 1:
+                    # 重置计时器
+                    last_activity_time = current_ts
+                    remaining = SCREEN_TIMEOUT # 更新显示的倒计时
+                    update_screen("EXTEND", "Time Extended!", (0, 100, 100), countdown=remaining)
+                    time.sleep(0.2) # 简单防抖
+                    update_screen("READY", "Face/Finger Ready", (0, 0, 0), countdown=remaining)
 
-                # 2. 人脸识别
+                # 3. 人脸识别
                 if face_rec:
                     face_uid = face_rec.scan()
                     if face_uid:
-                        last_activity_time = current_ts # 重置计时
                         perform_unlock(face_uid, method="Face")
-                        last_clock_update = time.time() # 动作后重置时钟基准
+                        last_activity_time = time.time() # 动作后重置计时
+                        last_clock_update = time.time()
                         continue
 
-                # 3. 指纹识别
+                # 4. 指纹识别
                 if finger:
                     try:
                         if finger.get_image() == adafruit_fingerprint.OK:
+                            # 只要摸了手指，就重置计时
                             last_activity_time = current_ts
                             update_screen("SCANNING", "Processing...", (0, 0, 100))
                             
                             if finger.image_2_tz(1) == adafruit_fingerprint.OK:
                                 if finger.finger_search() == adafruit_fingerprint.OK:
                                     perform_unlock(finger.finger_id, method="Fingerprint")
-                                    last_clock_update = time.time() # 动作后重置时钟基准
+                                    # 成功开锁后，重置计时器
+                                    last_activity_time = time.time()
+                                    last_clock_update = time.time()
+                                    
                                     while finger.get_image() != adafruit_fingerprint.NOFINGER:
                                         time.sleep(0.1)
+                                        # 按住手指时不计时
                                         last_activity_time = time.time()
                                 else:
                                     update_screen("DENIED", "Unknown Finger", (255, 0, 0))
                                     time.sleep(1)
-                                    update_screen("READY", "Try Again", (0, 0, 0))
+                                    last_activity_time = time.time() # 失败也给用户重试时间
+                                    update_screen("READY", "Try Again", (0, 0, 0), countdown=SCREEN_TIMEOUT)
                             else:
                                 update_screen("RETRY", "Bad Image", (200, 100, 0))
                     except Exception as fp_err:
                         print(f"⚠️ 指纹读取错误: {fp_err}")
 
-                # 4. 刷新时间 (每秒刷新一次屏幕以更新时钟)
+                # 5. 刷新屏幕 (倒计时或时钟更新)
                 if int(current_ts) != int(last_clock_update):
-                    update_screen("READY", "Face/Finger Ready", (0, 0, 0))
+                    update_screen("READY", "Face/Finger Ready", (0, 0, 0), countdown=remaining)
                     last_clock_update = current_ts
                 
                 time.sleep(0.01)
