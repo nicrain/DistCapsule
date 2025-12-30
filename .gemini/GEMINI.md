@@ -29,6 +29,7 @@
 - Fixed `RuntimeError` on fingerprint initialization by migrating button logic to `lgpio`.
 - Refactored `main.py` into a threaded state-machine.
 - Implemented real-time dynamic clock and countdown UI.
+- **Optimized Input**: Implemented interrupt-based GPIO handling for the wake button to fix response lag.
 
 ## 🔮 Next Steps
 - Implement MQTT client in `main.py` for remote control.

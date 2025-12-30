@@ -10,6 +10,7 @@ Le système est fonctionnel avec une architecture matérielle complète et un lo
 2.  **Expérience Utilisateur (UI/UX)** :
     *   **Compte à rebours linéaire** : Affichage fluide des secondes restantes.
     *   **Session Interactive** : Bouton physique (GPIO 26) pour le réveil et l'extension du temps ("Keep Alive").
+    *   **Réactivité Instantanée** : Utilisation d'interruptions matérielles pour le bouton, éliminant toute latence.
     *   **Sécurité Session** : Timeout automatique après 30s d'inactivité, forçage de l'arrêt après 5 min.
 3.  **Réseau** :
     *   Scripts de **Hotspot "Silencieux"** : Permet au téléphone de contrôler le Pi (MQTT/HTTP futur) tout en gardant la 4G (`tools/setup_manual_hotspot.sh`).
