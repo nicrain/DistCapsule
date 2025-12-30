@@ -24,7 +24,7 @@
 *   **控制器**: Raspberry Pi 5 (推荐 8GB)。
 *   **执行器**: 5x SG90 微型舵机 (9g)。
 *   **传感器**: DY-50 / R307 光学指纹模块 (UART) + Camera Module 3 (IMX708)。
-*   **显示器**: 1.3" IPS LCD (240x240) 配备 ST7789 驱动 (SPI)。
+*   **人机交互**: 1.3" IPS LCD (ST7789) + **唤醒按钮 (Wake-Up Button)**。
 *   **供电**: 舵机必须使用 **外部 5V 电源** (必须与 Pi 共地)。
 
 > **⚠️ 接线警告**: 不要直接从 Pi 的 GPIO 5V 引脚为 5 个舵机供电。请使用外部电源。详见 [WIRING_GUIDE.md](WIRING_GUIDE.md)。
@@ -59,6 +59,20 @@ sudo apt update
 sudo apt install python3-opencv python3-face-recognition
 ```
 
+### 4. 网络配置 (离线热点)
+为了让手机 App 能在没有外网的情况下控制 Pi，同时保持手机自身的 4G/5G 上网，请配置“无网关”热点模式：
+
+**开启热点:**
+```bash
+sudo ./tools/setup_manual_hotspot.sh
+```
+*   这将创建 Wi-Fi `DistCapsule_Box` (IP: 192.168.4.1)。手机连接后会自动保持 4G 上网。
+
+**关闭热点 (恢复正常 Wi-Fi):**
+```bash
+sudo ./tools/stop_hotspot.sh
+```
+
 ---
 
 ## 📖 使用指南
@@ -88,7 +102,10 @@ sudo python3 tools/hardware_test.py
 ```
 
 ### 5. 运行主程序
-启动分配器系统，进入监听状态。
+启动系统。系统默认进入 **休眠模式 (Sleep Mode)**（屏幕关闭）以节省能源。
+*   **唤醒**: 按下 **物理唤醒按钮**。
+*   **自动休眠**: 无操作 30 秒后自动重新进入休眠。
+
 ```bash
 sudo python3 main.py
 ```

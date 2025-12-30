@@ -91,8 +91,22 @@ rpicam-hello -t 5000
 
 ---
 
-## 6. 软件配置检查
-### 4.1 启用串口 (指纹)
+## 7. 唤醒按钮 (Wake-Up Button)
+**模块**: DFRobot Digital Push Button (DFR0029-B) 或通用点动开关。
+**用途**: 从低功耗休眠模式中唤醒系统（点亮屏幕、启动摄像头/指纹）。
+
+| DFRobot 线色 | 功能 | 树莓派引脚 | 物理引脚 (Board) |
+| :--- | :--- | :--- | :--- |
+| **黑 (Black)** | GND | **GND** | Pin 6, 9, 14... |
+| **红 (Red)** | VCC | **3.3V** | Pin 1 |
+| **绿 (Green)** | Signal | **GPIO 26** | Pin 37 |
+
+> **注意**: 请务必连接 **3.3V** 而不是 5V，以保护 Pi 的 GPIO 引脚。
+
+---
+
+## 8. 软件配置检查
+### 8.1 启用串口 (指纹)
 确保 Raspberry Pi 的串口未被控制台占用：
 1. 运行 `sudo raspi-config`
 2. 选择 `Interface Options` -> `Serial Port`

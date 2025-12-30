@@ -25,7 +25,7 @@ Un système de distribution de capsules sécurisé et activé par biométrie. Il
 *   **Contrôleur**: Raspberry Pi 5 (Recommandé 8Go).
 *   **Actionneurs**: 5x Micro servomoteurs SG90 (9g).
 *   **Capteur**: Module capteur d'empreintes optique DY-50 / R307 (UART).
-*   **Écran**: LCD IPS 1.3" (240x240) avec pilote ST7789 (SPI).
+*   **Interface**: Écran LCD IPS 1.3" (ST7789) + **Bouton Poussoir (Wake-Up)** pour le réveil du système.
 *   **Base**: Composants imprimés en 3D sur mesure. Les premières ébauches sont disponibles dans le répertoire `3D/`.
 *   **Alimentation**:
     *   Pi 5: Alimentation officielle USB-C 27W.
@@ -90,6 +90,11 @@ sudo ./tools/setup_manual_hotspot.sh
 *   Cela crée un réseau Wi-Fi `DistCapsule_Box` (IP: 192.168.4.1).
 *   **Important** : Le téléphone utilisera ce Wi-Fi pour MQTT mais gardera la 4G pour Internet.
 
+Pour arrêter le hotspot et reconnecter le Pi au Wi-Fi domestique :
+```bash
+sudo ./tools/stop_hotspot.sh
+```
+
 ---
 
 ## 📖 Guide d'Utilisation
@@ -130,7 +135,9 @@ python3 tools/face_enroll.py
 *   **Note Pi 5**: Le script utilise GStreamer/Libcamera automatiquement.
 
 ### 5. Lancer le Programme Principal
-Démarrer le système de distribution. Cela lance la boucle d'écoute des empreintes digitales, met à jour l'affichage et contrôle les servomoteurs en fonction de l'authentification.
+Démarrer le système. Le système démarre en **Mode Veille (Sleep Mode)** (écran éteint) pour économiser l'énergie.
+*   **Pour réveiller** : Appuyez sur le **bouton physique**.
+*   **Durée d'activité** : Le système reste actif pendant 30 secondes après la dernière action.
 
 ```bash
 sudo python3 main.py
