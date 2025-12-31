@@ -188,12 +188,9 @@ def main():
         lgpio.gpio_claim_input(h_gpio, WAKE_BUTTON_PIN, lgpio.SET_PULL_DOWN)
         print(f"✅ 唤醒按钮监听 GPIO {WAKE_BUTTON_PIN} (lgpio)")
 
-        servos[1] = ServoController(channel=2)
-        servos[2] = ServoController(channel=0)
-        servos[3] = ServoController(channel=1)
-        servos[4] = ServoController(channel=3)
-        servos[5] = ServoController(channel=5)
-        print(f"✅ {len(servos)} 个舵机已就绪")
+        for i in range(1, 6):
+            servos[i] = ServoController(channel=i)
+        print(f"✅ {len(servos)} 个舵机已就绪 (Servo 1-5)")
     except Exception as e:
         print(f"❌ 硬件初始化失败: {e}")
         return

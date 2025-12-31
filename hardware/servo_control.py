@@ -2,17 +2,14 @@ import lgpio
 import time
 import sys
 
-# 映射 PWM 通道 ID 到 BCM GPIO 编号 (Pi 5)
-# Channel 0 -> GPIO 12
-# Channel 1 -> GPIO 13
-# Channel 2 -> GPIO 18
-# Channel 3 -> GPIO 19
+# 映射逻辑编号 (Servo 1-5) 到 BCM GPIO 编号 (Pi 5)
+# 遵循 docs/WIRING_GUIDE.md
 CHANNEL_TO_PIN = {
-    0: 12,
-    1: 13,
-    2: 18,
-    3: 19,
-    5: 6
+    1: 18, # Servo 1
+    2: 12, # Servo 2
+    3: 13, # Servo 3
+    4: 19, # Servo 4
+    5: 6   # Servo 5
 }
 
 class ServoController:

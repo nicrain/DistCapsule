@@ -18,25 +18,12 @@ BAUD_RATE = 57600
 
 def test_servos():
     print("\n--- 舵机测试 ---")
-    # 映射逻辑ID到物理通道参数 (参考 main_demo.py)
-    # 1->2 (GPIO 18)
-    # 2->0 (GPIO 12)
-    # 3->1 (GPIO 13)
-    # 4->3 (GPIO 19)
-    # 5->5 (GPIO 6)
-    servo_map = {
-        1: 2,
-        2: 0,
-        3: 1,
-        4: 3,
-        5: 5
-    }
     
     servos = {}
     try:
-        print("初始化所有舵机...")
-        for logic_id, channel_id in servo_map.items():
-            servos[logic_id] = ServoController(channel=channel_id)
+        print("初始化所有舵机 (1-5)...")
+        for i in range(1, 6):
+            servos[i] = ServoController(channel=i)
         
         while True:
             print("\n[舵机菜单]")
