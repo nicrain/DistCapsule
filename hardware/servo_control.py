@@ -17,7 +17,7 @@ class ServoController:
     使用 lgpio (软件 PWM) 控制 SG90 舵机。
     完全绕过硬件 PWM 限制，解决与风扇的冲突。
     """
-    def __init__(self, channel=2):
+    def __init__(self, channel):
         self.pin = CHANNEL_TO_PIN.get(channel, channel)
         # Pi 5 的 GPIO 通常在 chip 4
         try:
