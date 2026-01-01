@@ -31,15 +31,20 @@
 - **Silent Mode**: No gateway assigned in DHCP to allow phones to keep 4G/5G internet access while connected to the Pi.
 
 ## 🚀 Recent Accomplishments
-- Refactored `main.py` into a threaded state-machine.
-- Implemented real-time dynamic clock and countdown UI.
-- **Optimized Input**: Using efficient polling (lgpio) for button handling to maintain code simplicity.
+- **Logic Optimization**: Removed blocking `sleep`, implemented non-blocking button debounce (edge detection), and centralized timestamp sync in `main.py`.
+- **Refactoring**: Aligned servo channel mapping (1-5) across `main.py`, `hardware/servo_control.py`, and `tools/hardware_test.py`.
+- **Documentation**: 
+    - Updated `PROJECT_STATUS_S5.md` to be bilingual (FR/CN).
+    - Synchronized `README.md` and `README_CN.md` with latest S5 logic.
+- **Deep Dive Learning**: Added comprehensive Chinese educational comments to core files (`st7789`, `face_system`, `main`) covering SPI, CLAHE, and Threading/State Machine.
 
 ## 🎓 Learning Progress (Python Study)
-- **Status**: Phase 1 (Classes & Encapsulation) - Started.
-- **Completed**: Breakdown of `hardware/servo_control.py`.
-- **Next Lesson**: SQLite Database logic (`main.py` functions).
-- **Pending Exercise**: Implement `slow_lock()` in `ServoController`.
+- **Status**: Phase 4 (Advanced Concurrency) - **Next Lesson (Not Started)**.
+- **Completed**: 
+    - Phase 1: Classes & Hardware (`servo_control`, `st7789`).
+    - Phase 2: Logic & Database (`log_access`, `get_user_info`).
+    - Phase 3: Control Flow (`State Machine`, `Timestamps`, `Edge Detection`).
+- **Next Lesson**: Phase 4: Concurrency (`Threading`, `Queue`, `Event`).
 
 ## 🔮 Next Steps
 - Implement MQTT client in `main.py` for remote control.

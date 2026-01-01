@@ -92,27 +92,8 @@ class FaceRecognizer:
             except Exception:
                 pass
 
-        # 2. 如果 GStreamer 失败，遍历搜索 V4L2 设备 (0-20)
-        print("⚠️ [Face] GStreamer 失败，正在搜索 V4L2 设备...")
-        for i in range(20):
-            try:
-                cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
-                if cap.isOpened():
-                    ret, frame = cap.read()
-                    if ret and frame is not None and frame.size > 0:
-                        print(f"✅ [Face] 成功连接 V4L2 设备 (Index: {i})")
-                        self.cap = cap
-                        
-                        # 保存一张调试图，确保画面正常
-                        cv2.imwrite("debug_camera_view.jpg", frame)
-                        print(f"   [Debug] 已保存测试图到 debug_camera_view.jpg")
-                        return
-                    else:
-                        cap.release()
-            except:
-                pass
-        
-        print("❌ [Face] 无法初始化任何摄像头，人脸识别将不可用")
+        print("❌ [Face] 无法初始化 GStreamer 摄像头，人脸识别将不可用")
+        print("   提示: 请检查摄像头排线是否插好，以及是否安装了 gstreamer1.0-libcamera")
         self.cap = None
 
     def scan(self):
