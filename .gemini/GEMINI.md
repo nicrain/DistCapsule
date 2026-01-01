@@ -5,6 +5,11 @@
 - **Target Platform**: Raspberry Pi 5 (Bookworm OS)
 - **Current State**: Stable S5 (Last updated: 2025-12-30)
 
+## ⚠️ Environment Constraints
+- **Current Host**: macOS (Darwin) - Development/Refactoring Mode.
+- **Hardware Access**: ❌ NOT AVAILABLE (No GPIO, Camera, or Serial).
+- **Execution Rule**: Do NOT attempt to run `main.py` or tools in `tools/` that depend on `lgpio`, `rpi_gpio`, or `picamera` while on this host. Only perform static code analysis, editing, and git operations.
+
 ## 🧠 Core Technical Context
 - **Hardware Architecture**: 
     - 5x SG90 Servos (Soft-PWM via `lgpio`).

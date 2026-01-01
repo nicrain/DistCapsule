@@ -34,7 +34,7 @@ Un système de distribution de capsules sécurisé et activé par biométrie. Il
     *   Pi 5: Alimentation officielle USB-C 27W.
     *   Servos: **Alimentation externe 5V** (Masse commune avec le Pi obligatoire).
 
-> **⚠️ Avertissement de Câblage**: Ne pas alimenter 5 servomoteurs directement depuis la broche 5V du GPIO du Pi. Utilisez une source d'alimentation externe. Voir [WIRING_GUIDE.md](WIRING_GUIDE.md) pour les détails de câblage.
+> **⚠️ Avertissement de Câblage**: Ne pas alimenter 5 servomoteurs directement depuis la broche 5V du GPIO du Pi. Utilisez une source d'alimentation externe. Voir [WIRING_GUIDE.md](docs/WIRING_GUIDE.md) pour les détails de câblage.
 
 ---
 
@@ -183,6 +183,7 @@ Pour installer le service systemd afin que le programme se lance au démarrage :
 *   **2025-12 (S5)**: 
     *   **Refonte Multi-threadée**: Migration vers une architecture à threads pour l'asynchronisme de l'IA (visage) et la fluidité de l'UI (compte à rebours linéaire).
     *   **Gestion Native GPIO**: Migration complète vers `lgpio` pour tous les contrôles (舵机 et boutons) afin de garantir la stabilité sur Pi 5.
+    *   **Optimisation de la Réactivité**: Suppression des délais bloquants (`time.sleep`) au profit d'une détection d'état non-bloquante et d'une synchronisation centralisée des horloges.
     *   **UI Avancée**: Ajout d'un compte à rebours numérique en temps réel avec changement de couleur dynamique.
     *   **Refonte des Permissions**: Introduction des niveaux de rôle et de l'allocation des canaux physiques.
 

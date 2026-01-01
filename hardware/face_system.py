@@ -117,14 +117,15 @@ class FaceRecognizer:
 
     def scan(self):
         """
-        尝试读取一帧并识别。
+        核心函数：尝试读取一帧并识别。
         返回: matched_user_id (int) 或 None
         """
-        # 如果没摄像头或没人脸库，直接跳过
+        # 如果没摄像头或没人脸库，直接跳过，不做无用功
         if not self.cap or not self.known_face_encodings:
             return None
 
-        # 频率控制
+        # 频率控制 (Throttling)
+        # 防止跑得太快占满 CPU，每秒只扫描 2 次 (1/0.5s)
         if time.time() - self.last_scan_time < self.scan_interval:
             return None
         self.last_scan_time = time.time()
@@ -132,60 +133,63 @@ class FaceRecognizer:
         ret, frame = self.cap.read()
         if not ret:
             print("⚠️ [Face] 无法读取视频帧 (Stream broken)")
-            # 尝试重连逻辑可以在这里添加
+            # 实际项目中这里可能需要尝试 self.init_camera() 重连
             return None
 
-        # 优化策略: 强制图像增强
-        # 1. 转为 LAB 颜色空间 (L=亮度, A/B=颜色)
+        # --- 图像增强 (Image Enhancement) ---
+        # 树莓派摄像头在室内往往光线不足。
+        # 这里使用了 CLAHE (对比度受限自适应直方图均衡化) 算法。
+        # 简单来说：它把画面切成小块，把太暗的地方提亮，把太亮的地方压暗。
+        
+        # 1. BGR 转 LAB: 因为在 RGB 模式下调亮度会改变颜色，LAB 模式把亮度(L)和颜色(A,B)分开了。
         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-        l, a, b = cv2.split(lab)
+        l, a, b = cv2.split(lab) # 拆分通道
 
-        # 2. 对 L (亮度) 通道应用 CLAHE
+        # 2. 对 L (亮度) 通道应用增强
+        # clipLimit=3.0: 限制对比度增强的倍数，防止噪声也被放大
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
         cl = clahe.apply(l)
 
-        # 3. 合并通道并转回 RGB
+        # 3. 合并通道并转回 RGB (人脸库需要 RGB)
         limg = cv2.merge((cl, a, b))
         enhanced_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
 
-        # 3. 检测人脸 (使用增强后的图像)
+        # --- 人脸检测 (Detection) ---
+        # 寻找画面中哪里有人脸 (返回坐标框：top, right, bottom, left)
         face_locations = face_recognition.face_locations(enhanced_frame)
         
         if not face_locations:
             self.no_face_count += 1
-            # 连续未检测到人脸时，仅在控制台提示（不再保存图片）
-            if self.no_face_count % 20 == 0: # 降低频率到约 10秒一次
-                # print(f"⚠️ [Face] 连续 {self.no_face_count} 次未检测到人脸 (请检查光线或距离)")
-                pass
+            if self.no_face_count % 20 == 0: 
+                pass # 连续没检测到人脸时，静默处理
             return None 
         
-        # 如果检测到了，重置计数器
         if self.no_face_count > 0:
-            # print("✨ [Face] 重新捕捉到人脸")
             self.no_face_count = 0
 
-        # 4. 提取特征
-        # 注意：虽然用增强图检测到了位置，但为了特征准确性，建议：
-        # 方案A: 用增强图提取特征 (暗光下可能更好)
-        # 方案B: 用原图提取特征 (颜色更自然)
-        # 这里我们选择方案 A，因为原图可能太暗根本提不出特征
+        # --- 特征提取 (Encoding) ---
+        # 把人脸图像转换成一个 128维 的向量 (一组数字)。
+        # 只要是同一个人，无论角度如何，这个向量的数值都很接近。
         face_encodings = face_recognition.face_encodings(enhanced_frame, face_locations)
         
         print(f"👀 [Face] 捕获到 {len(face_encodings)} 张人脸")
 
-        # 4. 比对
+        # --- 人脸比对 (Matching) ---
         for face_encoding in face_encodings:
-            # 计算与数据库中所有人脸的欧氏距离
-            # 距离越小越相似。通常 0.6 是分界线。
+            # 计算当前人脸向量与数据库中所有向量的欧氏距离 (Euclidean Distance)
+            # 距离越小 = 越相似。
+            # 距离 = 0: 完全一样
+            # 距离 > 0.6: 通常认为是不同的人
             face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
             
-            # 找到最相似的那个
+            # 找到距离最小的那个 (最像的那个)
+            # np.argmin 返回最小值所在的索引位置
             best_match_index = np.argmin(face_distances)
             min_distance = face_distances[best_match_index]
 
-            # 阈值调整说明:
-            # 0.60: 标准严格阈值 (误识率极低，但拒识率高)
-            # 0.72: 宽松阈值 (适合树莓派摄像头及非受控光线，体验更好)
+            # 阈值判定
+            # 0.60: 标准严格阈值
+            # 0.72: 宽松阈值 (为了适应 Pi 摄像头噪点和光线，这里放宽了标准)
             if min_distance < 0.72: 
                 user_id = self.known_face_ids[best_match_index]
                 print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
