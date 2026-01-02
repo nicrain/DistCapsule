@@ -27,13 +27,6 @@ def setup_database():
     );
     """)
 
-    # 检查 face_encoding 列是否存在 (针对旧库升级)
-    cursor.execute("PRAGMA table_info(Users)")
-    columns = [info[1] for info in cursor.fetchall()]
-    if "face_encoding" not in columns:
-        print("⚡️ 检测到旧表结构，正在添加 face_encoding 列...")
-        cursor.execute("ALTER TABLE Users ADD COLUMN face_encoding TEXT")
-
     # 2. 创建 Access_Logs 表
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Access_Logs (

@@ -3,7 +3,7 @@
 ## 📌 Identification
 - **Project Name**: DistCapsule (Smart Capsule Dispenser)
 - **Target Platform**: Raspberry Pi 5 (Bookworm OS)
-- **Current State**: Stable S5 (Last updated: 2025-12-30)
+- **Current State**: Dev S6 (IoT Integration) (Last updated: 2026-01-02)
 
 ## ⚠️ Environment Constraints
 - **Current Host**: macOS (Darwin) - Development/Refactoring Mode.
@@ -18,9 +18,9 @@
     - Raspberry Pi Camera Module 3 (IMX708).
     - Wake-up Button (GPIO 26, BCM).
 - **Software Architecture**: 
-    - **Multi-threaded**: Face recognition runs in a background thread to keep UI (countdown) fluid and linear.
+    - **Concurrency Model**: Producer-Consumer pattern using `threading` and `queue`. `face_worker` (Producer) scans in background; Main Loop (Consumer) handles UI/GPIO.
     - **GPIO Library**: Exclusively using `lgpio` for all I/O to avoid Pi 5 hardware clock conflicts.
-    - **Database**: SQLite3 (`capsule_dispenser.db`) for user mapping and access logs.
+    - **Database**: SQLite3 with auto-migration logic (`setup_database.py`) for schema evolution.
 - **Key Features**: 
     - 30s auto-sleep, 5min max session timeout.
     - Button wakeup and session extension ("Keep Alive").
@@ -31,25 +31,32 @@
 - **Silent Mode**: No gateway assigned in DHCP to allow phones to keep 4G/5G internet access while connected to the Pi.
 
 ## 🚀 Recent Accomplishments
-- **Logic Optimization**: Removed blocking `sleep`, implemented non-blocking button debounce (edge detection), and centralized timestamp sync in `main.py`.
-- **Refactoring**: Aligned servo channel mapping (1-5) across `main.py`, `hardware/servo_control.py`, and `tools/hardware_test.py`.
+- **S5 (Intelligent Core)**: 
+    - **Concurrency**: Implemented robust Thread/Queue/Event architecture. Removed all blocking `time.sleep` from Main Loop.
+    - **Persistence**: Added auto-migration to `setup_database.py` to handle schema updates (e.g., `face_encoding`).
+    - **UI/UX**: Real-time linear countdown and non-blocking button debounce.
+- **S4 (Hardware Adaptation)**: 
+    - **Pi 5 Compatibility**: Migrated servo control to Software PWM (`lgpio`) and Fingerprint to `/dev/ttyAMA0` to resolve hardware conflicts.
 - **Documentation**: 
-    - Updated `PROJECT_STATUS_S5.md` to be bilingual (FR/CN).
-    - Synchronized `README.md` and `README_CN.md` with latest S5 logic.
-- **Deep Dive Learning**: Added comprehensive Chinese educational comments to core files (`st7789`, `face_system`, `main`) covering SPI, CLAHE, and Threading/State Machine.
+    - Archived legacy phases to `docs/archive/`.
+    - Created `docs/PROJECT_STATUS_S6.md` as the new roadmap.
 
 ## 🎓 Learning Progress (Python Study)
-- **Status**: Phase 4 (Advanced Concurrency) - **Next Lesson (Not Started)**.
+- **Status**: Phase 5 (Network & Communication) - **Next Lesson (Not Started)**.
 - **Completed**: 
     - Phase 1: Classes & Hardware (`servo_control`, `st7789`).
     - Phase 2: Logic & Database (`log_access`, `get_user_info`).
     - Phase 3: Control Flow (`State Machine`, `Timestamps`, `Edge Detection`).
-- **Next Lesson**: Phase 4: Concurrency (`Threading`, `Queue`, `Event`).
+    - Phase 4: Concurrency (`Threading`, `Queue`, `Event`, `Database Migration`).
+- **Next Lesson**: Phase 5: Network & Communication (`MQTT`, `Flask/FastAPI Dashboard`).
 
 ## 🔮 Next Steps
 - Implement MQTT client in `main.py` for remote control.
 - Develop a Flask/FastAPI web dashboard for log visualization.
 - Add inventory tracking (capsule count) in the database.
+
+## 📝 Operational Mandates
+- **Doc Sync**: When updating project status, ALWAYS update `README.md`, `docs/README_CN.md`, and `docs/PROJECT_STATUS_S6.md`.
 
 ---
 *This file serves as a persistent context for Gemini CLI sessions within this project.*

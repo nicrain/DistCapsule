@@ -1,99 +1,60 @@
-# 智能胶囊分配器 - 项目状态文档 (S5.1)
-**日期:** 2025-12-08
-**平台:** Raspberry Pi 5 (Bookworm OS)
+# Status du Projet DistCapsule (S5) - 2026-01-02
+# DistCapsule 项目状态报告 (S5)
 
-## 1. 项目概况
-本项目旨在构建一个基于 Raspberry Pi 5 的离线智能胶囊分配器。系统通过生物识别（指纹/人脸）验证用户身份，并控制高扭矩舵机分配胶囊。
+## 🟢 État Actuel : Stable (S5) / 当前状态：稳定
+Le système est fonctionnel avec une architecture matérielle complète et un logiciel optimisé pour le Raspberry Pi 5.
+系统功能正常，拥有完整的硬件架构，且软件已针对 Raspberry Pi 5 进行了优化。
 
-## 2. 核心架构决策
+## 🛠 Modifications Récentes (S5) / 近期修改
+1.  **Données & Persistance (数据与持久化)** :
+    *   **Migration Automatique** : Le script `setup_database.py` détecte et met à jour automatiquement les anciennes structures de base de données (ajout de `face_encoding`).
+    *   **自动迁移**：`setup_database.py` 脚本能自动检测并升级旧的数据库结构（如自动添加 `face_encoding` 字段），无需手动重建。
 
-| 模块 | 决策/规格 | 状态 | 备注 |
-| :--- | :--- | :--- | :--- |
-| **主控** | Raspberry Pi 5 | ✅ 就绪 | 运行 Raspberry Pi OS (Bookworm) |
-| **舵机控制** | **SG90 (9g)** / 软件 PWM | ✅ 更新 | **关键变更**: 从硬件 PWM 迁移到软件 PWM (`lgpio`) 以解决与系统风扇的冲突 |
-| **显示屏** | **1.3" IPS (ST7789)** | ✅ 完成 | 240x240, SPI 接口, 自定义驱动 `st7789_driver.py` |
-| **数据库** | SQLite (`capsule_dispenser.db`) | ✅ 完成 | 已集成到主程序，支持用户查询和日志记录 |
-| **指纹模块** | DY-50 (类 R307) | ✅ 完成 | 解决了 Pi 5 特有的串口映射问题 (`ttyAMA0`) |
-| **散热** | 系统风扇 (Active Cooler) | ✅ 恢复 | 由系统内核自动控制，不再占用 GPIO 19 |
+2.  **Architecture Logicielle (软件架构)** :
+    *   Passage au **Multi-threading** : `main.py` sépare la reconnaissance faciale (thread arrière-plan) de l'UI (thread principal) pour éviter les blocages.
+    *   **多线程重构**：`main.py` 将人脸识别（后台线程）与 UI 界面（主线程）分离，彻底消除了卡顿。
+    *   **Migration lgpio** : Abandon total de `RPi.GPIO` au profit de `lgpio` pour éviter les conflits matériels sur le Pi 5.
+    *   **迁移至 lgpio**：为了解决 Pi 5 上的硬件冲突，全面弃用 `RPi.GPIO`，转而使用更底层的 `lgpio` 库。
 
----
+2.  **Expérience Utilisateur (UI/UX) (用户体验)** :
+    *   **Compte à rebours linéaire** : Affichage fluide des secondes restantes.
+    *   **线性倒计时**：流畅显示剩余秒数。
+    *   **Session Interactive** : Bouton physique (GPIO 26) pour le réveil et l'extension du temps ("Keep Alive").
+    *   **交互式会话**：通过物理按钮 (GPIO 26) 实现系统唤醒和会话时间延长（“保活”）。
+    *   **Réactivité Instantanée** : Utilisation d'interruptions matérielles pour le bouton, éliminant toute latence.
+    *   **即时响应**：按钮检测采用边缘检测机制，消除了延迟。
+    *   **Sécurité Session** : Timeout automatique après 30s d'inactivité, forçage de l'arrêt après 5 min.
+    *   **会话安全**：30秒无操作自动休眠，5分钟强制结束会话。
 
-## 3. 详细技术实现
+3.  **Réseau (网络)** :
+    *   Scripts de **Hotspot "Silencieux"** : Permet au téléphone de contrôler le Pi (MQTT/HTTP futur) tout en gardant la 4G (`tools/setup_manual_hotspot.sh`).
+    *   **静默热点脚本**：允许手机连接树莓派（用于未来的 MQTT/HTTP 控制）的同时，保持手机自身的 4G 上网功能。
 
-### 3.1 舵机控制系统 (Servo System)
-**重大架构变更 (2025-12-08)**:
-由于 Raspberry Pi 5 的硬件 PWM 模块与系统风扇驱动 (`pwm-fan`) 共享时钟源，当风扇启动时，PWM 频率会被强制锁定在 ~25kHz，导致舵机 (需要 50Hz) 失效。
-因此，我们将舵机控制迁移到了 **软件 PWM (Software PWM)**，使用 `lgpio` 库直接控制 GPIO 电平。
+## 📋 Liste de Contrôle des Fonctionnalités / 功能核对表
+- [x] Contrôle Servo (lgpio) / 舵机控制
+- [x] Écran LCD (ST7789) + Horloge / LCD 屏幕 + 时钟
+- [x] Capteur Empreinte (DY-50) / 指纹传感器
+- [x] Reconnaissance Faciale (OpenCV/GStreamer) / 人脸识别
+- [x] Base de données SQLite (Utilisateurs/Logs) / SQLite 数据库
+- [x] Bouton de Réveil/Extension / 唤醒与续命按钮
+- [x] Installation Service systemd (`capsule.service`) / 系统服务安装
+- [x] Documentation complète (FR/CN/Wiring) / 完整文档 (中/法/接线图)
 
-*   **硬件型号**: SG90 (Micro Servo 9g) x 4
-*   **接口分配**:
-    *   **Servo 1**: GPIO 18
-    *   **Servo 2**: GPIO 12
-    *   **Servo 3**: GPIO 13
-    *   **Servo 4**: GPIO 19 (已恢复)
-*   **系统配置**:
-    不再需要复杂的 `config.txt` PWM 覆盖。只需将引脚配置为普通输出模式。
-    1.  **配置脚本**: `/usr/local/bin/setup_pwm_pins.sh`
-        ```bash
-        #!/bin/bash
-        # 将 GPIO 12, 13, 18, 19 设置为普通输出模式 (Output)
-        pinctrl set 12 op
-        pinctrl set 13 op
-        pinctrl set 18 op
-        pinctrl set 19 op
-        ```
-*   **核心代码**: `servo_control.py`
-    *   使用 `lgpio` 库生成 50Hz PWM 信号。
-    *   **防抖逻辑**: 动作完成后立即关闭 PWM 输出 (`duty=0`)，防止舵机抖动并节省电力。
+## 🔮 Prochaines Étapes (To-Do) / 下一步计划
+1.  **Interface Web (Dashboard)** :
+    *   Créer une app Flask/Django locale pour visualiser les logs et gérer les utilisateurs depuis le téléphone.
+    *   **Web 仪表盘**：开发一个本地 Flask/Django 应用，以便在手机上查看日志和管理用户。
+2.  **Protocole MQTT** :
+    *   Implémenter le client MQTT dans `main.py` pour recevoir les commandes d'ouverture à distance.
+    *   **MQTT 协议**：在 `main.py` 中实现 MQTT 客户端，以接收远程开锁指令。
+3.  **Gestion de Stock** :
+    *   Ajouter un compteur de capsules par canal dans la base de données.
+    *   **库存管理**：在数据库中增加每个通道的胶囊计数功能。
 
-### 3.2 显示系统 (Display)
-*   **硬件**: 1.3寸 IPS 屏幕 (ST7789 驱动芯片)。
-*   **驱动**: 自研驱动 `st7789_driver.py`。
-    *   使用 `spidev` 直接操作 SPI 总线。
-    *   解决了第三方库在 Pi 5 上无法初始化的问题。
-*   **功能**: 显示系统状态、指纹提示、时间等。
-*   **UI 优化**:
-    *   安装了 `fonts-dejavu-core` 以支持矢量字体。
-    *   字体大小已调整为 **32px (标题)** 和 **22px (正文)**，提升可读性。
-
-### 3.3 数据库设计 (Database)
-*   **文件**: `capsule_dispenser.db`
-*   **表结构**:
-    1.  **Users**: 存储 `user_id`, `name`, `auth_level`, `finger_print_path` 等。
-    2.  **Access_Logs**: 记录所有操作日志 (`timestamp`, `event_type`, `status`)。
-    3.  **System_Settings**: 键值对配置 (如 `UNLOCK_DURATION=15`)。
-
-### 3.4 指纹模块 (Fingerprint)
-*   **硬件**: DY-50 (光学指纹模块, 6线制)。
-*   **通信接口**: **UART0** (GPIO 14/15)。
-*   **关键配置**:
-    *   **端口映射**: 在 Pi 5 上必须使用 **`/dev/ttyAMA0`**。
-    *   **系统设置**: 必须禁用 Serial Console。
-
----
-
-## 4. 当前文件清单
-
-```text
-/home/cafe/projet/
-├── main_demo.py           # [主程序] 集成指纹、屏幕、舵机 (软件 PWM)
-├── servo_control.py       # [驱动] 基于 lgpio 的软件 PWM 舵机控制器
-├── st7789_driver.py       # [驱动] 自研 ST7789 屏幕驱动
-├── fingerprint_enroll.py  # [工具] 指纹录入脚本
-├── setup_database.py      # [配置] 数据库初始化脚本
-├── add_user.py            # [工具] 添加测试用户脚本
-├── capsule_dispenser.db   # [数据] SQLite 数据库文件
-├── WIRING_GUIDE.md        # [文档] 硬件接线指南
-└── PROJECT_STATUS_S5.md   # [文档] 本文件
-```
-
-## 5. 下一步计划 (Next Steps)
-
-1.  **摄像头集成 (Camera)**:
-    *   配置 Pi Camera。
-    *   实现人脸识别或二维码扫描，作为第二验证手段。
-2.  **Web 管理界面**:
-    *   搭建 Flask 服务器。
-    *   实现远程查看日志、管理用户和远程开锁。
-3.  **硬件封装**:
-    *   设计外壳，将所有模块固定。
+## 📝 Notes pour la Reprise / 复工备注
+*   Pour lancer le système manuellement : `sudo systemctl stop capsule` puis `sudo python3 main.py`.
+*   手动启动系统：先停止服务 `sudo systemctl stop capsule`，再运行 `sudo python3 main.py`。
+*   Pour mettre à jour le service : `git pull` puis `sudo systemctl restart capsule`.
+*   更新服务代码：执行 `git pull` 后运行 `sudo systemctl restart capsule`。
+*   Le script de hotspot est `tools/setup_manual_hotspot.sh`.
+*   热点配置脚本位于 `tools/setup_manual_hotspot.sh`。

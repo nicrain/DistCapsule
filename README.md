@@ -2,7 +2,7 @@
 
 [![中文](https://img.shields.io/badge/Language-中文-red.svg)](./README_CN.md)
 
-**Plateforme:** Raspberry Pi 5 (Bookworm OS) | **État:** Stable (S5) | **Dernière mise à jour:** 2025-12
+**Plateforme:** Raspberry Pi 5 (Bookworm OS) | **État:** Stable (S5) | **Dernière mise à jour:** 2026-01
 
 Un système de distribution de capsules sécurisé et activé par biométrie. Il transforme un présentoir à capsules standard en un système de "boîte aux lettres" personnalisé où chaque utilisateur a un accès exclusif à un canal de stockage spécifique via une authentification par empreinte digitale. Le système prend en charge l'enregistrement multi-utilisateurs, la hiérarchie des permissions (Admin/Utilisateur) et l'allocation dynamique des canaux physiques.
 
