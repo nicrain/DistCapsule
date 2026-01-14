@@ -153,6 +153,13 @@ Pour installer le service systemd afin que le programme se lance au démarrage :
 ./tools/install_service.sh
 ```
 
+### 7. API REST (App Mobile)
+Pour activer le contrôle à distance via l'application Android, démarrez le serveur API :
+```bash
+pip install -r api/requirements.txt
+python3 -m uvicorn api.server:app --host 0.0.0.0 --port 8000
+```
+
 ---
 
 ## 📂 Structure du Projet
@@ -160,6 +167,7 @@ Pour installer le service systemd afin que le programme se lance au démarrage :
 | Fichier/Dossier | Description |
 | :--- | :--- |
 | `main.py` | **Application Principale**. Gère la boucle d'authentification et la logique métier. |
+| `api/` | **Web API**. Serveur FastAPI pour l'application mobile Android (Logs/Utilisateurs). |
 | `hardware/` | **Pilotes**. Contient les drivers (`servo_control`, `st7789`, `face_system`). |
 | `tools/` | **Outils**. Scripts d'installation, de test et d'enrôlement (`xxx_enroll.py`). |
 | `docs/` | **Documentation**. Guides de câblage et archives. |
@@ -170,7 +178,7 @@ Pour installer le service systemd afin que le programme se lance au démarrage :
 ## 🔮 Feuille de Route Future
 
 *   **Intégration Caméra**: Ajout du module caméra Raspberry Pi 3 pour l'identification faciale ou le déverrouillage par code QR (authentification secondaire).
-*   **Tableau de Bord Web**: Développement d'une interface Flask/Django locale pour la consultation des journaux à distance, la gestion des utilisateurs et le déverrouillage d'urgence.
+*   **Tableau de Bord Web**: Développement d'une interface Flask/Django locale pour la consultation des journaux à distance, la gestion des utilisateurs et le déverrouillage d'urgence. (En cours: API FastAPI)
 *   **Inventaire & Social**: 
     *   Suivi du nombre de capsules par canal.
     *   Fonctionnalité "Partage de capsules" : permet aux utilisateurs d'offrir leurs capsules excédentaires via l'application.
