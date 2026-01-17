@@ -32,7 +32,7 @@ class FaceRecognizer:
 
     def load_faces_from_db(self):
         """从数据库加载所有已录入的人脸特征"""
-        print("👤 [Face] 正在加载人脸数据库...")
+        print("👤 [Face] 正在加载人脸数据库 / Chargement de la BDD visages...")
         try:
             conn = sqlite3.connect(DATABASE_NAME)
             cursor = conn.cursor()
@@ -54,16 +54,16 @@ class FaceRecognizer:
                         self.known_face_ids.append(uid)
                         count += 1
                     except Exception as e:
-                        print(f"  ⚠️ 用户 {name} (ID {uid}) 数据损坏: {e}")
+                        print(f"  ⚠️ 用户 {name} (ID {uid}) 数据损坏 / Données corrompues: {e}")
             
             conn.close()
-            print(f"👤 [Face] 已加载 {count} 个用户的人脸数据")
+            print(f"👤 [Face] 已加载 {count} 个用户的人脸数据 / {count} visages chargés")
         except Exception as e:
-            print(f"❌ [Face] 数据库加载失败: {e}")
+            print(f"❌ [Face] 数据库加载失败 / Erreur de chargement BDD: {e}")
 
     def init_camera(self):
         """使用 Pi 5 兼容策略初始化摄像头"""
-        print("📷 [Face] 初始化摄像头...")
+        print("📷 [Face] 初始化摄像头 / Initialisation caméra...")
         
         # 1. 尝试 GStreamer 策略
         gst_pipelines = [
@@ -84,7 +84,7 @@ class FaceRecognizer:
                 if cap.isOpened():
                     ret, frame = cap.read()
                     if ret and frame is not None and frame.size > 0:
-                        print(f"✅ [Face] 摄像头就绪: {name}")
+                        print(f"✅ [Face] 摄像头就绪: {name} / Caméra prête")
                         self.cap = cap
                         return
                     else:
@@ -92,7 +92,7 @@ class FaceRecognizer:
             except Exception:
                 pass
 
-        print("❌ [Face] 无法初始化 GStreamer 摄像头，人脸识别将不可用")
+        print("❌ [Face] 无法初始化 GStreamer 摄像头，人脸识别将不可用 / Erreur init caméra")
         print("   提示: 请检查摄像头排线是否插好，以及是否安装了 gstreamer1.0-libcamera")
         self.cap = None
 
@@ -113,7 +113,7 @@ class FaceRecognizer:
 
         ret, frame = self.cap.read()
         if not ret:
-            print("⚠️ [Face] 无法读取视频帧 (Stream broken)")
+            print("⚠️ [Face] 无法读取视频帧 / Erreur lecture flux")
             return None
 
         # --- 旋转图像 (Rotation) ---
@@ -156,7 +156,7 @@ class FaceRecognizer:
         # 只要是同一个人，无论角度如何，这个向量的数值都很接近。
         face_encodings = face_recognition.face_encodings(enhanced_frame, face_locations)
         
-        print(f"👀 [Face] 捕获到 {len(face_encodings)} 张人脸")
+        print(f"👀 [Face] 捕获到 {len(face_encodings)} 张人脸 / Visage détecté")
 
         # --- 人脸比对 (Matching) ---
         for face_encoding in face_encodings:
@@ -176,10 +176,10 @@ class FaceRecognizer:
             # 0.68: 针对当前环境调整 (User Obs: 0.65)
             if min_distance < 0.68: 
                 user_id = self.known_face_ids[best_match_index]
-                print(f"👤 [Face] 识别成功! ID: {user_id} (特征差异: {min_distance:.2f})")
+                print(f"👤 [Face] 识别成功 / Succès! ID: {user_id} (特征差异/Diff: {min_distance:.2f})")
                 return user_id
             else:
-                print(f"🤔 [Face] 陌生人 (最小差异: {min_distance:.2f})")
+                print(f"🤔 [Face] 陌生人 / Inconnu (最小差异/Min Diff: {min_distance:.2f})")
         
         return None
 
