@@ -295,8 +295,8 @@ def main():
                     print("💤 超过 30秒 无操作，进入休眠 / Timeout Inactivité (30s)")
                     system_state = "SLEEP"
                     if disp: disp.set_backlight(False)
-                     face_running_event.clear()
-                     continue
+                    face_running_event.clear()
+                    continue
                 
                 if btn_val == 1 and last_btn_state == 0:
                     now = time.time()
