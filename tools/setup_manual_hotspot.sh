@@ -56,7 +56,7 @@ dnsmasq \
   --bind-interfaces \
   --port=0 \
   --dhcp-range=$DHCP_RANGE \
-  --dhcp-option=3 \
+  --dhcp-option=3,192.168.4.1 \
   --dhcp-option=6 \
   > /var/log/capsule_dhcp.log 2>&1 &  # 后台运行并记录日志
 

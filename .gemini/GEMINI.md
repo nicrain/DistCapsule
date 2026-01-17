@@ -37,6 +37,7 @@
     - **Architecture Change**: Removed MQTT from roadmap; decided to focus exclusively on REST API (`FastAPI`) for simplicity and reliability.
     - **API Backend**: Implemented `FastAPI` server in `api/` exposing User and Log data (serialization fixed, tested OK).
     - **App Control**: Implemented local Wi-Fi control (renamed from Remote) linking API to Hardware via `Pending_Commands`.
+    - **Hotspot Fix**: Re-enabled DHCP Gateway option to ensure stable Android/iOS connectivity.
     - **API Enhancements**: Added `has_face`/`has_fingerprint` flags and full User Management (`POST/DELETE` users) with hardware synchronization.
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
 - **S5 (Intelligent Core) & Fixes**: 
