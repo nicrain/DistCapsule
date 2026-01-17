@@ -49,12 +49,15 @@ def read_root():
 
 @app.get("/users", response_model=List[User])
 def get_users():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT user_id, name, auth_level, assigned_channel, created_at, is_active FROM Users")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, name, auth_level, assigned_channel, created_at, is_active FROM Users")
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error: {str(e)} | DB Path: {DATABASE_NAME}")
 
 @app.get("/logs", response_model=List[AccessLog])
 def get_logs(limit: int = 20):
