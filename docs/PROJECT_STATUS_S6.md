@@ -39,6 +39,7 @@
     *   **Architecture**: Simplification (Suppression de MQTT). Focus sur l'API HTTP.
     *   **API**: Correction de la sérialisation Pydantic/SQLite. Endpoints `/users` et `/logs` fonctionnels.
     *   **IoT**: Implémentation du contrôle App via table `Pending_Commands` (Renommé de Remote -> App).
+    *   **API**: Ajout des statuts biométriques (`has_face`, `has_fingerprint`) dans la réponse `/users`.
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 
 ---

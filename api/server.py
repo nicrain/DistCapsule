@@ -21,44 +21,30 @@ class User(BaseModel):
     name: str
     auth_level: int
     assigned_channel: Optional[int] = None
+    has_face: int
+    has_fingerprint: int
     created_at: Optional[str] = None
     is_active: int
 
-class AccessLog(BaseModel):
-    log_id: int
-    user_id: Optional[int]
-    timestamp: str
-    event_type: str
-    status: Optional[str]
-    detail_message: Optional[str]
-
-# --- Helpers ---
-def get_db_connection():
-    try:
-        conn = sqlite3.connect(DATABASE_NAME)
-        conn.row_factory = sqlite3.Row # Allow accessing columns by name
-        return conn
-    except sqlite3.Error as e:
-        raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
-
-# --- Routes ---
-
-@app.get("/")
-def read_root():
-    return {"status": "online", "message": "DistCapsule API is running"}
+# ...
 
 @app.get("/users", response_model=List[User])
 def get_users():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id, name, auth_level, assigned_channel, created_at, is_active FROM Users")
+        # Calculate has_face on the fly, but read has_fingerprint from column
+        cursor.execute("""
+            SELECT 
+                user_id, name, auth_level, assigned_channel, created_at, is_active,
+                has_fingerprint,
+                CASE WHEN face_encoding IS NOT NULL THEN 1 ELSE 0 END as has_face
+            FROM Users
+        """)
         rows = cursor.fetchall()
         conn.close()
         # Convert sqlite3.Row objects to dicts for Pydantic
         return [dict(row) for row in rows]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server Error: {str(e)} | DB Path: {DATABASE_NAME}")
 
 @app.get("/logs", response_model=List[AccessLog])
 def get_logs(limit: int = 20):

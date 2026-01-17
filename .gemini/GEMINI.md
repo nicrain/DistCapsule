@@ -37,6 +37,7 @@
     - **Architecture Change**: Removed MQTT from roadmap; decided to focus exclusively on REST API (`FastAPI`) for simplicity and reliability.
     - **API Backend**: Implemented `FastAPI` server in `api/` exposing User and Log data (serialization fixed, tested OK).
     - **App Control**: Implemented local Wi-Fi control (renamed from Remote) linking API to Hardware via `Pending_Commands`.
+    - **API Enhancements**: Added `has_face` and `has_fingerprint` flags to User API for better App UI state management.
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
 - **S5 (Intelligent Core) & Fixes**: 
     - **Camera Fix**: Implemented 90-degree counter-clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.

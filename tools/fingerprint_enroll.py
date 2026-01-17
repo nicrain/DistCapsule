@@ -189,8 +189,8 @@ def enroll_new_user(is_admin=False):
         cursor = conn.cursor()
         auth_level = 1 if is_admin else 2
         cursor.execute("""
-            INSERT INTO Users (user_id, name, auth_level, assigned_channel, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO Users (user_id, name, auth_level, assigned_channel, has_fingerprint, created_at)
+            VALUES (?, ?, ?, ?, 1, ?)
         """, (new_id, final_name, auth_level, assigned_channel, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
         conn.close()
