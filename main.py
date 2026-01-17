@@ -26,7 +26,7 @@ disp = None
 font_large = None
 font_small = None
 servos = {}
- h_gpio = None   
+h_gpio = None   
 face_queue = queue.Queue()      
 face_running_event = threading.Event() 
 
