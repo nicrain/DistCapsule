@@ -372,25 +372,22 @@ def main():
             else:
                 # 按钮松开
                 if qr_mode_active:
-                    # 如果是从 QR 模式退出，可以加个短暂提示或者直接回 READY
                     qr_mode_active = False
                 btn_press_start_time = 0
 
             # --- 3. 检查远程指令 (例如来自 App 的开锁) ---
-            if check_app_commands():
-# ... (rest of main loop) ...
+            app_cmd_processed = check_app_commands()
             
             if system_state == "SLEEP":
                 if face_running_event.is_set(): face_running_event.clear()
 
-                if check_app_commands(): # 即使休眠也检查指令
+                if app_cmd_processed: 
+                    # 如果处理了远程指令，自动唤醒系统
                     now = time.time()
                     system_state = "ACTIVE"
                     last_activity_time = now
                     session_start_time = now
                     last_clock_update = now
-                    # 注意：如果指令是录入，check_app_commands 内部会自己管理 event，这里不用强制 set
-                    # 但为了保险，如果它是 UNLOCK 完回来的，需要 set
                     if not face_running_event.is_set(): face_running_event.set()
 
                 elif btn_val == 1:
@@ -406,9 +403,9 @@ def main():
                     time.sleep(0.1)
 
             elif system_state == "ACTIVE":
-                # 检查指令
-                if check_app_commands():
-                    last_activity_time = time.time() # 活跃续命
+                # 如果有指令处理，刷新活跃时间
+                if app_cmd_processed:
+                    last_activity_time = time.time() 
 
                 current_ts = time.time()
                 elapsed = current_ts - last_activity_time
