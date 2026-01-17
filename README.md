@@ -91,7 +91,7 @@ sudo chmod +x tools/setup_manual_hotspot.sh
 sudo ./tools/setup_manual_hotspot.sh
 ```
 *   Cela crée un réseau Wi-Fi `DistCapsule_Box` (IP: 192.168.4.1).
-*   **Important** : Le téléphone utilisera ce Wi-Fi pour MQTT mais gardera la 4G pour Internet.
+*   **Important** : Le téléphone utilisera ce Wi-Fi pour l'API REST mais gardera la 4G pour Internet.
 
 Pour arrêter le hotspot et reconnecter le Pi au Wi-Fi domestique :
 ```bash
@@ -170,7 +170,7 @@ python3 -m uvicorn api.server:app --host 0.0.0.0 --port 8000
 | `api/` | **Web API**. Serveur FastAPI pour l'application mobile Android (Logs/Utilisateurs). |
 | `hardware/` | **Pilotes**. Contient les drivers (`servo_control`, `st7789`, `face_system`). |
 | `tools/` | **Outils**. Scripts d'installation, de test et d'enrôlement (`xxx_enroll.py`). |
-| `docs/` | **Documentation**. Guides de câblage et archives. |
+| `docs/` | **Documentation**. Guides de câblage, archives et **présentation (slides/)**. |
 | `capsule_dispenser.db` | **Données**. Base de données SQLite locale. |
 
 ---

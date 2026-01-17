@@ -161,6 +161,10 @@ def enroll_face():
             time.sleep(0.1)
             continue
 
+        # --- 旋转图像 (Rotation) ---
+        # 适配物理安装：摄像头顺时针旋转了 90 度，所以我们需要将画面顺时针转回 90 度
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
         # 缩小图像以加快处理速度 (1/2)
         small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5) 
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)

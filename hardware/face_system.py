@@ -114,8 +114,11 @@ class FaceRecognizer:
         ret, frame = self.cap.read()
         if not ret:
             print("⚠️ [Face] 无法读取视频帧 (Stream broken)")
-            # 实际项目中这里可能需要尝试 self.init_camera() 重连
             return None
+
+        # --- 旋转图像 (Rotation) ---
+        # 适配物理安装：摄像头顺时针旋转了 90 度，所以我们需要将画面顺时针转回 90 度
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
         # --- 图像增强 (Image Enhancement) ---
         # 树莓派摄像头在室内往往光线不足。
@@ -169,9 +172,10 @@ class FaceRecognizer:
             min_distance = face_distances[best_match_index]
 
             # 阈值判定
-            # 0.60: 标准严格阈值
-            # 0.72: 宽松阈值 (为了适应 Pi 摄像头噪点和光线，这里放宽了标准)
-            if min_distance < 0.72: 
+            # 0.60: 标准严格阈值 (Standard)
+            # 0.50: 非常严格 (Very Strict)
+            # 之前是 0.72 (Too Loose)，导致了误识别
+            if min_distance < 0.60: 
                 user_id = self.known_face_ids[best_match_index]
                 print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
                 return user_id

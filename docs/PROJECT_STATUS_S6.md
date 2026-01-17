@@ -8,10 +8,6 @@
 ## 🎯 Objectifs de la Phase S6 / 本阶段目标
 
 ### 1. Infrastructure Réseau (Pi-Side) / 网络基础设施 (树莓派端)
-- [ ] **MQTT Broker/Client**: 
-    - Installer et configurer Mosquitto sur le Pi.
-    - Implémenter un client MQTT asynchrone dans `main.py` pour écouter les commandes (ex: `distcapsule/open/1`).
-    - **MQTT 部署**: 安装 Mosquitto，并在 `main.py` 中集成异步 MQTT 客户端，监听远程开锁指令。
 - [ ] **API Web (Flask/FastAPI)**:
     - Créer une API légère pour exposer les logs (`/api/logs`) et l'état du système (`/api/status`).
     - **Web API**: 开发轻量级 API 接口，用于手机端获取日志和系统状态。
@@ -22,22 +18,26 @@
     - **App 架构**: 确定技术栈（建议原生 Android Kotlin）。
 - [ ] **Fonctionnalités Clés**:
     - **Dashboard**: Visualisation des niveaux de stock et des derniers accès.
-    - **Remote Control**: Bouton "Ouvrir" à distance via MQTT.
+    - **Remote Control**: Bouton "Ouvrir" à distance via API REST.
     - **Notifications**: Alerte sur le téléphone quand un utilisateur déverrouille une boîte.
     - **核心功能**: 仪表盘查看状态、远程一键开锁、实时访问通知。
 
 ### 3. Sécurité & Stabilité / 安全与稳定
-- [ ] **TLS/SSL**: Sécuriser les communications MQTT.
-- [ ] **Network Recovery**: Gestion automatique de la reconnexion Wi-Fi/MQTT en cas de coupure.
-- [ ] **安全加固**: MQTT 通信加密，以及网络断连后的自动重连机制。
+- [ ] **Network Recovery**: Gestion automatique de la reconnexion Wi-Fi en cas de coupure.
+- [ ] **安全加固**: 网络断连后的自动重连机制。
 
 ---
 
 ## 📅 Journal des Modifications (Changelog)
+*   **2026-01-16**: 
+    *   **Docs**: Création des diapositives de présentation (`docs/slides/`) avec architecture AAA et histoire du design 3D.
+    *   **Fix Caméra**: Correction de la rotation de 90° (Clockwise) dans `face_system.py` et `face_enroll.py`.
+    *   **IA**: Ajustement du seuil de reconnaissance faciale à 0.60 (vs 0.72) pour réduire les faux positifs.
+    *   **Architecture**: Simplification (Suppression de MQTT). Focus sur l'API HTTP.
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 
 ---
 
 ## 📝 Notes Techniques
-*   L'architecture S5 (Threading/Queue/Event) servira de base solide. Le client MQTT tournera probablement dans son propre thread, similaire à `face_worker`.
-*   S5 的多线程架构将作为坚实基础。MQTT 客户端预计将运行在独立的后台线程中，类似于现有的人脸识别线程。
+*   L'architecture S5 (Threading/Queue/Event) servira de base solide.
+*   S5 的多线程架构将作为坚实基础。

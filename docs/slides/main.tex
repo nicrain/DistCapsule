@@ -1,0 +1,254 @@
+\DocumentMetadata{
+  lang=fr-FR,
+  pdfstandard=ua-1,
+  testphase={phase-I,table,title}
+}
+\documentclass[xcolor=table]{beamer}
+\usepackage{graphicx}
+
+% --- Core French Language Support ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{listings}
+\usepackage{booktabs} % For nicer tables
+\usepackage{caption} % Fix for captionof if needed
+
+\usetheme{Darmstadt}
+\usecolortheme{dolphin}
+\usefonttheme{professionalfonts}
+
+\usepackage{csquotes}
+\usepackage[style=numeric, backend=biber]{biblatex}
+\addbibresource{ref.bib}
+
+\DefineBibliographyStrings{french}{
+  bibliography = {R{\'e}f{\'e}rences},
+}
+
+\AtBeginSection[]{
+\begin{frame}
+    \tableofcontents[sectionstyle=show/shaded,subsectionstyle=show/shaded/hide]
+\end{frame}
+}
+
+%% --- Title Page Metadata ---
+\title[DistCapsule]{DistCapsule : Distributeur de Capsules}
+\subtitle{Projet AAA (Android, Arduino, Agent Artificiel)}
+\author[Z. Wang \& X. Tang]{Zhaoyu WANG \& Xinqi TANG}
+\date[\today]{\today}
+\institute[M2 MIASHS]{Université Paris 8 \\ Master Technologies et Handicaps}
+
+%% --- Logo Configuration ---
+\titlegraphic{
+   \includegraphics[width=1.5cm]{pic/logo-handi.png}
+   \hspace{0.5cm}
+   \includegraphics[width=1.5cm]{pic/logo-p8.png}
+}
+\logo{\includegraphics[width=1cm]{pic/logo-p8.png}}
+
+%% --- Code Snippet Style ---
+\lstset{
+    basicstyle=\ttfamily\scriptsize, % Smaller font for code fitting
+    keywordstyle=\color{blue},
+    stringstyle=\color{green!60!black},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true,
+    language=Python
+}
+
+\begin{document}
+
+{
+\logo{}
+\begin{frame}
+    \titlepage   
+\end{frame}
+}
+
+% --- Section 1: Introduction ---
+\section{Introduction}
+\begin{frame}{Pr{\'e}sentation du Projet}
+    \begin{block}{Objectif}
+        Concevoir un syst{\`e}me de distribution s{\'e}curis{\'e} et personnalis{\'e}, transformant un simple pr{\'e}sentoir en une \textbf{"bo\^ite aux lettres intelligentes"} accessible par biom{\'e}trie.
+    \end{block}
+
+    \begin{itemize}
+        \item \textbf{Cible} : Gestion de m{\'e}dicaments ou capsules de caf{\'e} (bureau/domicile).
+        \item \textbf{Innovation} : Authentification double (Visage + Empreinte) et architecture autonome.
+        \item \textbf{État Actuel} : Phase S6 (Intégration Mobile \& API).
+    \end{itemize}
+\end{frame}
+
+% --- Section 2: Architecture AAA ---
+\section{Architecture AAA}
+\subsection{Concept Global}
+\begin{frame}{Le Mod{\`e}le AAA}
+    Le projet repose sur une architecture tripartite classique en IoT :
+    \begin{enumerate}
+        \item \textbf{Android} (Interface Humaine)
+        \item \textbf{Arduino / Raspberry Pi} (Interface Physique)
+        \item \textbf{Agent Artificiel} (Cerveau D{\'e}cisionnel)
+    \end{enumerate}
+\end{frame}
+
+\subsection{Détails des Couches}
+\begin{frame}{1. Android \& 2. Hardware (Arduino/Pi)}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \begin{alertblock}{Android (App)}
+                \begin{itemize}
+                    \item Interface de gestion (Admin).
+                    \item Enr{\^o}lement des utilisateurs.
+                    \item Consultation des logs via API REST.
+                    \item Notifications d'{\'e}tat.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{exampleblock}{Hardware (Pi 5)}
+                \begin{itemize}
+                    \item \textbf{Action} : 5x Servomoteurs (lgpio).
+                    \item \textbf{Vision} : Cam{\'e}ra Pi Module 3.
+                    \item \textbf{Toucher} : Capteur Empreinte (UART).
+                    \item \textbf{Affichage} : \'{E}cran IPS (SPI).
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{3. Agent Artificiel (Le Cœur)}
+    L'Agent est un programme Python autonome qui orchestre tout :
+    \begin{itemize}
+        \item \textbf{Multi-threading} : S{\'e}paration des t{\^a}ches lourdes (IA) et de l'UI.
+        \item \textbf{Machine \`a {\'{E}}tats} : Gestion des modes (Veille, Scan, D{\'e}verrouill{\'e}).
+        \item \textbf{D{\'e}cision} : "Est-ce un utilisateur connu ? A-t-il le droit d'ouvrir cette bo\^ite ?"
+    \end{itemize}
+\end{frame}
+
+% --- Section 3: Réalisation Physique ---
+\section{Réalisation Physique}
+\subsection{Montage Matériel}
+\begin{frame}{Composants et Assemblage}
+    Le système intègre divers modules pilotés par le Raspberry Pi 5 :
+    \begin{itemize}
+        \item \textbf{Actionneurs} : 5x Servomoteurs SG90 pour la distribution.
+        \item \textbf{Capteurs} : Caméra Module 3 et Lecteur d'empreintes DY-50.
+        \item \textbf{Interface} : Écran LCD IPS et bouton de réveil physique.
+    \end{itemize}
+    \begin{alertblock}{Gestion de l'énergie}
+        Utilisation d'une alimentation externe 5V dédiée pour les moteurs afin de protéger le Pi 5.
+    \end{alertblock}
+\end{frame}
+
+\subsection{Conception 3D}
+\begin{frame}{Modélisation Paramétrique}
+    Le châssis a été conçu via une approche \textbf{"Code-to-CAD"} :
+    \begin{itemize}
+        \item \textbf{Outils} : OpenSCAD \& SolidPython.
+        \item \textbf{Avantage} : Design paramétrique permettant des ajustements rapides des dimensions.
+    \end{itemize}
+    
+    \begin{block}{Éléments imprimés}
+        \begin{itemize}
+            \item \textbf{Base\_Distributeur} : Structure principale de stockage.
+            \item \textbf{Control\_Box} : Boîtier de protection pour l'électronique.
+            \item \textbf{Pusher \& Drawer} : Mécanisme d'éjection des capsules.
+            \item \textbf{Servo\_Arm} : Extensions sur mesure pour les palonniers.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Itération du Design}
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item \textbf{1. Inspiration} : Produit commercial (Amazon) à chargement vertical.
+                \item \textbf{2. Adaptation (V1)} : Reproduction imprimable (Conseil de D. Archambault).
+                \item \textbf{3. Automatisation (V2)} : Évolution vers une distribution gravitaire par le bas (\texttt{distCaps}).
+            \end{itemize}
+            
+            \begin{alertblock}{État Actuel (Prototype Hybride)}
+                Contrainte temporelle $\rightarrow$ Solution mixte :
+                \begin{itemize}
+                    \item \textbf{1 Canal} : Nouveau design auto (Pusher).
+                    \item \textbf{4 Canaux} : Design manuel vertical.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+        \begin{column}{0.38\textwidth}
+            \begin{figure}
+                \centering
+                \includegraphics[width=0.9\textwidth]{pic/amazon_ref.jpg}
+                \caption{Inspiration Originale}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% --- Section 4: D{\'e}fis Techniques ---
+\section{D{\'e}fis Techniques}
+\subsection{Vision par Ordinateur}
+\begin{frame}[fragile]{Adaptation Mat{\'e}rielle : Rotation}
+    La cam{\'e}ra est mont{\'e}e physiquement \`a 90°. L'algorithme doit corriger l'image avant l'analyse IA.
+    
+    \begin{lstlisting}[caption={Correction de l'orientation (Python/OpenCV)}]
+# Dans hardware/face_system.py
+def scan(self):
+    ret, frame = self.cap.read()
+    if not ret: return None
+
+    # Rotation de 90 degres (Clockwise)
+    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
+    # Amelioration (CLAHE) et Detection...
+    # ...
+    \end{lstlisting}
+\end{frame}
+
+\subsection{Concurrence}
+\begin{frame}{Architecture Multi-thread}
+    Pour {\'e}viter que la reconnaissanc{\`e} faciale (lente) ne bloque le compte \`a rebours \`a l'{\'e}cran (rapide) :
+    
+    \begin{table}[]
+        \centering
+        \rowcolors{2}{gray!10}{white}
+        \begin{tabular}{l | l | l}
+            \toprule
+            \textbf{Thread} & \textbf{R{\^o}le} & \textbf{Priorit{\'e}} \\
+            \midrule
+            Main Loop & Gestion UI (ontiti), Boutons & Haute (Temps r{\'e}el) \\
+            Face Worker & Capture \& Analyse IA & Basse (Arri{\`e}re-plan) \\
+            API Server & R{\'e}pondre aux requ\^{e}tes HTTP & Moyenne \\
+            \bottomrule
+        \end{tabular}
+        \caption{R{\'e}partition des t{\^a}ches}
+    \end{table}
+\end{frame}
+
+% --- Section 5: Conclusion ---
+\section{Conclusion}
+\begin{frame}{Perspectives \& Améliorations}
+    \begin{itemize}
+        \item \textbf{Prochaines {\'{e}}tapes (S7)} :
+        \begin{itemize}
+            \item Finalisation de l'application Android (Kotlin).
+            \item Bo\^itier imprim{\'e} en 3D complet.
+        \end{itemize}
+        \item \textbf{Am{\'e}liorations futures} :
+        \begin{itemize}
+            \item Support MQTT pour le contr{\^o}le hors r{\'e}seau local.
+            \item Analyse d'inventaire (compter les capsules restantes par vision).
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{R{\'e}f{\'e}rences}
+     \printbibliography[heading=none] 
+\end{frame}
+
+\end{document}

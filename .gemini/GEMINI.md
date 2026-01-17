@@ -33,17 +33,16 @@
 
 ## 🚀 Recent Accomplishments
 - **S7 (Mobile Integration)**:
+    - **Documentation**: Created LaTeX presentation slides in `docs/slides/` featuring AAA architecture and 3D design iteration history.
+    - **Architecture Change**: Removed MQTT from roadmap; decided to focus exclusively on REST API (`FastAPI`) for simplicity and reliability.
     - **API Backend**: Implemented `FastAPI` server in `api/` to expose User and Log data via JSON/REST.
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
-- **S5 (Intelligent Core)**: 
+- **S5 (Intelligent Core) & Fixes**: 
+    - **Camera Fix**: Implemented 90-degree clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
+    - **AI Optimization**: Tightened face recognition threshold to 0.60 to reduce false positives.
     - **Concurrency**: Implemented robust Thread/Queue/Event architecture. Removed all blocking `time.sleep` from Main Loop.
     - **Persistence**: Added auto-migration to `setup_database.py` to handle schema updates (e.g., `face_encoding`).
     - **UI/UX**: Real-time linear countdown and non-blocking button debounce.
-- **S4 (Hardware Adaptation)**: 
-    - **Pi 5 Compatibility**: Migrated servo control to Software PWM (`lgpio`) and Fingerprint to `/dev/ttyAMA0` to resolve hardware conflicts.
-- **Documentation**: 
-    - Archived legacy phases to `docs/archive/`.
-    - Created `docs/PROJECT_STATUS_S6.md` as the new roadmap.
 
 ## 🎓 Learning Progress (Python Study)
 - **Status**: Phase 5 (Network & Communication) - **Started**.
@@ -60,6 +59,7 @@
 - Add inventory tracking (capsule count) in the database.
 
 ## 📝 Operational Mandates
+- **Environment**: Do NOT suggest `sudo` for python scripts (using `lgpio` in user space). Do NOT suggest running hardware scripts on macOS host.
 - **Doc Sync**: When updating project status, ALWAYS update `README.md`, `docs/README_CN.md`, and `docs/PROJECT_STATUS_S6.md`.
 
 ---
