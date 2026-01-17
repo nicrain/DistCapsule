@@ -40,6 +40,7 @@
     *   **API**: Correction de la sérialisation Pydantic/SQLite. Endpoints `/users` et `/logs` fonctionnels.
     *   **IoT**: Implémentation du contrôle App via table `Pending_Commands` (Renommé de Remote -> App).
     *   **API**: Ajout des statuts biométriques (`has_face`, `has_fingerprint`) dans la réponse `/users`.
+    *   **API**: Implémentation de la gestion complète des utilisateurs (`POST /users` pour créer, `DELETE /users` pour supprimer avec nettoyage matériel).
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 
 ---

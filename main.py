@@ -175,6 +175,9 @@ def check_app_commands():
                     if success:
                         print("✅ 录入成功，重新加载人脸库...")
                         face_rec.load_faces_from_db()
+                        # UX 优化: 录入成功后等待 3 秒，让用户看清提示，并防止立即触发开锁
+                        time.sleep(3)
+                        update_screen("PRET", "Scanner...", (0, 0, 0), countdown=SCREEN_TIMEOUT)
                 else:
                     update_screen("ERREUR", "Camera HS", (200, 0, 0))
                     time.sleep(2)
@@ -193,6 +196,33 @@ def check_app_commands():
                     update_screen("ERREUR", "Capteur HS", (200, 0, 0))
                     time.sleep(2)
                 
+                face_running_event.set()
+
+            elif cmd_type == 'DELETE_USER':
+                print(f"🗑️ 删除用户 ID: {target_id}")
+                face_running_event.clear()
+                time.sleep(0.5)
+                
+                # 1. 删指纹
+                if finger:
+                    if finger.delete_model(target_id) == adafruit_fingerprint.OK:
+                        print("✅ 指纹已删除")
+                    else:
+                        print("⚠️ 指纹删除失败或不存在")
+                
+                # 2. 删数据库
+                try:
+                    # 复用当前的 conn 对象
+                    cursor.execute("DELETE FROM Users WHERE user_id = ?", (target_id,))
+                    conn.commit()
+                    print("✅ 数据库记录已删除")
+                    update_screen("INFO", f"User {target_id} Deleted\nSupprime", (0, 0, 150))
+                    time.sleep(2)
+                except Exception as e:
+                    print(f"❌ 删除失败: {e}")
+                    update_screen("ERREUR", "Delete Fail", (200, 0, 0))
+                
+                update_screen("PRET", "Systeme Actif", (0, 0, 0))
                 face_running_event.set()
 
             # 标记完成

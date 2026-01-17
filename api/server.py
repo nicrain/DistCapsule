@@ -30,6 +30,11 @@ class BindRequest(BaseModel):
 class AuthRequest(BaseModel):
     token: str
 
+class UserCreate(BaseModel):
+    name: str
+    auth_level: int = 2 # Default to normal user
+    assigned_channel: Optional[int] = None
+
 class AccessLog(BaseModel):
     log_id: int
     user_id: Optional[int]
@@ -70,6 +75,71 @@ def get_users():
         return [dict(row) for row in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error: {str(e)} | DB Path: {DATABASE_NAME}")
+
+@app.post("/users", response_model=User)
+def create_user(user: UserCreate):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check channel availability if assigned
+        if user.assigned_channel:
+            cursor.execute("SELECT user_id FROM Users WHERE assigned_channel = ?", (user.assigned_channel,))
+            if cursor.fetchone():
+                conn.close()
+                raise HTTPException(status_code=400, detail=f"Channel {user.assigned_channel} is already occupied")
+
+        import datetime
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        cursor.execute("""
+            INSERT INTO Users (name, auth_level, assigned_channel, created_at, has_face, has_fingerprint, is_active)
+            VALUES (?, ?, ?, ?, 0, 0, 1)
+        """, (user.name, user.auth_level, user.assigned_channel, now))
+        
+        new_id = cursor.lastrowid
+        conn.commit()
+        
+        # Fetch the created user to return it
+        cursor.execute("""
+            SELECT 
+                user_id, name, auth_level, assigned_channel, created_at, is_active,
+                has_fingerprint, app_token,
+                0 as has_face
+            FROM Users WHERE user_id = ?
+        """, (new_id,))
+        new_user = cursor.fetchone()
+        conn.close()
+        return dict(new_user)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Create Error: {str(e)}")
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists
+        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Instead of deleting directly, queue a command so hardware can cleanup fingerprint
+        cursor.execute(
+            "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
+            ("DELETE_USER", user_id, "pending")
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Delete command queued for user {user_id}"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete Error: {str(e)}")
 
 @app.post("/bind")
 def bind_user(req: BindRequest):
