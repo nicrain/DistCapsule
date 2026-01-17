@@ -1,0 +1,141 @@
+import time
+import sqlite3
+import json
+import adafruit_fingerprint
+import cv2
+import face_recognition
+from hardware.st7789_driver import ST7789_Driver
+from PIL import Image, ImageDraw, ImageFont
+
+# 引用 main.py 里的全局变量有点麻烦，这里重新定义简单的屏幕更新函数
+# 或者我们通过参数传入 disp 对象
+
+def update_enroll_screen(disp, title, msg, color="BLUE"):
+    if not disp: return
+    
+    bg_color = (0, 0, 150) # Default Blue for Enroll
+    if color == "GREEN": bg_color = (0, 150, 0)
+    if color == "RED": bg_color = (150, 0, 0)
+    
+    image = Image.new("RGB", (disp.width, disp.height), bg_color)
+    draw = ImageDraw.Draw(image)
+    
+    # 简单的字体加载
+    try:
+        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
+    except:
+        font_large = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+
+    draw.rectangle((5, 5, disp.width-5, disp.height-5), outline="WHITE", width=2)
+    draw.text((10, 20), title, font=font_large, fill="WHITE")
+    
+    # 多行文本
+    y = 70
+    for line in msg.split('\n'):
+        draw.text((10, y), line, font=font_small, fill="WHITE")
+        y += 30
+        
+    disp.display(image)
+
+def save_face_to_db(user_id, encoding, db_path):
+    encoding_json = json.dumps(encoding.tolist())
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Users SET face_encoding = ? WHERE user_id = ?", (encoding_json, user_id))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"DB Error: {e}")
+        return False
+
+def run_face_enrollment(disp, face_rec, user_id, db_path):
+    """
+    人脸录入流程 (阻塞式)
+    """
+    print(f"🚀 开始为人脸录入 ID: {user_id}")
+    update_enroll_screen(disp, "ENROLL FACE", "Regardez camera\nLook at camera")
+    
+    start_time = time.time()
+    
+    # 尝试 20秒
+    while time.time() - start_time < 20:
+        ret, frame = face_rec.cap.read()
+        if not ret:
+            time.sleep(0.1)
+            continue
+            
+        # 旋转 (保持与 face_system 一致)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        
+        # 缩小
+        small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+        rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+        
+        locs = face_recognition.face_locations(rgb_frame)
+        
+        if len(locs) == 1:
+            update_enroll_screen(disp, "CAPTURE", "Visage detecte\nNe bougez pas!")
+            # 编码
+            encodings = face_recognition.face_encodings(rgb_frame, locs)
+            if encodings:
+                if save_face_to_db(user_id, encodings[0], db_path):
+                    update_enroll_screen(disp, "SUCCES", "Visage Enregistre", "GREEN")
+                    time.sleep(2)
+                    return True
+        elif len(locs) > 1:
+            update_enroll_screen(disp, "ERREUR", "Trop de visages\nOnly one person", "RED")
+        
+        # 简单反馈
+        time.sleep(0.1)
+        
+    update_enroll_screen(disp, "ECHEC", "Timeout (20s)", "RED")
+    time.sleep(2)
+    return False
+
+def run_finger_enrollment(disp, finger, user_id, db_path):
+    """
+    指纹录入流程
+    """
+    print(f"🚀 开始为指纹录入 ID: {user_id}")
+    
+    # Step 1
+    update_enroll_screen(disp, "ENROLL FINGER", "Placez doigt\nPlace finger")
+    while finger.get_image() != adafruit_fingerprint.OK:
+        # 超时检查略
+        pass
+    
+    finger.image_2_tz(1)
+    update_enroll_screen(disp, "ETAPE 1 OK", "Retirez doigt\nRemove finger")
+    time.sleep(1)
+    while finger.get_image() != adafruit_fingerprint.NOFINGER:
+        pass
+        
+    # Step 2
+    update_enroll_screen(disp, "ETAPE 2", "Placez encore\nSame finger")
+    while finger.get_image() != adafruit_fingerprint.OK:
+        pass
+        
+    finger.image_2_tz(2)
+    
+    # Match
+    if finger.create_model() == adafruit_fingerprint.OK:
+        if finger.store_model(user_id) == adafruit_fingerprint.OK:
+            # Update DB flag
+            try:
+                conn = sqlite3.connect(db_path)
+                conn.execute("UPDATE Users SET has_fingerprint=1 WHERE user_id=?", (user_id,))
+                conn.commit()
+                conn.close()
+            except:
+                pass
+            update_enroll_screen(disp, "SUCCES", "Empreinte OK", "GREEN")
+            time.sleep(2)
+            return True
+    
+    update_enroll_screen(disp, "ECHEC", "Erreur Match", "RED")
+    time.sleep(2)
+    return False

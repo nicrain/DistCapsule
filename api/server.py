@@ -92,3 +92,47 @@ def remote_unlock(channel: int):
         return {"status": "success", "message": f"Unlock command for channel {channel} queued."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to queue command: {str(e)}")
+
+@app.post("/command/enroll_face")
+def enroll_face(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Ensure user exists first
+        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+
+        cursor.execute(
+            "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
+            ("ENROLL_FACE", user_id, "pending")
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Face enrollment queued for user {user_id}"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.post("/command/enroll_finger")
+def enroll_finger(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Ensure user exists
+        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+
+        cursor.execute(
+            "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
+            ("ENROLL_FINGER", user_id, "pending")
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Fingerprint enrollment queued for user {user_id}"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
