@@ -38,8 +38,9 @@
     - **API Backend**: Implemented `FastAPI` server in `api/` to expose User and Log data via JSON/REST.
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
 - **S5 (Intelligent Core) & Fixes**: 
-    - **Camera Fix**: Implemented 90-degree clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
-    - **AI Optimization**: Tightened face recognition threshold to 0.60 to reduce false positives.
+    - **Camera Fix**: Implemented 90-degree counter-clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
+    - **AI Optimization**: Tightened face recognition threshold to 0.68 (based on user testing) to reduce false positives.
+    - **Wiring**: Updated Servo 2-5 pin assignments to avoid conflicts and improve layout.
     - **Concurrency**: Implemented robust Thread/Queue/Event architecture. Removed all blocking `time.sleep` from Main Loop.
     - **Persistence**: Added auto-migration to `setup_database.py` to handle schema updates (e.g., `face_encoding`).
     - **UI/UX**: Real-time linear countdown and non-blocking button debounce.

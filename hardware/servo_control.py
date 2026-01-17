@@ -5,11 +5,11 @@ import sys
 # 映射逻辑编号 (Servo 1-5) 到 BCM GPIO 编号 (Pi 5)
 # 遵循 docs/WIRING_GUIDE.md
 CHANNEL_TO_PIN = {
-    1: 18, # Servo 1
-    2: 12, # Servo 2
-    3: 13, # Servo 3
-    4: 19, # Servo 4
-    5: 6   # Servo 5
+    1: 18, # Servo 1 (Pin 12)
+    2: 6,  # Servo 2 (Pin 31)
+    3: 12, # Servo 3 (Pin 32)
+    4: 13, # Servo 4 (Pin 33)
+    5: 19  # Servo 5 (Pin 35)
 }
 
 class ServoController:

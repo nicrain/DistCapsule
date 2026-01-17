@@ -117,8 +117,8 @@ class FaceRecognizer:
             return None
 
         # --- 旋转图像 (Rotation) ---
-        # 适配物理安装：摄像头顺时针旋转了 90 度，所以我们需要将画面顺时针转回 90 度
-        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        # 适配物理安装：摄像头逆时针旋转了 90 度 (Counter-Clockwise)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         # --- 图像增强 (Image Enhancement) ---
         # 树莓派摄像头在室内往往光线不足。
@@ -173,9 +173,8 @@ class FaceRecognizer:
 
             # 阈值判定
             # 0.60: 标准严格阈值 (Standard)
-            # 0.50: 非常严格 (Very Strict)
-            # 之前是 0.72 (Too Loose)，导致了误识别
-            if min_distance < 0.60: 
+            # 0.68: 针对当前环境调整 (User Obs: 0.65)
+            if min_distance < 0.68: 
                 user_id = self.known_face_ids[best_match_index]
                 print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
                 return user_id

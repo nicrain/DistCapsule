@@ -24,10 +24,10 @@
 | 舵机编号 | 信号线 (橙) | BCM GPIO | 物理引脚 (Pin) | 备注 |
 | :--- | :--- | :--- | :--- | :--- |
 | **Servo 1** | **GPIO 18** | GPIO 18 | Pin 12 | 亦支持硬件 PWM |
-| **Servo 2** | **GPIO 12** | GPIO 12 | Pin 32 | 亦支持硬件 PWM |
-| **Servo 3** | **GPIO 13** | GPIO 13 | Pin 33 | 亦支持硬件 PWM |
-| **Servo 4** | **GPIO 19** | GPIO 19 | Pin 35 | 亦支持硬件 PWM |
-| **Servo 5** | **GPIO 6**  | GPIO 6  | Pin 31 | 纯软件 PWM |
+| **Servo 2** | **GPIO 6**  | GPIO 6  | Pin 31 | 纯软件 PWM |
+| **Servo 3** | **GPIO 12** | GPIO 12 | Pin 32 | 亦支持硬件 PWM |
+| **Servo 4** | **GPIO 13** | GPIO 13 | Pin 33 | 亦支持硬件 PWM |
+| **Servo 5** | **GPIO 19** | GPIO 19 | Pin 35 | 亦支持硬件 PWM |
 
 | 通用线色 | 功能 | 连接目标 |
 | :--- | :--- | :--- |

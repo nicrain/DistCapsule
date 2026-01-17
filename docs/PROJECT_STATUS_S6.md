@@ -31,8 +31,9 @@
 ## 📅 Journal des Modifications (Changelog)
 *   **2026-01-16**: 
     *   **Docs**: Création des diapositives de présentation (`docs/slides/`) avec architecture AAA et histoire du design 3D.
-    *   **Fix Caméra**: Correction de la rotation de 90° (Clockwise) dans `face_system.py` et `face_enroll.py`.
-    *   **IA**: Ajustement du seuil de reconnaissance faciale à 0.60 (vs 0.72) pour réduire les faux positifs.
+    *   **Fix Caméra**: Correction de la rotation de 90° (Counter-Clockwise) dans `face_system.py` et `face_enroll.py`.
+    *   **IA**: Ajustement du seuil de reconnaissance faciale à 0.68 (vs 0.72) pour réduire les faux positifs.
+    *   **Wiring**: Mise à jour des broches pour les Servos 2-5 (GPIO 6, 12, 13, 19).
     *   **Architecture**: Simplification (Suppression de MQTT). Focus sur l'API HTTP.
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 
