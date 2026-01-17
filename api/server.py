@@ -122,11 +122,18 @@ def delete_user(user_id: int):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Check if user exists
-        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
-        if not cursor.fetchone():
+        # Check if user exists and check permission
+        cursor.execute("SELECT user_id, auth_level FROM Users WHERE user_id = ?", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
             conn.close()
             raise HTTPException(status_code=404, detail="User not found")
+            
+        # Protect Admin (ID 1 or any Admin Level)
+        if user['user_id'] == 1 or user['auth_level'] <= 1:
+            conn.close()
+            raise HTTPException(status_code=403, detail="Cannot delete Administrator")
 
         # Instead of deleting directly, queue a command so hardware can cleanup fingerprint
         cursor.execute(
