@@ -8,9 +8,9 @@
 ## 🎯 Objectifs de la Phase S6 / 本阶段目标
 
 ### 1. Infrastructure Réseau (Pi-Side) / 网络基础设施 (树莓派端)
-- [ ] **API Web (Flask/FastAPI)**:
+- [x] **API Web (Flask/FastAPI)**:
     - Créer une API légère pour exposer les logs (`/api/logs`) et l'état du système (`/api/status`).
-    - **Web API**: 开发轻量级 API 接口，用于手机端获取日志和系统状态。
+    - **Web API**: 开发轻量级 API 接口，用于手机端获取日志和系统状态 (GET endpoints OK, POST pending).
 
 ### 2. Application Mobile (Android) / 移动端应用
 - [ ] **App Architecture**: 
@@ -37,6 +37,7 @@
     *   **UX**: Clarification des logs (Remplacement du terme "Distance" par "Différence de caractéristiques").
     *   **Wiring**: Mise à jour des broches pour les Servos 2-5 (GPIO 6, 12, 13, 19).
     *   **Architecture**: Simplification (Suppression de MQTT). Focus sur l'API HTTP.
+    *   **API**: Correction de la sérialisation Pydantic/SQLite. Endpoints `/users` et `/logs` fonctionnels.
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 
 ---

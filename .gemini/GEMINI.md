@@ -35,7 +35,7 @@
 - **S7 (Mobile Integration)**:
     - **Documentation**: Created LaTeX presentation slides in `docs/slides/` featuring AAA architecture and 3D design iteration history.
     - **Architecture Change**: Removed MQTT from roadmap; decided to focus exclusively on REST API (`FastAPI`) for simplicity and reliability.
-    - **API Backend**: Implemented `FastAPI` server in `api/` to expose User and Log data via JSON/REST.
+    - **API Backend**: Implemented `FastAPI` server in `api/` exposing User and Log data (serialization fixed, tested OK).
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
 - **S5 (Intelligent Core) & Fixes**: 
     - **Camera Fix**: Implemented 90-degree counter-clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
