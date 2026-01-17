@@ -355,11 +355,6 @@ def main():
                     face_running_event.clear()
                     continue
                 
-                if btn_val == 1 and last_btn_state == 0:
-                    last_activity_time = time.time()
-                    remaining = SCREEN_TIMEOUT
-                    update_screen("PROLONGE", "+30 Sec", (0, 100, 100), countdown=remaining)
-                
                 if not face_queue.empty():
                     face_uid = face_queue.get()
                     print(f"🤖 人脸检测: {face_uid}")
