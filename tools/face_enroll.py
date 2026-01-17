@@ -13,7 +13,6 @@ warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API
 warnings.filterwarnings("ignore", category=UserWarning, module="face_recognition_models")
 
 # 动态获取数据库绝对路径
-# 脚本在 tools/，数据库在根目录 (tools 的上一级)
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 DATABASE_NAME = os.path.join(PROJECT_ROOT, "capsule_dispenser.db")
@@ -31,8 +30,8 @@ def list_users():
     print("\n--- 用户列表 / Liste des utilisateurs ---")
     for row in rows:
         uid, name, enc = row
-        has_face = "✅ 已录入" if enc else "❌ 无人脸"
-        print(f"ID: {uid:<3} | {name:<15} | {has_face}")
+        has_face = "OK" if enc else "Non"
+        print(f"ID: {uid:<3} | {name:<15} | Face: {has_face}")
     print("-" * 40)
 
 def save_face_to_db(user_id, encoding):
@@ -61,95 +60,69 @@ def enroll_face():
     print("正在搜索可用摄像头 / Recherche caméra...")
     cap = None
 
-    # 定义多种 GStreamer 管道尝试策略
     pipelines = [
-        # 策略 1: 强制指定 NV12 格式和分辨率 (Pi 5 推荐)
         (
-            "libcamerasrc ! "
-            "video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! "
-            "videoconvert ! "
-            "video/x-raw,format=BGR ! "
-            "appsink drop=1",
+            "libcamerasrc ! video/x-raw,format=NV12,width=640,height=480,framerate=30/1 ! videoconvert ! video/x-raw,format=BGR ! appsink drop=1",
             "GStreamer (NV12 640x480)"
         ),
-        # 策略 2: 仅指定分辨率，由驱动决定格式
         (
-            "libcamerasrc ! "
-            "video/x-raw,width=640,height=480 ! "
-            "videoconvert ! "
-            "video/x-raw,format=BGR ! "
-            "appsink drop=1",
+            "libcamerasrc ! video/x-raw,width=640,height=480 ! videoconvert ! video/x-raw,format=BGR ! appsink drop=1",
             "GStreamer (Auto 640x480)"
         ),
-        # 策略 3: 不指定分辨率 (使用默认/最大)，后续由 OpenCV 缩放
         (
-            "libcamerasrc ! "
-            "video/x-raw ! "
-            "videoconvert ! "
-            "video/x-raw,format=BGR ! "
-            "appsink drop=1",
-            "GStreamer (Default Resolution)"
+            "libcamerasrc ! video/x-raw ! videoconvert ! video/x-raw,format=BGR ! appsink drop=1",
+            "GStreamer (Default)"
         )
     ]
 
     for pipeline, name in pipelines:
         try:
             print(f"尝试管道 / Essai pipeline: {name}...")
-            # print(f"  -> {pipeline}")
             cap_gst = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
             if cap_gst.isOpened():
                 ret, _ = cap_gst.read()
                 if ret:
                     cap = cap_gst
-                    print(f"✅ 成功打开摄像头 [{name}] / Caméra OK")
+                    print(f"成功打开摄像头 [{name}] / Caméra OK")
                     break
                 else:
-                    print(f"  ❌ 管道打开但无法读取帧 / Erreur lecture")
+                    print(f"  管道打开但无法读取帧 / Erreur lecture")
                     cap_gst.release()
             else:
-                print(f"  ❌ 管道无法打开 / Erreur ouverture")
+                print(f"  管道无法打开 / Erreur ouverture")
         except Exception as e:
-            print(f"  ⚠️ 异常 / Exception: {e}")
+            print(f"  异常 / Exception: {e}")
 
-    # 方案 4: 如果 GStreamer 全部失败，尝试遍历 V4L2 设备
     if cap is None:
-        print("尝试 V4L2 模式 (可能不稳定)... / Essai V4L2...")
-        for i in range(20): # 扩大搜索范围
-            # print(f"尝试 index {i}...")
+        print("尝试 V4L2 模式... / Essai V4L2...")
+        for i in range(20):
             temp_cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
             if temp_cap.isOpened():
-                # 尝试读取一帧以确认真的可用
                 ret, _ = temp_cap.read()
                 if ret:
                     cap = temp_cap
-                    print(f"✅ 成功打开 V4L2 设备 (Index: {i})")
+                    print(f"成功打开 V4L2 设备 (Index: {i}) / V4L2 OK")
                     break
                 else:
                     temp_cap.release()
     
     if cap is None:
-        print("❌ 无法打开任何摄像头。")
-        print("请尝试运行 'libcamera-hello' 检查摄像头硬件是否正常。")
+        print("无法打开任何摄像头 / Erreur caméra")
         return
 
-    # 设置分辨率，太高会卡，320x240 足够识别
+    # 设置分辨率
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    # ... (前文代码不变)
-
-    # 检查是否支持 GUI 显示
     import os
     has_display = os.environ.get('DISPLAY') is not None
     
     if has_display:
         print("\n--- GUI 模式指南 / Mode GUI ---")
-        print("1. 窗口中会出现人脸框。")
-        print("2. 按 's' 键保存，'q' 键退出。")
+        print("1. 按 's' 键保存，'q' 键退出。")
     else:
-        print("\n⚠️  未检测到显示器 (SSH模式)。切换到 [自动录入模式]。")
-        print("➡️  请正对摄像头，保持静止... / Regardez la caméra...")
-        print("➡️  系统将在检测到单张清晰人脸时自动保存。")
+        print("\n未检测到显示器 (SSH模式) / Mode SSH Auto")
+        print("请正对摄像头，保持静止... / Regardez la caméra...")
 
     start_time = time.time()
     last_log_time = time.time()
@@ -161,51 +134,37 @@ def enroll_face():
             time.sleep(0.1)
             continue
 
-        # --- 旋转图像 (Rotation) ---
-        # 适配物理安装：摄像头逆时针旋转了 90 度 (Counter-Clockwise)
         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-        # 缩小图像以加快处理速度 (1/2)
         small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5) 
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-        # 检测人脸
         face_locations = face_recognition.face_locations(rgb_small_frame)
 
-        # --- 分支 1: 无显示器 (自动模式) ---
         if not has_display:
-            # 每秒打印一次状态点，避免刷屏
             if time.time() - last_log_time > 1.0:
                 print(".", end="", flush=True)
                 last_log_time = time.time()
 
             if len(face_locations) == 1:
-                print(f"\n✅ 检测到人脸! 正在提取特征... / Visage détecté!")
+                print(f"\n检测到人脸! 正在提取特征... / Visage détecté!")
                 encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
                 if encodings:
                     if save_face_to_db(user_id, encodings[0]):
-                        print(f"✅ ID {user_id} 人脸录入成功！ / Enregistré!")
+                        print(f"ID {user_id} 人脸录入成功！ / Succès!")
                         break
             elif len(face_locations) > 1:
                 if time.time() - last_log_time > 1.0:
-                    print("\n[提示] 检测到多张人脸，请保留一人... / Trop de visages", end="")
+                    print("\n[提示] 检测到多张人脸... / Trop de visages", end="")
             
-            # 超时保护 (60秒)
             if time.time() - start_time > 60:
-                print("\n❌ 录入超时 (60s)，未检测到有效人脸。 / Timeout")
+                print("\n录入超时 (60s) / Timeout")
                 break
             
-            # 简单限速
             time.sleep(0.1)
             continue
 
-        # --- 分支 2: GUI 模式 (原有逻辑) ---
-        # 在原图上画框
         for (top, right, bottom, left) in face_locations:
-            top *= 2
-            right *= 2
-            bottom *= 2
-            left *= 2
+            top *= 2; right *= 2; bottom *= 2; left *= 2
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
 
         cv2.imshow('Face Enroll - Press s to Save', frame)
@@ -216,18 +175,18 @@ def enroll_face():
             break
         elif key == ord('s'):
             if len(face_locations) == 1:
-                print("📸 正在提取特征... / Extraction...")
+                print("正在提取特征... / Extraction...")
                 encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
                 if encodings:
                     if save_face_to_db(user_id, encodings[0]):
-                        print(f"✅ ID {user_id} 人脸录入成功！ / Succès!")
+                        print(f"ID {user_id} 人脸录入成功！ / Succès!")
                         break
                     else:
-                        print("保存失败 / Erreur sauvegarde")
+                        print("保存失败 / Erreur")
             elif len(face_locations) == 0:
-                print("⚠️  未检测到人脸 / Pas de visage")
+                print("未检测到人脸 / Pas de visage")
             else:
-                print("⚠️  多张人脸 / Trop de visages")
+                print("多张人脸 / Trop de visages")
 
     cap.release()
     if has_display:

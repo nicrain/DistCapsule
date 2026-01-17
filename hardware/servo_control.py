@@ -30,7 +30,7 @@ class ServoController:
             lgpio.gpio_claim_output(self.h, self.pin)
         except Exception as e:
             # 如果已经被占用，打印警告但继续尝试运行
-            print(f"⚠️ Warning: GPIO {self.pin} already claimed or busy: {e}")
+            print(f"Warning: GPIO {self.pin} already claimed or busy: {e}")
 
         # SG90 参数
         self.FREQ = 50 # 50Hz

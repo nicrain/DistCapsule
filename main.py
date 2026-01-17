@@ -1,3 +1,8 @@
+import os
+# 在导入任何其他库之前设置环境变量，屏蔽底层驱动的刷屏日志
+os.environ["LIBCAMERA_LOG_LEVELS"] = "ERROR" # 屏蔽 libcamera 的 INFO
+os.environ["OPENCV_LOG_LEVEL"] = "ERROR"     # 屏蔽 OpenCV 的 WARN
+
 import time
 import serial   # 串口通信库 (用于指纹模块)
 import sqlite3  # SQLite 数据库库
@@ -6,7 +11,13 @@ import threading # 多线程库 (让程序能"分心"做两件事)
 import queue    # 线程安全的队列 (用于线程间传话)
 import adafruit_fingerprint # 指纹模块驱动
 import lgpio    # 树莓派 GPIO 库 (Pi 5 专用)
+import warnings # 屏蔽过时警告
 from hardware.servo_control import ServoController
+
+# 屏蔽无关紧要的第三方库警告
+warnings.filterwarnings("ignore", category=UserWarning, module="face_recognition_models")
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+
 from PIL import Image, ImageDraw, ImageFont # 图像处理库
 from hardware.st7789_driver import ST7789_Driver
 from hardware.face_system import FaceRecognizer
@@ -18,7 +29,7 @@ BAUD_RATE = 57600            # 通信波特率 (必须与指纹模块一致)
 UNLOCK_TIME = 5              # 舵机开锁保持时间 (秒)
 DATABASE_NAME = "capsule_dispenser.db"
 SCREEN_TIMEOUT = 30          # 屏幕自动休眠倒计时
-MAX_SESSION_TIME = 300       # 最大活跃时间 (5分钟)，防止程序死在活跃状态耗电
+MAX_SESSION_TIME = 300       # 最大活跃时间 (5分钟)
 WAKE_BUTTON_PIN = 26         # 唤醒按钮连接的 GPIO 引脚
 
 # --- 全局变量 (Global Variables) ---
@@ -44,9 +55,9 @@ def init_display_system():
         except:
             font_large = ImageFont.load_default()
             font_small = ImageFont.load_default()
-        print("✅ 屏幕对象初始化完成 / Écran initialisé")
+        print("屏幕对象初始化完成 / Écran initialisé")
     except Exception as e:
-        print(f"⚠️ 屏幕初始化失败 / Erreur init écran: {e}")
+        print(f"屏幕初始化失败 / Erreur init écran: {e}")
 
 def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None, countdown=None):
     if disp is None: return
@@ -94,7 +105,7 @@ def log_access(user_id, event_type, status, message=""):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"⚠️ 日志记录失败 / Erreur Log: {e}")
+        print(f"日志记录失败 / Erreur Log: {e}")
 
 def get_user_info(user_id):
     if user_id == 0: return ("Mobile App", 1, None)
@@ -113,13 +124,13 @@ def perform_unlock(user_id, method="Fingerprint", override_channel=None):
     user_name, auth_level, assigned_channel = get_user_info(user_id)
     if override_channel is not None: assigned_channel = override_channel
         
-    print(f"✅ [{method}] 验证通过 / Vérifié！用户: {user_name} (ID: #{user_id})")
+    print(f"[{method}] 验证通过 / Vérifié！用户: {user_name} (ID: #{user_id})")
     log_access(user_id, f"{method.upper()}_UNLOCK", "SUCCESS", f"Lvl:{auth_level} Ch:{assigned_channel}")
     
     bg_color = (100, 0, 100) if auth_level == 1 else (0, 150, 0)
     
     if assigned_channel and assigned_channel in servos:
-        print(f"🔓 打开通道 #{assigned_channel} / Ouvrir Canal #{assigned_channel}")
+        print(f"打开通道 #{assigned_channel} / Ouvrir Canal #{assigned_channel}")
         display_msg = f"{user_name} #{assigned_channel}\n({method})"
         update_screen("ACCES", display_msg, bg_color, progress=1.0)
         servos[assigned_channel].unlock()
@@ -128,7 +139,7 @@ def perform_unlock(user_id, method="Fingerprint", override_channel=None):
             prog = i / steps
             update_screen("OUVERTURE", display_msg, bg_color, progress=prog)
             time.sleep(0.05)
-        print(f"🔒 关闭通道 #{assigned_channel} / Fermer Canal")
+        print(f"关闭通道 #{assigned_channel} / Fermer Canal")
         servos[assigned_channel].lock()
         update_screen("FERME", "Fini", (0, 0, 100))
     else:
@@ -136,7 +147,7 @@ def perform_unlock(user_id, method="Fingerprint", override_channel=None):
             update_screen("ADMIN", f"Bienvenue\n{user_name}", bg_color)
             time.sleep(3)
         else:
-            print("⚠️  用户未分配通道 / Aucun canal assigné")
+            print("用户未分配通道 / Aucun canal assigné")
             update_screen("EN ATTENTE", f"Aucun Canal\nHi, {user_name}", (200, 100, 0))
             time.sleep(3)
     
@@ -157,7 +168,7 @@ def check_app_commands():
         
         if row:
             cmd_id, cmd_type, target_id = row
-            print(f"📲 [App] 收到指令: {cmd_type} target: {target_id}")
+            print(f"[App] 收到指令: {cmd_type} target: {target_id}")
             cursor.execute("UPDATE Pending_Commands SET status = 'processing' WHERE cmd_id = ?", (cmd_id,))
             conn.commit()
             
@@ -166,14 +177,14 @@ def check_app_commands():
                 perform_unlock(user_id=0, method="App", override_channel=target_id)
             
             elif cmd_type == 'ENROLL_FACE':
-                print("🔄 暂停后台识别，进入人脸录入模式...")
+                print("暂停后台识别，进入人脸录入模式...")
                 face_running_event.clear()
                 time.sleep(0.5) 
                 
                 if face_rec:
                     success = enrollment.run_face_enrollment(disp, face_rec, target_id, DATABASE_NAME)
                     if success:
-                        print("✅ 录入成功，重新加载人脸库...")
+                        print("录入成功，重新加载人脸库...")
                         face_rec.load_faces_from_db()
                         time.sleep(3)
                         update_screen("PRET", "Scanner...", (0, 0, 0), countdown=SCREEN_TIMEOUT)
@@ -181,11 +192,11 @@ def check_app_commands():
                     update_screen("ERREUR", "Camera HS", (200, 0, 0))
                     time.sleep(2)
                 
-                print("🔄 恢复后台识别")
+                print("恢复后台识别")
                 face_running_event.set()
 
             elif cmd_type == 'ENROLL_FINGER':
-                print("🔄 暂停后台识别，进入指纹录入模式...")
+                print("暂停后台识别，进入指纹录入模式...")
                 face_running_event.clear()
                 time.sleep(0.5)
                 
@@ -198,24 +209,24 @@ def check_app_commands():
                 face_running_event.set()
 
             elif cmd_type == 'DELETE_USER':
-                print(f"🗑️ 删除用户 ID: {target_id}")
+                print(f"删除用户 ID: {target_id}")
                 face_running_event.clear()
                 time.sleep(0.5)
                 
                 if finger:
                     if finger.delete_model(target_id) == adafruit_fingerprint.OK:
-                        print("✅ 指纹已删除")
+                        print("指纹已删除")
                     else:
-                        print("⚠️ 指纹删除失败或不存在")
+                        print("指纹删除失败或不存在")
                 
                 try:
                     cursor.execute("DELETE FROM Users WHERE user_id = ?", (target_id,))
                     conn.commit()
-                    print("✅ 数据库记录已删除")
+                    print("数据库记录已删除")
                     update_screen("INFO", f"User {target_id} Deleted\nSupprime", (0, 0, 150))
                     time.sleep(2)
                 except Exception as e:
-                    print(f"❌ 删除失败: {e}")
+                    print(f"删除失败: {e}")
                     update_screen("ERREUR", "Delete Fail", (200, 0, 0))
                 
                 update_screen("PRET", "Systeme Actif", (0, 0, 0))
@@ -229,11 +240,11 @@ def check_app_commands():
             
         conn.close()
     except Exception as e:
-        print(f"⚠️ App指令检查失败: {e}")
+        print(f"App指令检查失败: {e}")
     return False
 
 def face_worker(rec_obj):
-    print("📸 人脸识别后台线程已启动 / Thread Visage Démarré")
+    print("人脸识别后台线程已启动 / Thread Visage Démarré")
     while True:
         if face_running_event.is_set():
             try:
@@ -242,7 +253,7 @@ def face_worker(rec_obj):
                     if face_queue.empty():
                         face_queue.put(face_uid)
             except Exception as e:
-                print(f"⚠️ 线程人脸错误 / Erreur Thread Visage: {e}")
+                print(f"线程人脸错误 / Erreur Thread Visage: {e}")
                 time.sleep(1)
         else:
             time.sleep(0.5)
@@ -257,12 +268,12 @@ def main():
     try:
         h_gpio = lgpio.gpiochip_open(0)
         lgpio.gpio_claim_input(h_gpio, WAKE_BUTTON_PIN, lgpio.SET_PULL_DOWN)
-        print(f"✅ 唤醒按钮监听 GPIO {WAKE_BUTTON_PIN} (lgpio)")
+        print(f"唤醒按钮监听 GPIO {WAKE_BUTTON_PIN} (lgpio)")
         for i in range(1, 6):
             servos[i] = ServoController(channel=i)
-        print(f"✅ {len(servos)} 个舵机已就绪 (Servo 1-5) / Servos Prêts")
+        print(f"5 个舵机已就绪 (Servo 1-5) / Servos Prêts")
     except Exception as e:
-        print(f"❌ 硬件初始化失败 / Erreur init matériel: {e}")
+        print(f"硬件初始化失败 / Erreur init matériel: {e}")
         return
 
     time.sleep(0.5)
@@ -271,10 +282,10 @@ def main():
         uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
         finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
         if finger.read_sysparam() != adafruit_fingerprint.OK:
-             print("⚠️ 指纹模块不稳定 / Connexion capteur instable...")
-        print(f"✅ 指纹模块已就绪 / Capteur Prêt")
+             print("指纹模块不稳定 / Connexion capteur instable...")
+        print(f"指纹模块已就绪 / Capteur Prêt")
     except Exception as e:
-        print(f"❌ 指纹模块初始化失败 / Erreur init capteur: {e}")
+        print(f"指纹模块初始化失败 / Erreur init capteur: {e}")
         finger = None
     
     try:
@@ -282,7 +293,7 @@ def main():
         t = threading.Thread(target=face_worker, args=(face_rec,), daemon=True)
         t.start()
     except Exception as e:
-        print(f"⚠️ 人脸模块不可用 / Module Visage indisponible: {e}")
+        print(f"人脸模块不可用 / Module Visage indisponible: {e}")
         face_rec = None
 
     system_state = "SLEEP" 
@@ -298,16 +309,12 @@ def main():
     face_running_event.clear()
     last_btn_state = 0
 
-    print("💤 系统进入休眠模式，等待按钮唤醒... / Mode Veille (Attente bouton)...")
+    print("系统进入休眠模式，等待按钮唤醒... / Mode Veille (Attente bouton)...")
 
     try:
         while True:
             btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
             
-            # --- 按钮检测 ---
-            # (已移除长按二维码逻辑，保持简单的唤醒功能)
-
-            # --- 检查远程指令 ---
             app_cmd_processed = check_app_commands()
             
             if system_state == "SLEEP":
@@ -322,7 +329,7 @@ def main():
                     if not face_running_event.is_set(): face_running_event.set()
 
                 elif btn_val == 1:
-                    print("🔔 按钮按下！系统唤醒... / Réveil système...")
+                    print("按钮按下！系统唤醒... / Réveil système...")
                     now = time.time()
                     system_state = "ACTIVE"
                     last_activity_time = now
@@ -342,14 +349,14 @@ def main():
                 remaining = max(0, SCREEN_TIMEOUT - elapsed)
 
                 if current_ts - session_start_time > MAX_SESSION_TIME:
-                     print("🛑 强制休眠 / Timeout Session")
+                     print("强制休眠 / Timeout Session")
                      system_state = "SLEEP"
                      if disp: disp.set_backlight(False)
                      face_running_event.clear()
                      continue
 
                 if remaining == 0:
-                    print("💤 自动休眠 / Timeout Inactivité")
+                    print("自动休眠 / Timeout Inactivité")
                     system_state = "SLEEP"
                     if disp: disp.set_backlight(False)
                     face_running_event.clear()
@@ -357,7 +364,7 @@ def main():
                 
                 if not face_queue.empty():
                     face_uid = face_queue.get()
-                    print(f"🤖 人脸检测: {face_uid}")
+                    print(f"人脸检测: {face_uid}")
                     perform_unlock(face_uid, method="Face")
                     last_activity_time = time.time()
                     continue
