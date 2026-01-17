@@ -19,8 +19,16 @@ class User(BaseModel):
     assigned_channel: Optional[int] = None
     has_face: int
     has_fingerprint: int
+    app_token: Optional[str] = None
     created_at: Optional[str] = None
     is_active: int
+
+class BindRequest(BaseModel):
+    user_id: int
+    token: str
+
+class AuthRequest(BaseModel):
+    token: str
 
 class AccessLog(BaseModel):
     log_id: int
@@ -53,7 +61,7 @@ def get_users():
         cursor.execute("""
             SELECT 
                 user_id, name, auth_level, assigned_channel, created_at, is_active,
-                has_fingerprint,
+                has_fingerprint, app_token,
                 CASE WHEN face_encoding IS NOT NULL THEN 1 ELSE 0 END as has_face
             FROM Users
         """)
@@ -62,6 +70,51 @@ def get_users():
         return [dict(row) for row in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error: {str(e)} | DB Path: {DATABASE_NAME}")
+
+@app.post("/bind")
+def bind_user(req: BindRequest):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. Check user exists
+        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (req.user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        # 2. Update Token (Ensure uniqueness by clearing old binding first)
+        cursor.execute("UPDATE Users SET app_token = NULL WHERE app_token = ?", (req.token,))
+        cursor.execute("UPDATE Users SET app_token = ? WHERE user_id = ?", (req.token, req.user_id))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Device bound to user {req.user_id}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bind Error: {str(e)}")
+
+@app.post("/auth", response_model=User)
+def login_by_token(req: AuthRequest):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                user_id, name, auth_level, assigned_channel, created_at, is_active,
+                has_fingerprint, app_token,
+                CASE WHEN face_encoding IS NOT NULL THEN 1 ELSE 0 END as has_face
+            FROM Users WHERE app_token = ?
+        """, (req.token,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return dict(row)
+        else:
+            raise HTTPException(status_code=401, detail="Invalid Token")
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Auth Error: {str(e)}")
 
 @app.get("/logs", response_model=List[AccessLog])
 def get_logs(limit: int = 20):
