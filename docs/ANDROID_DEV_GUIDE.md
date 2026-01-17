@@ -77,41 +77,25 @@ DistCapsule/ (根目录)
     git push origin feature/android-integration
     ```
 
-## 4. 合并指南 (Merge via CLI)
+## 4. 合并指南 (Merge Workflow)
 
-既然我们是工程师，推荐使用命令行来完成合并，这比网页操作更高效。
+由于仓库开启了 **分支保护 (Branch Protection)**，你无法直接推送到 `main` 分支。请遵循以下流程：
 
-**场景**: 你已经把代码推送到远程的 `feature/android-integration` 分支，现在要把它们合并到 `main` 主分支。
+### 4.1 提交 Pull Request (PR)
+1.  确保你的代码已推送到远程分支 (`git push origin feature/android-integration`)。
+2.  打开 GitHub 仓库页面。
+3.  点击顶部的 **"Pull requests"** -> **"New pull request"**。
+4.  选择 `base: main` <- `compare: feature/android-integration`。
+5.  点击 **"Create pull request"**。
 
-**由仓库维护者 (Maintainer) 执行以下命令：**
+### 4.2 完成合并
+*   **Web 方式 (推荐)**: 
+    *   在 PR 页面底部，如果没有冲突，点击绿色的 **"Merge pull request"** 按钮即可。
+    *   如果设置了审批规则，需等待管理员 Approve。
 
-1.  **切换回主分支并更新**:
-    ```bash
-    git checkout main
-    git pull origin main
-    ```
-
-2.  **获取远程分支更新**:
-    ```bash
-    git fetch origin
-    ```
-
-3.  **执行合并 (Merge)**:
-    ```bash
-    # 将 feature 分支的代码合入当前分支 (main)
-    git merge origin/feature/android-integration
-    ```
-    *如果提示冲突 (Conflict)，请手动解决文件冲突后，执行 `git add .` 和 `git commit`。*
-
-4.  **推送到远程主分支**:
-    ```bash
-    git push origin main
-    ```
-
-5.  **删除旧分支 (可选/清理)**:
-    ```bash
-    git push origin --delete feature/android-integration
-    ```
+*   **CLI 方式 (仅限管理员)**:
+    *   只有管理员 (Admin) 才有权限在本地合并后强行推送到 `main`。
+    *   普通开发者请务必使用 Web PR 方式。
 
 ---
 
