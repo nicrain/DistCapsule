@@ -40,9 +40,10 @@
     *   **API**: Correction de la sérialisation Pydantic/SQLite. Endpoints `/users` et `/logs` fonctionnels.
     *   **IoT**: Implémentation du contrôle App via table `Pending_Commands` (Renommé de Remote -> App).
     *   **Hotspot**: Ajout de la passerelle DHCP (192.168.4.1) pour résoudre les problèmes de connexion Android/iOS.
-    *   **UX**: Ajout d'un QR Code Wi-Fi sur l'écran LCD (Appui long 2s sur le bouton).
+    *   **UX**: Nettoyage des logs (Suppression des Emojis, style professionnel).
     *   **API**: Ajout des statuts biométriques (`has_face`, `has_fingerprint`) dans la réponse `/users`.
     *   **API**: Implémentation de la gestion complète des utilisateurs (`POST /users` pour créer, `DELETE /users` pour supprimer avec nettoyage matériel).
+*   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
     *   **Auth**: Simplification du flux (Suppression de `/bind`, intégration du Token dans `/users` pour l'enregistrement direct).
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 

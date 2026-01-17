@@ -38,8 +38,8 @@
     - **API Backend**: Implemented `FastAPI` server in `api/` exposing User and Log data (serialization fixed, tested OK).
     - **App Control**: Implemented local Wi-Fi control (renamed from Remote) linking API to Hardware via `Pending_Commands`.
     - **Hotspot Fix**: Re-enabled DHCP Gateway option to ensure stable Android/iOS connectivity.
-    - **QR Pairing**: Implemented "Long Press to Show Wi-Fi QR" feature for instant phone connection.
     - **API Enhancements**: Added `has_face`/`has_fingerprint` flags and full User Management (`POST/DELETE` users) with hardware synchronization.
+    - **Style**: Removed emojis from all logs for a professional output format.
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
 - **S5 (Intelligent Core) & Fixes**: 
     - **Camera Fix**: Implemented 90-degree counter-clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
