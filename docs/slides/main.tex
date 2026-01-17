@@ -77,7 +77,7 @@
     \end{block}
 
     \begin{itemize}
-        \item \textbf{Cible} : Gestion de m{\'e}dicaments ou capsules de caf{\'e} (bureau/domicile).
+        \item \textbf{Cible} : Gestion de capsules de caf{\'e} (bureau/domicile).
         \item \textbf{Innovation} : Authentification double (Visage + Empreinte) et architecture autonome.
         \item \textbf{État Actuel} : Phase S6 (Intégration Mobile \& API).
     \end{itemize}
@@ -130,7 +130,48 @@
     \end{itemize}
 \end{frame}
 
-% --- Section 3: Réalisation Physique ---
+% --- Section 3: Application Mobile ---
+\section{Application Mobile}
+\subsection{Rôles \& Fonctionnalités}
+\begin{frame}{Expérience Utilisateur (UX)}
+    L'application s'adapte dynamiquement au rôle de l'utilisateur :
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Utilisateur Standard}
+                \begin{itemize}
+                    \item \textbf{One-Tap Dispense} : Bouton "Mon Café" (Ouvre le canal assigné).
+                    \item \textbf{État} : Visualisation des statuts biométriques (Visage/Empreinte).
+                \end{itemize}
+            \end{block}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{alertblock}{Administrateur}
+                \begin{itemize}
+                    \item \textbf{Gestion} : Créer/Supprimer utilisateurs.
+                    \item \textbf{Maintenance} : Contrôle manuel des 5 canaux.
+                    \item \textbf{Enrôlement} : Déclenchement à distance de l'enregistrement biométrique.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\subsection{Architecture Technique}
+\begin{frame}{Communication App $\leftrightarrow$ Pi}
+    \begin{itemize}
+        \item \textbf{Protocole} : REST API (FastAPI).
+        \item \textbf{Sécurité} : Authentification par \textbf{Token} (UUID) lié au dispositif.
+        \item \textbf{Flux d'Enrôlement} :
+        \begin{enumerate}
+            \item Admin clique "Enrôler Visage" sur l'App.
+            \item App envoie \texttt{POST /command/enroll\_face}.
+            \item Pi se réveille, active la caméra et guide l'utilisateur.
+            \item Résultat mis à jour en base de données.
+        \end{enumerate}
+    \end{itemize}
+\end{frame}
+
+% --- Section 4: Réalisation Physique ---
 \section{Réalisation Physique}
 \subsection{Montage Matériel}
 \begin{frame}{Composants et Assemblage}

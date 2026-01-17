@@ -90,11 +90,9 @@ def show_wifi_qr():
     except Exception as e:
         print(f"⚠️ 无法加载二维码图片: {e}")
         update_screen("ERREUR", "No QR File", (200, 0, 0))
-    
-disp.display(image)
-disp.set_backlight(True)
 
-def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None, countdown=None):    if disp is None: return
+def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None, countdown=None):
+    if disp is None: return
     disp.set_backlight(True)
     image = Image.new("RGB", (disp.width, disp.height), bg_color)
     draw = ImageDraw.Draw(image)

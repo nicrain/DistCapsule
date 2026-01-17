@@ -23,6 +23,7 @@ def setup_database():
         assigned_channel INTEGER,
         face_encoding TEXT,
         has_fingerprint INTEGER NOT NULL DEFAULT 0,
+        app_token TEXT,
         created_at TEXT,
         is_active INTEGER NOT NULL DEFAULT 1
     );

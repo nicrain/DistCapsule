@@ -23,17 +23,19 @@ class User(BaseModel):
     created_at: Optional[str] = None
     is_active: int
 
-class BindRequest(BaseModel):
-    user_id: int
-    token: str
-
-class AuthRequest(BaseModel):
-    token: str
-
 class UserCreate(BaseModel):
     name: str
     auth_level: int = 2 # Default to normal user
     assigned_channel: Optional[int] = None
+    app_token: Optional[str] = None # New: Bind immediately on creation
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    auth_level: Optional[int] = None
+    assigned_channel: Optional[int] = None # Use None to release
+
+class AuthRequest(BaseModel):
+    token: str
 
 class AccessLog(BaseModel):
     log_id: int
@@ -93,9 +95,9 @@ def create_user(user: UserCreate):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         cursor.execute("""
-            INSERT INTO Users (name, auth_level, assigned_channel, created_at, has_face, has_fingerprint, is_active)
-            VALUES (?, ?, ?, ?, 0, 0, 1)
-        """, (user.name, user.auth_level, user.assigned_channel, now))
+            INSERT INTO Users (name, auth_level, assigned_channel, app_token, created_at, has_face, has_fingerprint, is_active)
+            VALUES (?, ?, ?, ?, ?, 0, 0, 1)
+        """, (user.name, user.auth_level, user.assigned_channel, user.app_token, now))
         
         new_id = cursor.lastrowid
         conn.commit()
@@ -116,6 +118,60 @@ def create_user(user: UserCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Create Error: {str(e)}")
 
+@app.patch("/users/{user_id}", response_model=User)
+def update_user(user_id: int, update_data: UserUpdate):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. Check if user exists
+        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # 2. Check channel conflict
+        if update_data.assigned_channel is not None:
+            cursor.execute("SELECT user_id FROM Users WHERE assigned_channel = ? AND user_id != ?", 
+                           (update_data.assigned_channel, user_id))
+            conflict_user = cursor.fetchone()
+            if conflict_user:
+                conn.close()
+                raise HTTPException(status_code=400, detail=f"Channel {update_data.assigned_channel} is already assigned to user {conflict_user['user_id']}")
+
+        # 3. Dynamic Update
+        data_dict = update_data.model_dump(exclude_unset=True)
+        if not data_dict and update_data.assigned_channel is None and "assigned_channel" not in update_data.model_fields_set:
+             conn.close()
+             raise HTTPException(status_code=400, detail="No fields provided")
+
+        update_fields = []
+        params = []
+        for key, value in data_dict.items():
+            update_fields.append(f"{key} = ?")
+            params.append(value)
+            
+        params.append(user_id)
+        sql = f"UPDATE Users SET {', '.join(update_fields)} WHERE user_id = ?"
+        cursor.execute(sql, params)
+        conn.commit()
+        
+        # 4. Return result
+        cursor.execute("""
+            SELECT 
+                user_id, name, auth_level, assigned_channel, created_at, is_active,
+                has_fingerprint, app_token,
+                CASE WHEN face_encoding IS NOT NULL THEN 1 ELSE 0 END as has_face
+            FROM Users WHERE user_id = ?
+        """, (user_id,))
+        updated_user = cursor.fetchone()
+        conn.close()
+        return dict(updated_user)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Update Error: {str(e)}")
+
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int):
     try:
@@ -130,12 +186,12 @@ def delete_user(user_id: int):
             conn.close()
             raise HTTPException(status_code=404, detail="User not found")
             
-        # Protect Admin (ID 1 or any Admin Level)
+        # Protect Admin
         if user['user_id'] == 1 or user['auth_level'] <= 1:
             conn.close()
             raise HTTPException(status_code=403, detail="Cannot delete Administrator")
 
-        # Instead of deleting directly, queue a command so hardware can cleanup fingerprint
+        # Queue command for hardware
         cursor.execute(
             "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
             ("DELETE_USER", user_id, "pending")
@@ -147,27 +203,6 @@ def delete_user(user_id: int):
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Delete Error: {str(e)}")
-
-@app.post("/bind")
-def bind_user(req: BindRequest):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # 1. Check user exists
-        cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (req.user_id,))
-        if not cursor.fetchone():
-            conn.close()
-            raise HTTPException(status_code=404, detail="User not found")
-            
-        # 2. Update Token (Ensure uniqueness by clearing old binding first)
-        cursor.execute("UPDATE Users SET app_token = NULL WHERE app_token = ?", (req.token,))
-        cursor.execute("UPDATE Users SET app_token = ? WHERE user_id = ?", (req.token, req.user_id))
-        conn.commit()
-        conn.close()
-        return {"status": "success", "message": f"Device bound to user {req.user_id}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Bind Error: {str(e)}")
 
 @app.post("/auth", response_model=User)
 def login_by_token(req: AuthRequest):
@@ -228,7 +263,6 @@ def enroll_face(user_id: int):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        # Ensure user exists first
         cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="User not found")
@@ -250,7 +284,6 @@ def enroll_finger(user_id: int):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        # Ensure user exists
         cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="User not found")
