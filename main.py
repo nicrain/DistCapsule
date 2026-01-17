@@ -124,7 +124,7 @@ def get_user_info(user_id):
     返回: (name, auth_level, assigned_channel) 元组
     """
     if user_id == 0:
-        return ("Remote App", 1, None) # 0 号预留给远程指令
+        return ("Mobile App", 1, None) # 0 号预留给 App 指令
         
     try:
         conn = sqlite3.connect(DATABASE_NAME)
@@ -185,9 +185,9 @@ def perform_unlock(user_id, method="Fingerprint", override_channel=None):
     
     face_running_event.set()
 
-def check_remote_commands():
+def check_app_commands():
     """
-    检查数据库是否有待处理的远程指令 (例如: App 触发的开锁)
+    检查数据库是否有待处理的 App 指令 (例如: 手机触发的开锁)
     """
     try:
         conn = sqlite3.connect(DATABASE_NAME)
@@ -199,7 +199,7 @@ def check_remote_commands():
         
         if row:
             cmd_id, cmd_type, target_id = row
-            print(f"📲 [Remote] 收到远程指令: {cmd_type} target: {target_id}")
+            print(f"📲 [App] 收到指令: {cmd_type} target: {target_id}")
             
             # 2. 标记为处理中
             cursor.execute("UPDATE Pending_Commands SET status = 'processing' WHERE cmd_id = ?", (cmd_id,))
@@ -207,7 +207,7 @@ def check_remote_commands():
             
             # 3. 执行动作
             if cmd_type == 'UNLOCK':
-                perform_unlock(user_id=0, method="Remote", override_channel=target_id)
+                perform_unlock(user_id=0, method="App", override_channel=target_id)
             
             # 4. 标记为已完成
             cursor.execute("UPDATE Pending_Commands SET status = 'completed' WHERE cmd_id = ?", (cmd_id,))
@@ -217,7 +217,7 @@ def check_remote_commands():
             
         conn.close()
     except Exception as e:
-        print(f"⚠️ 远程指令检查失败: {e}")
+        print(f"⚠️ App指令检查失败: {e}")
     return False
 
 def face_worker(face_rec):
@@ -302,7 +302,7 @@ def main():
             btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
             
             # --- 2. 检查远程指令 (例如来自 App 的开锁) ---
-            if check_remote_commands():
+            if check_app_commands():
                 # 如果处理了远程指令，自动唤醒系统进入活跃状态
                 now = time.time()
                 system_state = "ACTIVE"
