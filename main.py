@@ -150,30 +150,33 @@ def perform_unlock(user_id, method="Fingerprint"):
         print(f"🔓 打开通道 #{assigned_channel} / Ouvrir Canal #{assigned_channel}")
         display_msg = f"{user_name} #{assigned_channel}\n({method})"
         
-        update_screen("ACCES / GRANTED", display_msg, bg_color, progress=1.0)
+        # 显示开锁动画
+        update_screen("ACCES", display_msg, bg_color, progress=1.0)
         
         servos[assigned_channel].unlock()
         
-        steps = UNLOCK_TIME * 20 
+        # 倒计时进度条效果
+        steps = UNLOCK_TIME * 20 # 5秒 * 20fps = 100帧
         for i in range(steps, 0, -1):
             prog = i / steps
-            update_screen("OUVERTURE...", display_msg, bg_color, progress=prog)
+            update_screen("OUVERTURE", display_msg, bg_color, progress=prog)
             time.sleep(0.05)
         
         print(f"🔒 关闭通道 #{assigned_channel} / Fermer Canal")
         servos[assigned_channel].lock()
-        update_screen("VERROUILLE", "Terminé / Done", (0, 0, 100))
+        update_screen("FERME", "Fini", (0, 0, 100))
     else:
+        # 如果是管理员或者未分配胶囊的用户
         if auth_level == 1:
             update_screen("ADMIN", f"Bienvenue\n{user_name}", bg_color)
             time.sleep(3)
         else:
             print("⚠️  用户未分配通道 / Aucun canal assigné")
-            update_screen("LISTE D'ATTENTE", f"Pas de Boite\nHi, {user_name}", (200, 100, 0))
+            update_screen("EN ATTENTE", f"Aucun Canal\nHi, {user_name}", (200, 100, 0))
             time.sleep(3)
     
     print("--- 任务完成，准备进入休眠 / Tâche terminée, mise en veille ---")
-    update_screen("PRET / READY", "System Active", (0, 0, 0))
+    update_screen("PRET", "Systeme Actif", (0, 0, 0))
     
     face_running_event.set()
 
@@ -270,7 +273,7 @@ def main():
                     session_start_time = now
                     last_clock_update = now
                     
-                    update_screen("PRET / READY", "Face/Finger Ready", (0, 0, 0), countdown=SCREEN_TIMEOUT)
+                    update_screen("PRET", "Scanner...", (0, 0, 0), countdown=SCREEN_TIMEOUT)
                     
                     face_running_event.set()
                 else:
@@ -292,14 +295,14 @@ def main():
                     print("💤 超过 30秒 无操作，进入休眠 / Timeout Inactivité (30s)")
                     system_state = "SLEEP"
                     if disp: disp.set_backlight(False)
-                    face_running_event.clear()
-                    continue
+                     face_running_event.clear()
+                     continue
                 
                 if btn_val == 1 and last_btn_state == 0:
                     now = time.time()
                     last_activity_time = now 
                     remaining = SCREEN_TIMEOUT
-                    update_screen("PROLONGE / EXTEND", "Temps +30s", (0, 100, 100), countdown=remaining)
+                    update_screen("PROLONGE", "+30 Sec", (0, 100, 100), countdown=remaining)
                 
                 if not face_queue.empty():
                     face_uid = face_queue.get()
@@ -314,7 +317,7 @@ def main():
                     try:
                         if finger.get_image() == adafruit_fingerprint.OK:
                             last_activity_time = current_ts
-                            update_screen("SCANNING", "Traitement...", (0, 0, 100))
+                            update_screen("SCAN", "Analyse...", (0, 0, 100))
                             
                             if finger.image_2_tz(1) == adafruit_fingerprint.OK:
                                 if finger.finger_search() == adafruit_fingerprint.OK:
@@ -327,17 +330,17 @@ def main():
                                         time.sleep(0.1)
                                         last_activity_time = time.time()
                                 else:
-                                    update_screen("REFUSE / DENIED", "Inconnu / Unknown", (255, 0, 0))
+                                    update_screen("REFUSE", "Inconnu", (255, 0, 0))
                                     time.sleep(1)
                                     last_activity_time = time.time()
-                                    update_screen("PRET / READY", "Reessayer / Retry", (0, 0, 0), countdown=SCREEN_TIMEOUT)
+                                    update_screen("PRET", "Reessayer", (0, 0, 0), countdown=SCREEN_TIMEOUT)
                             else:
-                                update_screen("ERREUR / ERROR", "Mauvaise Image", (200, 100, 0))
+                                update_screen("ERREUR", "Image HS", (200, 100, 0))
                     except Exception:
                         pass 
 
                 if int(current_ts) != int(last_clock_update):
-                    update_screen("PRET / READY", "Face/Finger Ready", (0, 0, 0), countdown=remaining)
+                    update_screen("PRET", "Scanner...", (0, 0, 0), countdown=remaining)
                     last_clock_update = current_ts
                 
             last_btn_state = btn_val
