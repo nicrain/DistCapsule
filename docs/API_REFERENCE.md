@@ -7,19 +7,7 @@
 
 ## 1. Authentication & Session
 
-### 1.1 Bind Device (First Login)
-Associates a mobile device (UUID) with a user account.
-*   **POST** `/bind`
-*   **Body**:
-    ```json
-    {
-      "user_id": 12,
-      "token": "uuid-string-generated-by-android"
-    }
-    ```
-*   **Response**: `{"status": "success", "message": "..."}`
-
-### 1.2 Login (Auto Auth)
+### 1.1 Login (Auto Auth)
 Retrieves current user info using the stored token.
 *   **POST** `/auth`
 *   **Body**:
@@ -37,14 +25,16 @@ Returns a list of all users and their status.
 *   **GET** `/users`
 *   **Response**: `[User, User, ...]`
 
-### 2.2 Create User
+### 2.2 Create User (Register & Bind)
+Creates a new user and optionally binds the current device token.
 *   **POST** `/users`
 *   **Body**:
     ```json
     {
       "name": "Jean Dupont",
       "auth_level": 2,        // 1=Admin, 2=User
-      "assigned_channel": 1   // Optional (1-5)
+      "assigned_channel": 1,  // Optional (1-5)
+      "app_token": "uuid..."  // Optional: Bind device immediately
     }
     ```
 *   **Response**: `User Object` (Newly created)
@@ -59,6 +49,7 @@ Returns a list of all users and their status.
     }
     ```
 *   **Response**: `User Object` (Updated)
+*   **Errors**: Returns `400` if the target channel is already occupied.
 
 ### 2.4 Delete User
 Removes database record AND clears fingerprint data.

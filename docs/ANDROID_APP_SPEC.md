@@ -43,11 +43,15 @@ The Android application serves as the primary **Control & Management Interface**
 
 ### 3.1 Onboarding & Login (Token Based)
 *   **No Password**: The app uses a device-bound **Token** for authentication.
-*   **First Run**:
+*   **First Run (New User)**:
     1.  App scans for the API (`GET /`).
-    2.  User selects their name from a list (`GET /users`).
-    3.  **Binding**: App sends a generated UUID to the server (`POST /bind`).
-    4.  *Security Note*: For this prototype, we assume the local Wi-Fi is trusted. No PIN required.
+    2.  User clicks "Register".
+    3.  App generates a UUID Token.
+    4.  **Registration**: App sends Name + Token to server (`POST /users`).
+    5.  Server creates user and binds the token immediately.
+*   **First Run (Existing User - Lost Phone)**:
+    *   *Note*: To prevent identity theft, users cannot self-bind to an existing account.
+    *   **Process**: Ask Admin to reset the old binding, or register as a new user.
 *   **Subsequent Runs**:
     1.  App sends Token (`POST /auth`).
     2.  Server returns user profile.
