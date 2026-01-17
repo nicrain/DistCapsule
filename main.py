@@ -6,6 +6,7 @@ import threading # 多线程库 (让程序能"分心"做两件事)
 import queue    # 线程安全的队列 (用于线程间传话)
 import adafruit_fingerprint # 指纹模块驱动
 import lgpio    # 树莓派 GPIO 库 (Pi 5 专用)
+# import qrcode   # (Removed: Use static image)
 from hardware.servo_control import ServoController
 from PIL import Image, ImageDraw, ImageFont # 图像处理库
 from hardware.st7789_driver import ST7789_Driver
@@ -20,15 +21,20 @@ DATABASE_NAME = "capsule_dispenser.db"
 SCREEN_TIMEOUT = 30          # 屏幕自动休眠倒计时
 MAX_SESSION_TIME = 300       # 最大活跃时间 (5分钟)，防止程序死在活跃状态耗电
 WAKE_BUTTON_PIN = 26         # 唤醒按钮连接的 GPIO 引脚
+LONG_PRESS_TIME = 2.0        # 长按 2 秒显示 Wi-Fi 二维码
+
+# Wi-Fi 信息
+WIFI_SSID = "DistCapsule_Box"
+WIFI_PASS = "capsule_admin"
 
 # --- 全局变量 (Global Variables) ---
 disp = None
 font_large = None
 font_small = None
-servos = {}     
-h_gpio = None   
-face_queue = queue.Queue()      
-face_running_event = threading.Event() 
+servos = {}
+h_gpio = None
+face_queue = queue.Queue()
+face_running_event = threading.Event()
 
 # 核心硬件对象 (全局化以便录入模块调用)
 face_rec = None
@@ -48,8 +54,47 @@ def init_display_system():
     except Exception as e:
         print(f"⚠️ 屏幕初始化失败 / Erreur init écran: {e}")
 
-def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None, countdown=None):
-    if disp is None: return
+def show_wifi_qr():
+    """在屏幕上显示预生成的 Wi-Fi 连接二维码"""
+    global disp
+    if not disp: return
+    
+    print("📱 [System] 显示 Wi-Fi 二维码 / Affichage QR Code...")
+    
+    try:
+        # 加载静态图片
+        qr_img = Image.open("wifi_qr.png").convert("RGB")
+        # 调整大小以适应屏幕中心 (180x180)
+        qr_img = qr_img.resize((180, 180))
+        
+        # 创建最终画布
+        image = Image.new("RGB", (disp.width, disp.height), "WHITE")
+        draw = ImageDraw.Draw(image)
+        
+        # 居中放置二维码
+        image.paste(qr_img, (30, 45))
+        
+        # 添加标题和 SSID 文本
+        try:
+            f_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+            f_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        except:
+            f_title = ImageFont.load_default()
+            f_small = ImageFont.load_default()
+            
+        draw.text((45, 10), "SCAN TO JOIN", font=f_title, fill="BLACK")
+        draw.text((25, 220), f"SSID: {WIFI_SSID}", font=f_small, fill="BLUE")
+        
+        disp.display(image)
+        disp.set_backlight(True)
+    except Exception as e:
+        print(f"⚠️ 无法加载二维码图片: {e}")
+        update_screen("ERREUR", "No QR File", (200, 0, 0))
+    
+disp.display(image)
+disp.set_backlight(True)
+
+def update_screen(status_type, message, bg_color=(0, 0, 0), progress=None, countdown=None):    if disp is None: return
     disp.set_backlight(True)
     image = Image.new("RGB", (disp.width, disp.height), bg_color)
     draw = ImageDraw.Draw(image)
@@ -299,14 +344,43 @@ def main():
         image = Image.new("RGB", (disp.width, disp.height), "BLACK")
         disp.display(image)
     
+    # 初始暂停人脸线程
     face_running_event.clear()
+    
+    # 按钮状态记忆
     last_btn_state = 0
+    btn_press_start_time = 0
+    qr_mode_active = False
 
     print("💤 系统进入休眠模式，等待按钮唤醒... / Mode Veille (Attente bouton)...")
 
     try:
         while True:
+            # --- 1. 统一读取硬件状态 ---
             btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
+            
+            # --- 2. 按钮长按检测逻辑 (Wi-Fi 二维码) ---
+            if btn_val == 1:
+                if last_btn_state == 0:
+                    # 刚按下
+                    btn_press_start_time = time.time()
+                else:
+                    # 持续按下中
+                    press_duration = time.time() - btn_press_start_time
+                    if press_duration >= LONG_PRESS_TIME and not qr_mode_active:
+                        show_wifi_qr()
+                        qr_mode_active = True
+                        last_activity_time = time.time() # 延长活跃时间
+            else:
+                # 按钮松开
+                if qr_mode_active:
+                    # 如果是从 QR 模式退出，可以加个短暂提示或者直接回 READY
+                    qr_mode_active = False
+                btn_press_start_time = 0
+
+            # --- 3. 检查远程指令 (例如来自 App 的开锁) ---
+            if check_app_commands():
+# ... (rest of main loop) ...
             
             if system_state == "SLEEP":
                 if face_running_event.is_set(): face_running_event.clear()
