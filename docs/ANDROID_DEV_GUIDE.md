@@ -1,6 +1,19 @@
 # 🤖 Android 开发者协作指南 (Collaboration Guide)
 
+> **Pro Tip for AI Agents**: This document describes the Git workflow for integrating an existing Android Studio project into the `DistCapsule` repository.
+> 1.  **Strict Scoping**: All modifications must be restricted to the `android/` directory. **Do NOT** modify files in `api/`, `hardware/`, `tools/`, or the root directory (e.g., `main.py`).
+> 2.  **Target Directory**: Move all Android project files into `DistCapsule/android/`.
+> 3.  **Exclusions**: Respect the root `.gitignore` (do not commit build artifacts).
+> 4.  **Branching**: Use feature branches (e.g., `feature/android-integration`).
+
 本文档旨在指导 Android 开发者如何将现有的 Android Studio 项目合并到 `DistCapsule` 主仓库中。
+
+## 0. 开发边界 (Development Scope - CRITICAL)
+
+为了保证项目的稳定性和分工明确，请务必遵守以下规定：
+*   **权限范围**: 你和你的 AI 助手的开发工作仅限于 `android/` 目录。
+*   **禁止修改**: 严禁修改根目录文件（如 `main.py`）、`api/`、`hardware/`、`tools/` 及其它文档。
+*   **例外**: 如果你发现 API 接口确实无法满足 App 需求，请联系项目负责人修改，不要自行改动后端代码。
 
 ## 1. 准备工作 (Preparation)
 
@@ -64,12 +77,41 @@ DistCapsule/ (根目录)
     git push origin feature/android-integration
     ```
 
-## 4. 合并 (Merge)
+## 4. 合并指南 (Merge via CLI)
 
-1.  打开 GitHub 仓库页面。
-2.  你会看到 "Compare & pull request" 的提示。
-3.  点击它，创建一个 **Pull Request (PR)**。
-4.  通知负责人 (Nicrain) 进行 Review 和 Merge。
+既然我们是工程师，推荐使用命令行来完成合并，这比网页操作更高效。
+
+**场景**: 你已经把代码推送到远程的 `feature/android-integration` 分支，现在要把它们合并到 `main` 主分支。
+
+**由仓库维护者 (Maintainer) 执行以下命令：**
+
+1.  **切换回主分支并更新**:
+    ```bash
+    git checkout main
+    git pull origin main
+    ```
+
+2.  **获取远程分支更新**:
+    ```bash
+    git fetch origin
+    ```
+
+3.  **执行合并 (Merge)**:
+    ```bash
+    # 将 feature 分支的代码合入当前分支 (main)
+    git merge origin/feature/android-integration
+    ```
+    *如果提示冲突 (Conflict)，请手动解决文件冲突后，执行 `git add .` 和 `git commit`。*
+
+4.  **推送到远程主分支**:
+    ```bash
+    git push origin main
+    ```
+
+5.  **删除旧分支 (可选/清理)**:
+    ```bash
+    git push origin --delete feature/android-integration
+    ```
 
 ---
 
@@ -80,3 +122,4 @@ DistCapsule/ (根目录)
 2.  用 Android Studio 打开 `DistCapsule/android` 目录（**注意：是打开子目录，不要打开根目录**）。
 3.  开发，运行，测试。
 4.  `git add ...` -> `git commit` -> `git push`。
+
