@@ -176,10 +176,10 @@ class FaceRecognizer:
             # 0.68: 针对当前环境调整 (User Obs: 0.65)
             if min_distance < 0.68: 
                 user_id = self.known_face_ids[best_match_index]
-                print(f"👤 [Face] 识别成功! ID: {user_id} (距离: {min_distance:.2f})")
+                print(f"👤 [Face] 识别成功! ID: {user_id} (特征差异: {min_distance:.2f})")
                 return user_id
             else:
-                print(f"🤔 [Face] 陌生人 (最近距离: {min_distance:.2f})")
+                print(f"🤔 [Face] 陌生人 (最小差异: {min_distance:.2f})")
         
         return None
 

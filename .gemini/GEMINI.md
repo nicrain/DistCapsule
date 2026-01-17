@@ -39,7 +39,7 @@
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
 - **S5 (Intelligent Core) & Fixes**: 
     - **Camera Fix**: Implemented 90-degree counter-clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
-    - **AI Optimization**: Tightened face recognition threshold to 0.68 (based on user testing) to reduce false positives.
+    - **AI Optimization**: Tightened face recognition threshold to 0.68 and clarified log terminology ("Feature Diff") to avoid confusion.
     - **Wiring**: Updated Servo 2-5 pin assignments to avoid conflicts and improve layout.
     - **Concurrency**: Implemented robust Thread/Queue/Event architecture. Removed all blocking `time.sleep` from Main Loop.
     - **Persistence**: Added auto-migration to `setup_database.py` to handle schema updates (e.g., `face_encoding`).
