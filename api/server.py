@@ -55,7 +55,8 @@ def get_users():
         cursor.execute("SELECT user_id, name, auth_level, assigned_channel, created_at, is_active FROM Users")
         rows = cursor.fetchall()
         conn.close()
-        return rows
+        # Convert sqlite3.Row objects to dicts for Pydantic
+        return [dict(row) for row in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error: {str(e)} | DB Path: {DATABASE_NAME}")
 
@@ -66,7 +67,7 @@ def get_logs(limit: int = 20):
     cursor.execute("SELECT log_id, user_id, timestamp, event_type, status, detail_message FROM Access_Logs ORDER BY timestamp DESC LIMIT ?", (limit,))
     rows = cursor.fetchall()
     conn.close()
-    return rows
+    return [dict(row) for row in rows]
 
 # Future endpoint for App to trigger actions (Phase 2)
 @app.post("/command/unlock")
