@@ -123,6 +123,9 @@ def get_user_info(user_id):
     查询用户信息
     返回: (name, auth_level, assigned_channel) 元组
     """
+    if user_id == 0:
+        return ("Remote App", 1, None) # 0 号预留给远程指令
+        
     try:
         conn = sqlite3.connect(DATABASE_NAME)
         cursor = conn.cursor()
@@ -133,13 +136,18 @@ def get_user_info(user_id):
     except Exception:
         return ("Unknown", 0, None)
 
-def perform_unlock(user_id, method="Fingerprint"):
+def perform_unlock(user_id, method="Fingerprint", override_channel=None):
     """
     执行开锁流程
     """
     face_running_event.clear()
     
     user_name, auth_level, assigned_channel = get_user_info(user_id)
+    
+    # 如果指定了覆盖通道（用于远程开锁）
+    if override_channel is not None:
+        assigned_channel = override_channel
+        
     print(f"✅ [{method}] 验证通过 / Vérifié！用户: {user_name} (ID: #{user_id})")
     
     log_access(user_id, f"{method.upper()}_UNLOCK", "SUCCESS", f"Lvl:{auth_level} Ch:{assigned_channel}")
@@ -150,13 +158,11 @@ def perform_unlock(user_id, method="Fingerprint"):
         print(f"🔓 打开通道 #{assigned_channel} / Ouvrir Canal #{assigned_channel}")
         display_msg = f"{user_name} #{assigned_channel}\n({method})"
         
-        # 显示开锁动画
         update_screen("ACCES", display_msg, bg_color, progress=1.0)
         
         servos[assigned_channel].unlock()
         
-        # 倒计时进度条效果
-        steps = UNLOCK_TIME * 20 # 5秒 * 20fps = 100帧
+        steps = UNLOCK_TIME * 20 
         for i in range(steps, 0, -1):
             prog = i / steps
             update_screen("OUVERTURE", display_msg, bg_color, progress=prog)
@@ -166,7 +172,6 @@ def perform_unlock(user_id, method="Fingerprint"):
         servos[assigned_channel].lock()
         update_screen("FERME", "Fini", (0, 0, 100))
     else:
-        # 如果是管理员或者未分配胶囊的用户
         if auth_level == 1:
             update_screen("ADMIN", f"Bienvenue\n{user_name}", bg_color)
             time.sleep(3)
@@ -179,6 +184,41 @@ def perform_unlock(user_id, method="Fingerprint"):
     update_screen("PRET", "Systeme Actif", (0, 0, 0))
     
     face_running_event.set()
+
+def check_remote_commands():
+    """
+    检查数据库是否有待处理的远程指令 (例如: App 触发的开锁)
+    """
+    try:
+        conn = sqlite3.connect(DATABASE_NAME)
+        cursor = conn.cursor()
+        
+        # 1. 查找最早的一个待处理指令
+        cursor.execute("SELECT cmd_id, command_type, target_id FROM Pending_Commands WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1")
+        row = cursor.fetchone()
+        
+        if row:
+            cmd_id, cmd_type, target_id = row
+            print(f"📲 [Remote] 收到远程指令: {cmd_type} target: {target_id}")
+            
+            # 2. 标记为处理中
+            cursor.execute("UPDATE Pending_Commands SET status = 'processing' WHERE cmd_id = ?", (cmd_id,))
+            conn.commit()
+            
+            # 3. 执行动作
+            if cmd_type == 'UNLOCK':
+                perform_unlock(user_id=0, method="Remote", override_channel=target_id)
+            
+            # 4. 标记为已完成
+            cursor.execute("UPDATE Pending_Commands SET status = 'completed' WHERE cmd_id = ?", (cmd_id,))
+            conn.commit()
+            conn.close()
+            return True 
+            
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ 远程指令检查失败: {e}")
+    return False
 
 def face_worker(face_rec):
     """
@@ -258,7 +298,20 @@ def main():
 
     try:
         while True:
+            # --- 1. 统一读取硬件状态 ---
             btn_val = lgpio.gpio_read(h_gpio, WAKE_BUTTON_PIN)
+            
+            # --- 2. 检查远程指令 (例如来自 App 的开锁) ---
+            if check_remote_commands():
+                # 如果处理了远程指令，自动唤醒系统进入活跃状态
+                now = time.time()
+                system_state = "ACTIVE"
+                last_activity_time = now
+                session_start_time = now
+                last_clock_update = now
+                face_running_event.set()
+
+            # --- 3. 状态机逻辑 (State Machine) ---
             
             if system_state == "SLEEP":
                 if face_running_event.is_set():

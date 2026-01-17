@@ -48,6 +48,17 @@ def setup_database():
         description TEXT
     );
     """)
+
+    # 4. 创建 Pending_Commands 表 (用于远程控制)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Pending_Commands (
+        cmd_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        command_type TEXT NOT NULL,  -- 例如 'UNLOCK'
+        target_id INTEGER,           -- 例如 1 (通道号)
+        status TEXT DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
     
     settings = [
         ('UNLOCK_DURATION', '5', '舵机解锁后自动锁定的秒数'),

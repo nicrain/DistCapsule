@@ -72,5 +72,18 @@ def get_logs(limit: int = 20):
 # Future endpoint for App to trigger actions (Phase 2)
 @app.post("/command/unlock")
 def remote_unlock(channel: int):
-    # This will eventually communicate with main.py
-    return {"status": "queued", "message": f"Unlock request for channel {channel} received (Not implemented yet)"}
+    if channel < 1 or channel > 5:
+        raise HTTPException(status_code=400, detail="Invalid channel. Must be between 1 and 5.")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
+            ("UNLOCK", channel, "pending")
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Unlock command for channel {channel} queued."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to queue command: {str(e)}")

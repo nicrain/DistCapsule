@@ -16,11 +16,11 @@
 - [ ] **App Architecture**: 
     - Tech: Android (Kotlin/Java) ou Cross-platform (Flutter).
     - **App 架构**: 确定技术栈（建议原生 Android Kotlin）。
-- [ ] **Fonctionnalités Clés**:
+- [x] **Fonctionnalités Clés**:
     - **Dashboard**: Visualisation des niveaux de stock et des derniers accès.
-    - **Remote Control**: Bouton "Ouvrir" à distance via API REST.
+    - **Remote Control**: Bouton "Ouvrir" à distance via API REST (Backend implemented).
     - **Notifications**: Alerte sur le téléphone quand un utilisateur déverrouille une boîte.
-    - **核心功能**: 仪表盘查看状态、远程一键开锁、实时访问通知。
+    - **核心功能**: 仪表盘查看状态、远程一键开锁(后端已就绪)、实时访问通知。
 
 ### 3. Sécurité & Stabilité / 安全与稳定
 - [ ] **Network Recovery**: Gestion automatique de la reconnexion Wi-Fi en cas de coupure.
@@ -38,6 +38,7 @@
     *   **Wiring**: Mise à jour des broches pour les Servos 2-5 (GPIO 6, 12, 13, 19).
     *   **Architecture**: Simplification (Suppression de MQTT). Focus sur l'API HTTP.
     *   **API**: Correction de la sérialisation Pydantic/SQLite. Endpoints `/users` et `/logs` fonctionnels.
+    *   **IoT**: Implémentation du contrôle à distance via table `Pending_Commands` (API POST -> DB -> Main Loop Poll).
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
 
 ---
