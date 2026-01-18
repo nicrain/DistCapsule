@@ -246,7 +246,12 @@ public class MainActivity extends AppCompatActivity {
         if (etSelectUser != null) {
             etSelectUser.setAdapter(null); // Disable dropdown
             etSelectUser.setText("");
-            // Try to set hint if possible, otherwise user sees "Select User" which is acceptable
+            // IMPORTANT: Restore keyboard for registration name entry
+            etSelectUser.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+            etSelectUser.setFocusable(true);
+            etSelectUser.setFocusableInTouchMode(true);
+            etSelectUser.setCursorVisible(true);
+            
             etSelectUser.setHint("Entrez votre nom");
         }
         if (btnBindUser != null) {
@@ -650,17 +655,33 @@ public class MainActivity extends AppCompatActivity {
 
     private void deleteAdminUser() {
         if (selectedDeleteUser == null) return;
-        if (demoMode) { cachedUsers.remove(selectedDeleteUser); updateUserAdapters(); return; }
+        // Store ID locally because selectedDeleteUser might be nulled before response
+        int targetId = selectedDeleteUser.getId();
+        
+        if (demoMode) { 
+            cachedUsers.removeIf(u -> u.getId() == targetId); 
+            updateUserAdapters(); 
+            etAdminDeleteUser.setText("");
+            return; 
+        }
+        
         String baseUrl = resolveBaseUrl();
-        apiForBaseUrl(baseUrl).deleteUser(selectedDeleteUser.getId()).enqueue(new Callback<StatusResponse>() {
+        apiForBaseUrl(baseUrl).deleteUser(targetId).enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(MainActivity.this, "Utilisateur supprimé", Toast.LENGTH_SHORT).show();
-                    refreshUsers(baseUrl);
-                    // Reset selection
+                    // 1. Locally remove from cache for instant update
+                    cachedUsers.removeIf(u -> u.getId() == targetId);
+                    updateUserAdapters(); // Refresh dropdowns
+                    
+                    // 2. Clear UI
                     etAdminDeleteUser.setText("");
+                    etAdminDeleteUser.clearFocus();
                     selectedDeleteUser = null;
+                    
+                    // 3. Sync from server just in case
+                    refreshUsers(baseUrl);
                 } else {
                     Toast.makeText(MainActivity.this, "Échec suppression: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
@@ -839,8 +860,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupDropdown(AutoCompleteTextView v) {
+        if (v == null) return;
+        // Make it read-only: no keyboard, no manual focus
+        v.setInputType(android.text.InputType.TYPE_NULL);
+        v.setFocusable(false);
+        v.setClickable(true);
+        v.setCursorVisible(false);
+        
         v.setThreshold(0);
         v.setOnClickListener(view -> v.showDropDown());
-        v.setOnFocusChangeListener((view, f) -> { if (f) v.showDropDown(); });
+        // For some versions of Android, we also need to catch the click on the parent container
+        // But for now, simple click should work.
     }
 }
