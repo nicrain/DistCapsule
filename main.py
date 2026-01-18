@@ -163,12 +163,12 @@ def check_app_commands():
     try:
         conn = sqlite3.connect(DATABASE_NAME)
         cursor = conn.cursor()
-        cursor.execute("SELECT cmd_id, command_type, target_id, detail_message FROM Pending_Commands WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1")
+        cursor.execute("SELECT cmd_id, command_type, target_id FROM Pending_Commands WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1")
         row = cursor.fetchone()
         
         if row:
-            cmd_id, cmd_type, target_id, detail_msg = row
-            print(f"[App] 收到指令: {cmd_type} target: {target_id} msg: {detail_msg}")
+            cmd_id, cmd_type, target_id = row
+            print(f"[App] 收到指令: {cmd_type} target: {target_id}")
             cursor.execute("UPDATE Pending_Commands SET status = 'processing' WHERE cmd_id = ?", (cmd_id,))
             conn.commit()
             
@@ -202,8 +202,8 @@ def check_app_commands():
                 time.sleep(0.5)
                 
                 if finger:
-                    # Pass finger label (detail_msg) to enrollment logic
-                    enrollment.run_finger_enrollment(disp, finger, target_id, DATABASE_NAME, cmd_id=cmd_id, finger_label=detail_msg)
+                    # Pass cmd_id for status sync
+                    enrollment.run_finger_enrollment(disp, finger, target_id, DATABASE_NAME, cmd_id=cmd_id)
                 else:
                     update_screen("ERREUR", "Capteur HS", (200, 0, 0))
                     time.sleep(2)

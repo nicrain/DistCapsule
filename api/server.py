@@ -305,25 +305,43 @@ def enroll_face(user_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/command/enroll_finger")
-def enroll_finger(user_id: int, finger_label: Optional[str] = None):
+
+def enroll_finger(user_id: int):
+
     try:
+
         conn = get_db_connection()
+
         cursor = conn.cursor()
+
         cursor.execute("SELECT user_id FROM Users WHERE user_id = ?", (user_id,))
+
         if not cursor.fetchone():
+
             raise HTTPException(status_code=404, detail="User not found")
 
-        msg = finger_label if finger_label else "Place finger"
+
+
         cursor.execute(
-            "INSERT INTO Pending_Commands (command_type, target_id, status, detail_message) VALUES (?, ?, ?, ?)",
-            ("ENROLL_FINGER", user_id, "pending", msg)
+
+            "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
+
+            ("ENROLL_FINGER", user_id, "pending")
+
         )
+
         conn.commit()
+
         conn.close()
-        return {"status": "success", "message": f"Fingerprint enrollment ({msg}) queued"}
+
+        return {"status": "success", "message": f"Fingerprint enrollment queued for user {user_id}"}
+
     except HTTPException as he:
+
         raise he
+
     except Exception as e:
+
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/command/poll/{user_id}")

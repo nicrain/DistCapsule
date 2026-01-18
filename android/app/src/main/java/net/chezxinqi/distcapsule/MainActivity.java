@@ -226,11 +226,13 @@ public class MainActivity extends AppCompatActivity {
             if (currentUser != null) triggerEnrollment(currentUser.getId(), true);
         });
         btnSelfEnrollFinger.setOnClickListener(v -> {
-            if (currentUser != null) showFingerSelectionDialog(currentUser.getId());
+            if (currentUser != null) triggerEnrollment(currentUser.getId(), false);
         });
 
         btnAdminAssignChannel.setOnClickListener(v -> assignAdminChannel());
-        btnAdminEnrollFace.setOnClickListener(v -> updateAdminBiometric(true));
+        btnAdminEnrollFace.setOnClickListener(v -> {
+            if (selectedAdminUser != null) triggerEnrollment(selectedAdminUser.getId(), true);
+        });
         btnAdminEnrollFinger.setOnClickListener(v -> updateAdminBiometric(false));
         btnAdminDeleteUser.setOnClickListener(v -> deleteAdminUser());
         btnAdminUserManagement.setOnClickListener(v -> showAdminUserSection());
@@ -797,35 +799,25 @@ public class MainActivity extends AppCompatActivity {
     private void updateAdminBiometric(boolean face) {
         if (selectedAdminUser == null) return;
         if (demoMode) { if (face) selectedAdminUser.setHasFace(true); else selectedAdminUser.setHasFingerprint(true); updateAdminUi(selectedAdminUser); return; }
-        if (face) {
-            triggerEnrollment(selectedAdminUser.getId(), true, null);
-        } else {
-            showFingerSelectionDialog(selectedAdminUser.getId());
-        }
-    }
-
-    private void showFingerSelectionDialog(int userId) {
-        String[] fingers = {
-            "Pouce gauche", "Index gauche", "Majeur gauche", "Annulaire gauche", "Auriculaire gauche",
-            "Pouce droit", "Index droit", "Majeur droit", "Annulaire droit", "Auriculaire droit"
-        };
-        
-        new MaterialAlertDialogBuilder(this)
-            .setTitle("Sélectionnez le doigt")
-            .setItems(fingers, (dialog, which) -> {
-                String selectedFinger = fingers[which];
-                triggerEnrollment(userId, false, selectedFinger);
-            })
-            .show();
+        String baseUrl = resolveBaseUrl();
+        ApiService api = apiForBaseUrl(baseUrl);
+        Call<StatusResponse> call = face ? api.enrollFace(selectedAdminUser.getId()) : api.enrollFinger(selectedAdminUser.getId());
+        call.enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                if (response.isSuccessful()) refreshUsers(baseUrl);
+            }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
+        });
     }
 
     // New helper to avoid duplicate enrollment logic
-    private void triggerEnrollment(int userId, boolean isFace, String fingerLabel) {
+    private void triggerEnrollment(int userId, boolean isFace) {
         String baseUrl = resolveBaseUrl();
         if (baseUrl.isEmpty()) return;
         setLoading(true);
         ApiService api = apiForBaseUrl(baseUrl);
-        Call<StatusResponse> call = isFace ? api.enrollFace(userId) : api.enrollFinger(userId, fingerLabel);
+        Call<StatusResponse> call = isFace ? api.enrollFace(userId) : api.enrollFinger(userId);
         call.enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
