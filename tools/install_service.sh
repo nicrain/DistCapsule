@@ -1,11 +1,30 @@
 #!/bin/bash
 
 SERVICE_NAME="capsule"
-USER_NAME=$USER
+
+# 关键修正：获取调用 sudo 的真实用户，而不是 root
+if [ -n "$SUDO_USER" ]; then
+    USER_NAME=$SUDO_USER
+else
+    USER_NAME=$USER
+fi
+
 # 获取脚本所在目录的上一级作为项目根目录
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-PYTHON_EXEC=$(which python3)
+
+# 尝试找到用户环境下的 python3
+# 如果是 sudo 运行，which python3 也是系统的。我们尝试构造用户路径。
+USER_PYTHON="/home/$USER_NAME/.local/bin/python3"
+SYSTEM_PYTHON=$(which python3)
+
+if [ -f "$USER_PYTHON" ]; then
+    PYTHON_EXEC=$USER_PYTHON
+    echo "使用用户 Python: $PYTHON_EXEC"
+else
+    PYTHON_EXEC=$SYSTEM_PYTHON
+    echo "使用系统 Python: $PYTHON_EXEC"
+fi
 
 echo "--- 胶囊分配器 开机自启安装脚本 ---"
 echo "项目根目录: $PROJECT_ROOT"
@@ -26,11 +45,15 @@ Restart=always
 RestartSec=5
 # 确保输出即时刷新到日志
 Environment=PYTHONUNBUFFERED=1
+# 关键：确保能加载用户目录下的包
+Environment=PATH=/home/$USER_NAME/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/home/$USER_NAME/.local/lib/python3.11/site-packages
 
 [Install]
 WantedBy=multi-user.target"
 
 # 1.1 创建 systemd 服务文件内容 (热点 & DHCP)
+# 热点服务必须用 root 权限运行 (nmcli, dnsmasq 需要)
 HOTSPOT_SERVICE_NAME="capsule_hotspot"
 HOTSPOT_SERVICE_CONTENT="[Unit]
 Description=DistCapsule Hotspot & DHCP Controller
@@ -60,6 +83,9 @@ ExecStart=$PYTHON_EXEC -m uvicorn api.server:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
+# 关键：确保能加载用户目录下的包
+Environment=PATH=/home/$USER_NAME/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/home/$USER_NAME/.local/lib/python3.11/site-packages
 
 [Install]
 WantedBy=multi-user.target"
