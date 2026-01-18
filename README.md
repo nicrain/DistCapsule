@@ -100,7 +100,8 @@ L'application (dossier `android/`) a été optimisée pour une fluidité maximal
 *   **Connexion Wi-Fi Simplifiée** : Un bouton dédié permet de se connecter automatiquement au hotspot `DistCapsule_Box` sans saisir de mot de passe (Android 10+) ou en ouvrant directement les paramètres (Android 9).
 *   **Saisie d'IP Simplifiée** : Entrez simplement l'IP, le protocole et le port sont gérés automatiquement.
 *   **Gestion de Compte Sécurisée** : Bouton "Supprimer mon compte" avec nettoyage automatique du token local et des données biométriques sur le matériel.
-*   **Navigation Fluide** : Ajout de boutons de retour et gestion intelligente du clavier virtuel pour une expérience sans friction.
+*   **Sécurité Administrateur** : Protection contre la suppression accidentelle du compte admin et verrouillage des modifications pour le profil administrateur dans la console de gestion.
+*   **Navigation Fluide** : Interface dynamique affichant les contrôles uniquement après sélection d'un utilisateur valide, boutons de retour et gestion intelligente du clavier.
 
 ---
 

@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton btnAdminUserBack, btnAdminHardwareBack;
     private View adminUserHeader, adminHardwareHeader;
     private View sectionAdminUser, sectionAdminHardware, sectionAdminAssign, sectionAdminDelete;
+    private View layoutAdminAssignActions;
     private ProgressBar pbLoading;
 
     private final List<User> cachedUsers = new ArrayList<>();
@@ -215,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
         sectionAdminHardware = findViewById(R.id.sectionAdminHardware);
         sectionAdminAssign = findViewById(R.id.sectionAdminAssign);
         sectionAdminDelete = findViewById(R.id.sectionAdminDelete);
+        layoutAdminAssignActions = findViewById(R.id.layoutAdminAssignActions);
         adminUserHeader = findViewById(R.id.adminUserHeader);
         adminHardwareHeader = findViewById(R.id.adminHardwareHeader);
         btnAdminUserBack = findViewById(R.id.btnAdminUserBack);
@@ -535,7 +537,15 @@ public class MainActivity extends AppCompatActivity {
         etAdminSelectUser.setOnItemClickListener((p, v, pos, id) -> {
             if (pos >= 0 && pos < adminUsers.size()) {
                 selectedAdminUser = adminUsers.get(pos);
-                updateAdminUi(selectedAdminUser);
+                if (selectedAdminUser.getAuthLevel() == 1) {
+                    // It's Admin: hide everything and alert
+                    if (layoutAdminAssignActions != null) layoutAdminAssignActions.setVisibility(View.GONE);
+                    Toast.makeText(MainActivity.this, "L\'administrateur ne peut pas être modifié", Toast.LENGTH_SHORT).show();
+                } else {
+                    // Regular User: show actions
+                    if (layoutAdminAssignActions != null) layoutAdminAssignActions.setVisibility(View.VISIBLE);
+                    updateAdminUi(selectedAdminUser);
+                }
             }
         });
 
@@ -597,17 +607,26 @@ public class MainActivity extends AppCompatActivity {
 
     private void showAdminUserMenu() {
         if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.VISIBLE);
+        hideAllAdminSections();
+    }
+
+    private void hideAllAdminSections() {
         if (sectionAdminAssign != null) sectionAdminAssign.setVisibility(View.GONE);
         if (sectionAdminDelete != null) sectionAdminDelete.setVisibility(View.GONE);
     }
 
     private void showAdminAssignSection() {
         if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.GONE);
+        hideAllAdminSections();
         if (sectionAdminAssign != null) sectionAdminAssign.setVisibility(View.VISIBLE);
+        if (layoutAdminAssignActions != null) layoutAdminAssignActions.setVisibility(View.GONE);
+        etAdminSelectUser.setText("");
+        selectedAdminUser = null;
     }
 
     private void showAdminDeleteSection() {
         if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.GONE);
+        hideAllAdminSections();
         if (sectionAdminDelete != null) sectionAdminDelete.setVisibility(View.VISIBLE);
     }
 
@@ -657,6 +676,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void deleteCurrentUser() {
         if (currentUser == null) return;
+        if (currentUser.getAuthLevel() == 1) {
+            Toast.makeText(this, "Impossible de supprimer un compte Administrateur", Toast.LENGTH_LONG).show();
+            return;
+        }
         if (demoMode) { currentUser = null; showBindStep(); return; }
         String baseUrl = resolveBaseUrl();
         apiForBaseUrl(baseUrl).deleteUser(currentUser.getId()).enqueue(new Callback<StatusResponse>() {
@@ -670,6 +693,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void deleteAdminUser() {
         if (selectedDeleteUser == null) return;
+        if (selectedDeleteUser.getAuthLevel() == 1) {
+            Toast.makeText(this, "Action interdite : Impossible de supprimer l\'administrateur", Toast.LENGTH_LONG).show();
+            return;
+        }
         // Store ID locally because selectedDeleteUser might be nulled before response
         int targetId = selectedDeleteUser.getId();
         

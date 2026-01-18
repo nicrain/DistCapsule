@@ -543,168 +543,171 @@
                                 android:layout_marginTop="4dp"
                                 android:text="@string/bio_finger_pending" />
 
-                            <!-- New Channel Selection UI -->
-                            <TextView
-                                style="@style/TextAppearance.DistCapsule.Body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="@string/assign_free_channel_hint" />
-
                             <LinearLayout
+                                android:id="@+id/layoutAdminAssignActions"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:baselineAligned="false"
-                                android:gravity="center"
-                                android:paddingHorizontal="8dp"
-                                android:paddingTop="20dp"
-                                android:paddingBottom="10dp"
-                                android:clipChildren="false"
-                                android:clipToPadding="false"
-                                android:orientation="horizontal">
+                                android:orientation="vertical"
+                                android:visibility="gone">
 
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAssign1"
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                                    android:layout_width="0dp"
-                                    android:layout_height="45dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginHorizontal="4dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:text="1"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold"
-                                    app:cornerRadius="8dp" />
-
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAssign2"
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                                    android:layout_width="0dp"
-                                    android:layout_height="45dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginHorizontal="4dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:text="2"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold"
-                                    app:cornerRadius="8dp" />
-
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAssign3"
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                                    android:layout_width="0dp"
-                                    android:layout_height="45dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginHorizontal="4dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:text="3"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold"
-                                    app:cornerRadius="8dp" />
-
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAssign4"
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                                    android:layout_width="0dp"
-                                    android:layout_height="45dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginHorizontal="4dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:text="4"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold"
-                                    app:cornerRadius="8dp" />
-
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAssign5"
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                                    android:layout_width="0dp"
-                                    android:layout_height="45dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginHorizontal="4dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:text="5"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold"
-                                    app:cornerRadius="8dp" />
-
-                            </LinearLayout>
-
-                            <!-- Hidden original input to keep Java code happy until updated -->
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:visibility="gone"
-                                android:hint="@string/assign_free_channel_hint"
-                                app:boxBackgroundMode="outline"
-                                app:hintTextAppearance="@style/TextAppearance.DistCapsule.Body">
-
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/etAdminChannel"
+                                <TextView
+                                    style="@style/TextAppearance.DistCapsule.Body"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:fontFamily="@font/handlee_regular"
-                                    android:textStyle="bold"
-                                    android:textColor="@color/on_surface"
-                                    android:inputType="number"
-                                    android:singleLine="true" />
+                                    android:layout_marginTop="16dp"
+                                    android:text="@string/admin_channel_hint" />
 
-                            </com.google.android.material.textfield.TextInputLayout>
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:gravity="center"
+                                    android:orientation="horizontal">
 
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnAdminAssignChannel"
-                                style="@style/Widget.DistCapsule.ButtonTonal"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:minHeight="48dp"
-                                android:layout_marginTop="8dp"
-                                android:text="@string/button_assign_channel" />
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAssign1"
+                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="45dp"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:text="1"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        app:cornerRadius="8dp" />
 
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:baselineAligned="false"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAssign2"
+                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="45dp"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:text="2"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        app:cornerRadius="8dp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAssign3"
+                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="45dp"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:text="3"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        app:cornerRadius="8dp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAssign4"
+                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="45dp"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:text="4"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        app:cornerRadius="8dp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAssign5"
+                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="45dp"
+                                        android:layout_weight="1"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:text="5"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        app:cornerRadius="8dp" />
+
+                                </LinearLayout>
+
+                                <!-- Hidden original input to keep Java code happy until updated -->
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:visibility="gone"
+                                    android:hint="@string/assign_free_channel_hint"
+                                    app:boxBackgroundMode="outline"
+                                    app:hintTextAppearance="@style/TextAppearance.DistCapsule.Body">
+
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/etAdminChannel"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:fontFamily="@font/handlee_regular"
+                                        android:textStyle="bold"
+                                        android:textColor="@color/on_surface"
+                                        android:inputType="number"
+                                        android:singleLine="true" />
+
+                                </com.google.android.material.textfield.TextInputLayout>
 
                                 <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAdminEnrollFace"
+                                    android:id="@+id/btnAdminAssignChannel"
                                     style="@style/Widget.DistCapsule.ButtonTonal"
-                                    android:layout_width="0dp"
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:minHeight="72dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:paddingHorizontal="4dp"
-                                    android:textAllCaps="false"
-                                    android:gravity="center"
-                                    android:textSize="17sp"
-                                    android:text="@string/button_update_face" />
+                                    android:minHeight="48dp"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/button_assign_channel" />
 
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnAdminEnrollFinger"
-                                    style="@style/Widget.DistCapsule.ButtonTonal"
-                                    android:layout_width="0dp"
+                                <LinearLayout
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="8dp"
-                                    android:layout_weight="1"
-                                    android:minHeight="72dp"
-                                    android:insetTop="0dp"
-                                    android:insetBottom="0dp"
-                                    android:paddingHorizontal="4dp"
-                                    android:textAllCaps="false"
-                                    android:gravity="center"
-                                    android:textSize="17sp"
-                                    android:text="@string/button_update_finger" />
+                                    android:layout_marginTop="8dp"
+                                    android:baselineAligned="false"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAdminEnrollFace"
+                                        style="@style/Widget.DistCapsule.ButtonTonal"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:minHeight="72dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:paddingHorizontal="4dp"
+                                        android:textAllCaps="false"
+                                        android:gravity="center"
+                                        android:textSize="17sp"
+                                        android:text="@string/button_update_face" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAdminEnrollFinger"
+                                        style="@style/Widget.DistCapsule.ButtonTonal"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="8dp"
+                                        android:layout_weight="1"
+                                        android:minHeight="72dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:paddingHorizontal="4dp"
+                                        android:textAllCaps="false"
+                                        android:gravity="center"
+                                        android:textSize="17sp"
+                                        android:text="@string/button_update_finger" />
+
+                                </LinearLayout>
+
                             </LinearLayout>
 
                         </LinearLayout>

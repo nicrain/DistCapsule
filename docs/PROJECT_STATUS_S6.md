@@ -33,8 +33,11 @@
     *   **Android App v1.1**: Refonte totale de l'UX (Vivid Palette), icône personnalisée, auto-login via Token.
     *   **Wi-Fi Automation**: Bouton de connexion automatique au hotspot `DistCapsule_Box` avec gestion des permissions.
     *   **Logic Cleanup**: Suppression du Mode Demo et de la création d'utilisateur côté Admin au profit du self-service. Nettoyage massif des ressources (strings.xml) pour une stabilité de build accrue.
+    *   **Sécurité & Protection Admin**: 
+        - Blocage total de la suppression des comptes administrateurs (côté API et App).
+        - Interface de gestion dynamique : les boutons d'action sont masqués tant qu'un utilisateur n'est pas sélectionné.
+        - Verrouillage automatique de l'UI si le profil sélectionné est l'administrateur.
     *   **UX Revolution**: Boutons de retour, gestion intelligente du clavier, et messages Toast conviviaux. Distinction sémantique entre "Supprimer l'utilisateur" (Admin) et "Supprimer mon compte" (Utilisateur).
-    *   **Sécurité**: Suppression automatique du token d'accès lors de la suppression du compte.
 *   **2026-01-14 (V1.0 Initial IoT Release)**:
     *   Intégration du code source de l'application dans le répertoire `android/`.
     *   Nettoyage des logs (Suppression des Emojis, style professionnel).
