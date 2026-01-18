@@ -48,7 +48,8 @@ class AccessLog(BaseModel):
 # --- Helpers ---
 def get_db_connection():
     try:
-        conn = sqlite3.connect(DATABASE_NAME)
+        # Increase timeout to reduce "database is locked" errors
+        conn = sqlite3.connect(DATABASE_NAME, timeout=10)
         conn.row_factory = sqlite3.Row # Allow accessing columns by name
         return conn
     except sqlite3.Error as e:
@@ -118,6 +119,7 @@ def create_user(user: UserCreate):
     except HTTPException as he:
         raise he
     except Exception as e:
+        print(f"!!! CRITICAL CREATE ERROR: {str(e)}") # Debug Log
         raise HTTPException(status_code=500, detail=f"Create Error: {str(e)}")
 
 @app.patch("/users/{user_id}", response_model=User)
