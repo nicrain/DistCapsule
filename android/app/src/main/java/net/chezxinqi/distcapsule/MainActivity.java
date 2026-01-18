@@ -1,11 +1,18 @@
 package net.chezxinqi.distcapsule;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -52,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private static final long CHANNEL_MAP_REFRESH_MS = 10000;
 
     private EditText etBaseUrl;
-    private TextInputLayout tilBaseUrl;
+    private TextInputLayout tilBaseUrl, tilSelectUser;
     private boolean baseUrlEditing = false;
 
     private Button btnLoadUsers, btnDemo, btnBindUser, btnUnlock, btnDeleteUser;
@@ -60,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btnAdminAssignChannel, btnAdminEnrollFace, btnAdminEnrollFinger, btnAdminDeleteUser;
     private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuCreate, btnAdminMenuAssign, btnAdminMenuDelete;
     private Button btnUnlock1, btnUnlock2, btnUnlock3, btnUnlock4, btnUnlock5;
-    // New Assign Buttons
     private Button[] btnAssigns = new Button[6]; // Index 1-5
     private Integer selectedAssignChannel = null;
     private Button btnCreateUser;
@@ -70,10 +76,10 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvGreeting, tvBioSummary, tvFaceStatus, tvFingerStatus, tvChannelStatus;
     private TextView tvAdminFaceStatus, tvAdminFingerStatus, tvActionResultTitle, tvActionResultDetail;
-    private TextView tvChannel1, tvChannel2, tvChannel3, tvChannel4, tvChannel5;
+    private TextView tvChannel1, tvChannel2, tvChannel3, tvChannel4, tvChannel5, tvSplashTitle;
 
-    private ImageView ivCafeDashboard;
-    private View screenConnection, screenBind, screenDashboard, splashOverlay;
+    private ImageView ivCafeDashboard, ivHeaderCapsule, ivSplashCapsule;
+    private View screenConnection, screenBind, screenDashboard, splashOverlay, mainScroll;
     private MaterialCardView cardSelfManage, cardActions, cardStatus, cardAdminChannels, cardChannelMap, cardCreateUser, cardActionResult;
     private MaterialCardView cardAdminMenu, cardAdminUserMenu;
     private ImageButton btnAdminUserBack, btnAdminHardwareBack;
@@ -92,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
     private User selectedAdminUser;
     private User selectedDeleteUser;
     private boolean demoMode = false;
+    private int debugStep = 0;
     private final Handler channelMapHandler = new Handler(Looper.getMainLooper());
 
     private final Runnable channelMapRunnable = new Runnable() {
@@ -119,16 +126,22 @@ public class MainActivity extends AppCompatActivity {
         setupBaseUrlEditing();
 
         String savedUrl = loadBaseUrl();
-        etBaseUrl.setText(savedUrl.isEmpty() ? DEFAULT_IP : stripProtocolAndPort(savedUrl));
+        if (savedUrl.isEmpty()) {
+            etBaseUrl.setText(DEFAULT_IP);
+        } else {
+            etBaseUrl.setText(stripProtocolAndPort(savedUrl));
+        }
         setBaseUrlEditable(false);
 
         showConnectionStep();
         playSplash();
+        setupDebugScreenToggle();
     }
 
     private void initViews() {
         etBaseUrl = findViewById(R.id.etBaseUrl);
         tilBaseUrl = findViewById(R.id.tilBaseUrl);
+        tilSelectUser = findViewById(R.id.tilSelectUser);
         btnLoadUsers = findViewById(R.id.btnLoadUsers);
         btnDemo = findViewById(R.id.btnDemo);
         btnBindUser = findViewById(R.id.btnBindUser);
@@ -179,11 +192,16 @@ public class MainActivity extends AppCompatActivity {
         tvChannel3 = findViewById(R.id.tvChannel3);
         tvChannel4 = findViewById(R.id.tvChannel4);
         tvChannel5 = findViewById(R.id.tvChannel5);
+        tvSplashTitle = findViewById(R.id.tvSplashTitle);
+        
         ivCafeDashboard = findViewById(R.id.ivCafeDashboard);
+        ivHeaderCapsule = findViewById(R.id.ivCapsule);
+        ivSplashCapsule = findViewById(R.id.ivSplashCapsule);
         screenConnection = findViewById(R.id.screenConnection);
         screenBind = findViewById(R.id.screenBind);
         screenDashboard = findViewById(R.id.screenDashboard);
         splashOverlay = findViewById(R.id.splashOverlay);
+        mainScroll = findViewById(R.id.mainScroll);
         cardSelfManage = findViewById(R.id.cardSelfManage);
         cardActions = findViewById(R.id.cardActions);
         cardStatus = findViewById(R.id.cardStatus);
@@ -207,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnLoadUsers.setOnClickListener(v -> connectToApi());
-        btnDemo.setOnClickListener(v -> enableDemoMode());
+        // Demo listener removed
         btnBindUser.setOnClickListener(v -> bindSelectedUser());
         btnUnlock.setOnClickListener(v -> unlockChannel());
         btnDeleteUser.setOnClickListener(v -> deleteCurrentUser());
@@ -228,6 +246,7 @@ public class MainActivity extends AppCompatActivity {
         btnAdminMenuCreate.setOnClickListener(v -> showAdminCreateSection());
         btnAdminMenuAssign.setOnClickListener(v -> showAdminAssignSection());
         btnAdminMenuDelete.setOnClickListener(v -> showAdminDeleteSection());
+        
         btnUnlock1.setOnClickListener(v -> unlockSpecificChannel(1));
         btnUnlock2.setOnClickListener(v -> unlockSpecificChannel(2));
         btnUnlock3.setOnClickListener(v -> unlockSpecificChannel(3));
@@ -244,16 +263,7 @@ public class MainActivity extends AppCompatActivity {
         btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
     }
 
-    private void playSplash() {
-        if (splashOverlay != null) {
-            splashOverlay.setVisibility(View.VISIBLE);
-            new Handler(Looper.getMainLooper()).postDelayed(() -> splashOverlay.setVisibility(View.GONE), 2000);
-        }
-    }
 
-    private void prepareNetworkForLocalApi(String baseUrl) {
-        // Implementation for network preparation if needed
-    }
 
     private void showConnectionStep() {
         screenConnection.setVisibility(View.VISIBLE);
@@ -1072,5 +1082,151 @@ public class MainActivity extends AppCompatActivity {
         v.setOnClickListener(view -> v.showDropDown());
         // For some versions of Android, we also need to catch the click on the parent container
         // But for now, simple click should work.
+    }
+
+    private void playSplash() {
+        if (splashOverlay == null || mainScroll == null || tvSplashTitle == null || ivSplashCapsule == null) {
+            return;
+        }
+
+        mainScroll.setAlpha(0f);
+        mainScroll.setVisibility(View.INVISIBLE);
+
+        tvSplashTitle.setAlpha(0f);
+        tvSplashTitle.setScaleX(0.85f);
+        tvSplashTitle.setScaleY(0.85f);
+        ivSplashCapsule.setAlpha(0f);
+        ivSplashCapsule.setTranslationY(-220f);
+
+        ObjectAnimator titleAlpha = ObjectAnimator.ofFloat(tvSplashTitle, View.ALPHA, 0f, 1f);
+        ObjectAnimator titleScaleX = ObjectAnimator.ofFloat(tvSplashTitle, View.SCALE_X, 0.85f, 1f);
+        ObjectAnimator titleScaleY = ObjectAnimator.ofFloat(tvSplashTitle, View.SCALE_Y, 0.85f, 1f);
+
+        AnimatorSet titleSet = new AnimatorSet();
+        titleSet.playTogether(titleAlpha, titleScaleX, titleScaleY);
+        titleSet.setDuration(900);
+
+        ObjectAnimator capsuleDrop = ObjectAnimator.ofFloat(
+                ivSplashCapsule,
+                View.TRANSLATION_Y,
+                -220f,
+                0f,
+                -28f,
+                0f,
+                -12f,
+                0f
+        );
+        ObjectAnimator capsuleAlpha = ObjectAnimator.ofFloat(ivSplashCapsule, View.ALPHA, 0f, 1f);
+
+        AnimatorSet capsuleSet = new AnimatorSet();
+        capsuleSet.playTogether(capsuleDrop, capsuleAlpha);
+        capsuleSet.setDuration(1700);
+        capsuleSet.setInterpolator(new OvershootInterpolator(0.6f));
+        capsuleSet.setStartDelay(150);
+
+        AnimatorSet full = new AnimatorSet();
+        full.playSequentially(titleSet, capsuleSet);
+        full.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                splashOverlay.setVisibility(View.GONE);
+                mainScroll.setVisibility(View.VISIBLE);
+                mainScroll.animate().alpha(1f).setDuration(450).start();
+                attemptAutoAuth();
+            }
+        });
+        full.start();
+    }
+
+    private void attemptAutoAuth() {
+        if (demoMode) {
+            return;
+        }
+        String token = loadToken();
+        if (token == null || token.isEmpty()) {
+            return;
+        }
+        connectToApi();
+    }
+
+    private void setupDebugScreenToggle() {
+        if (ivHeaderCapsule == null) {
+            return;
+        }
+        ivHeaderCapsule.setOnClickListener(v -> {
+            debugStep = (debugStep + 1) % 3;
+            if (debugStep == 0) {
+                showConnectionStep();
+            } else if (debugStep == 1) {
+                showBindStep();
+            } else {
+                showDashboardStep();
+            }
+        });
+    }
+
+    private void prepareNetworkForLocalApi(String baseUrl) {
+        if (!shouldBindWifi(baseUrl)) {
+            return;
+        }
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (cm == null) {
+            return;
+        }
+        Network wifi = findWifiNetwork(cm);
+        if (wifi == null) {
+            Toast.makeText(this, getString(R.string.toast_connect_wifi), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        boolean bound = cm.bindProcessToNetwork(wifi);
+        if (!bound) {
+            Toast.makeText(this, getString(R.string.toast_bind_wifi_failed), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private Network findWifiNetwork(ConnectivityManager cm) {
+        for (Network network : cm.getAllNetworks()) {
+            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+            if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return network;
+            }
+        }
+        return null;
+    }
+
+    private boolean shouldBindWifi(String baseUrl) {
+        Uri uri = Uri.parse(baseUrl);
+        String host = uri.getHost();
+        if (host == null) {
+            return false;
+        }
+        if ("localhost".equalsIgnoreCase(host) || host.endsWith(".local")) {
+            return true;
+        }
+        return isPrivateIpv4(host);
+    }
+
+    private boolean isPrivateIpv4(String host) {
+        String[] parts = host.split("\\.");
+        if (parts.length != 4) {
+            return false;
+        }
+        int[] nums = new int[4];
+        for (int i = 0; i < 4; i++) {
+            try {
+                nums[i] = Integer.parseInt(parts[i]);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            if (nums[i] < 0 || nums[i] > 255) {
+                return false;
+            }
+        }
+        if (nums[0] == 10) return true;
+        if (nums[0] == 192 && nums[1] == 168) return true;
+        if (nums[0] == 172 && nums[1] >= 16 && nums[1] <= 31) return true;
+        if (nums[0] == 169 && nums[1] == 254) return true;
+        return false;
     }
 }

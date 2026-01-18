@@ -62,8 +62,8 @@
 
 ## 🔮 Next Steps
 - Android Team: Build the app based on `ANDROID_APP_SPEC.md`.
-- Backend: Integrate `main.py` hardware control into the `FastAPI` server (Phase 2).
-- Add inventory tracking (capsule count) in the database.
+- Backend: Finalize biometric enrollment synchronization between App and Hardware.
+- Stability: Optimize database locking for high-frequency polling.
 
 ## 📝 Operational Mandates
 - **Environment**: Do NOT suggest `sudo` for python scripts (using `lgpio` in user space). Do NOT suggest running hardware scripts on macOS host.
