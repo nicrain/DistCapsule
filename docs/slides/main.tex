@@ -1,8 +1,3 @@
-\DocumentMetadata{
-  lang=fr-FR,
-  pdfstandard=ua-1,
-  testphase={phase-I,table,title}
-}
 \documentclass[xcolor=table, aspectratio=169]{beamer}
 \usepackage{graphicx}
 
@@ -11,19 +6,14 @@
 \usepackage[utf8]{inputenc}
 \usepackage[french]{babel}
 \usepackage{listings}
-\usepackage{booktabs}
-\usepackage{caption}
-\usepackage{subcaption}
+\usepackage{booktabs} 
 \usepackage{tikz} 
-
-\usetheme{Madrid}
+\usetikzlibrary{shapes,arrows,positioning}
+\usetheme{Darmstadt}
 \usecolortheme{dolphin}
 \usefonttheme{professionalfonts}
 
 \usepackage{csquotes}
-\usepackage[style=numeric, backend=biber]{biblatex}
-\addbibresource{ref.bib}
-\DefineBibliographyStrings{french}{bibliography = {R\'ef\'erences}}
 
 \AtBeginSection[]{
 \begin{frame}
@@ -32,100 +22,143 @@
 \end{frame}
 }
 
-% --- Code Style ---
-\lstset{
-    basicstyle=\ttfamily\scriptsize,
-    keywordstyle=\color{blue!80!black}\bfseries,
-    stringstyle=\color{green!60!black},
-    commentstyle=\color{gray}\itshape,
-    breaklines=true,
-    language=Python,
-    frame=single
-}
+%% --- Metadata ---
+\title[DistCapsule]{DistCapsule : Distributeur Connecté}
+\subtitle{Système IoT Biométrique sur Raspberry Pi 5}
+\author[Z. Wang \& X. Tang]{Zhaoyu WANG et Xinqi TANG}
+\date[\today]{Soutenance Finale -- \today}
+\institute[M2 MIASHS]{Université Paris 8 \\ Master Technologies et Handicaps}
 
-%% --- Title ---
-\title[DistCapsule]{DistCapsule : Distributeur Connect\'e}
-\subtitle{Syst\`eme IoT Biom\'etrique sur Raspberry Pi 5}
-\author[Z. Wang \& X. Tang]{Zhaoyu WANG \& Xinqi TANG}
-\date[\today]{\today}
-\institute[M2 MIASHS]{Universit\'e Paris 8 \\ Master Technologies et Handicaps}
-
+%% --- Logo Configuration ---
 \titlegraphic{
    \includegraphics[height=1.2cm]{pic/logo-handi.png} \hfill
    \includegraphics[height=1.2cm]{pic/logo-p8.png}
 }
 \logo{\includegraphics[width=0.8cm]{pic/logo-p8.png}}
 
+%% --- Code Snippet Style ---
+\lstset{
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{blue!80!black}\bfseries,
+    stringstyle=\color{green!60!black},
+    commentstyle=\color{gray}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=shadowbox,
+    rulesepcolor=\color{gray},
+    breaklines=true,
+    language=Python,
+    showstringspaces=false
+}
+
 \begin{document}
 
 {
-\setbeamertemplate{logo}{}
+\logo{}
 \begin{frame}
-    \titlepage
+    \titlepage   
 \end{frame}
 }
 
+% --- Global Table of Contents ---
+\begin{frame}{Plan de la présentation}
+    \tableofcontents
+\end{frame}
+
 % ==============================================================================
-% SECTION 1: CONTEXTE
+% SECTION 1: CONTEXTE (3-4 min)
 % ==============================================================================
-\section{Contexte \& Objectifs}
-\begin{frame}{Le Besoin}
+\section{Contexte et Problématique}
+
+\begin{frame}{Le Constat}
+    Dans un espace café partagé, les capsules sont souvent mélangées en vrac ou stockées individuellement, encombrant inutilement le plan de travail.
+    
     \begin{columns}
         \begin{column}{0.6\textwidth}
-            \begin{block}{Le Constat}
-                Dans un espace café partagé, les capsules sont souvent mélangées en vrac ou stockées individuellement, encombrant inutilement le plan de travail.
-            \end{block}
-            \vspace{0.5cm}
-            \begin{itemize}
-                \item \textbf{Problème} : Désordre visuel, difficulté à identifier ses propres capsules, perte d'espace.
-                \item \textbf{Solution} : Un stockage vertical, centralisé et personnalisé qui libère de l'espace.
-            \end{itemize}
+            \begin{alertblock}{Problèmes Identifiés}
+                \begin{itemize}
+                    \item \textbf{Désordre} : Capsules en vrac, boîtes empilées, perte d'espace sur le plan de travail.
+                    \item \textbf{Confusion} : Difficulté à distinguer ses propres capsules (variétés similaires).
+                    \item \textbf{Stockage} : Certains utilisateurs cachent leurs capsules pour éviter le vol ou le mélange.
+                \end{itemize}
+            \end{alertblock}
         \end{column}
         \begin{column}{0.38\textwidth}
             \begin{figure}
                 \includegraphics[width=\textwidth,height=4cm,keepaspectratio]{pic/amazon_ref.jpg}
-                \caption{Inspiration}
+                \caption{Situation actuelle (Stockage passif)}
             \end{figure}
         \end{column}
     \end{columns}
 \end{frame}
 
-% ==============================================================================
-% SECTION 2: ARCHITECTURE & FLUX
-% ==============================================================================
-\section{Architecture Globale}
-
-\begin{frame}{Topologie du Syst\`eme}
-    \begin{block}{Architecture 3-Tiers}
-        Le syst\`eme est divis\'e en trois couches ind\'ependantes communiquant via HTTP et SQLite.
+\begin{frame}{Notre Solution : DistCapsule}
+    Transformer un simple présentoir en un \textbf{écosystème IoT} intelligent.
+    
+    \vspace{0.5cm}
+    \begin{block}{Proposition de Valeur}
+        \begin{itemize}
+            \item \textbf{Centralisation} : Une tour compacte stockant 5 variétés.
+            \item \textbf{Personnalisation} : Chaque utilisateur a ses droits d'accès.
+            \item \textbf{Fluidité} : Distribution sans contact (Biométrie) ou via Mobile.
+        \end{itemize}
     \end{block}
+\end{frame}
+
+% ==============================================================================
+% SECTION 2: ARCHITECTURE (5 min)
+% ==============================================================================
+\section{Architecture Technique}
+
+\begin{frame}{Architecture 3-Tiers}
+    Pour garantir la stabilité, nous avons découplé les responsabilités en trois couches distinctes :
+    
     \vspace{0.3cm}
+    \begin{center}
+    \begin{tikzpicture}[node distance=2.5cm, auto, thick]
+        % Nodes
+        \node[draw, fill=green!20, minimum size=1cm, align=center] (App) {\textbf{Android App}\\(Java)};
+        \node[draw, fill=blue!20, minimum size=1cm, align=center, right of=App, node distance=5cm] (API) {\textbf{API Server}\\(FastAPI)};
+        \node[draw, fill=red!20, minimum size=1cm, align=center, right of=API, node distance=5cm] (Core) {\textbf{Core Agent}\\(Python)};
+        
+        % Arrows
+        \draw[<->] (App) -- node[above] {HTTP/JSON} node[below] {Token} (API);
+        \draw[<->] (API) -- node[above] {SQLite} node[below] {Queue} (Core);
+    \end{tikzpicture}
+    \end{center}
+    
+    \begin{itemize}
+        \item \textbf{App} : Interface de commande (Client Léger).
+        \item \textbf{API} : Passerelle de sécurité et gestion des données.
+        \item \textbf{Core} : Gestion du matériel (Boucle infinie, non-bloquante).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Flux de Données (Workflow)}
+    Exemple : Un utilisateur demande une capsule via l'application.
+    \vspace{0.2cm}
+    \begin{columns}[T]
+    \begin{column}{0.35\textwidth}    
+    \begin{enumerate}
+        \item \textbf{Requête} : \par\texttt{POST} avec Token.
+        \item \textbf{Validation} : \par Auth \& Insertion BDD.
+        \item \textbf{Exécution} : \par \textbf{Core Agent} (Polling).
+        \item \textbf{Action} : \par Pilotage Servo (\texttt{lgpio}).
+        \item \textbf{Feedback} : \par Feedback IPS \& App.
+    \end{enumerate}
+    \end{column}
+    \begin{column}{0.65\textwidth}
     \begin{figure}
         \centering
-        % TODO: Ins\'erer un sch\'ema global (App -> API -> Hardware)
-        % Nom du fichier: pic/system_architecture.png
-        \includegraphics[width=0.9\textwidth,height=4cm,keepaspectratio]{pic/system_architecture.png}
-        \caption{Flux de donn\'ees : Du smartphone au servomoteur}
+        \includegraphics[width=0.9\textwidth,height=5cm,keepaspectratio]{pic/data_flow.png}
+        \par\vspace{0.2cm}\small Schéma du flux de données entre les composants
     \end{figure}
+
+    \end{column}
+    \end{columns}
 \end{frame}
 
-\begin{frame}{S\'equence d\'Action (Workflow)}
-    Que se passe-t-il quand l'utilisateur clique sur "Mon Caf\'e" ?
-    \vspace{0.2cm}
-    \begin{enumerate}
-        \item \textbf{App} : Envoie \texttt{POST /command/unlock} avec le Token.
-        \item \textbf{API} : Vérifie le Token et ajoute la commande en BDD (\texttt{Pending\_Commands}).
-        \item \textbf{Core (Main Loop)} :
-        \begin{itemize}
-            \item D\'etecte la nouvelle commande.
-            \item Active le servomoteur correspondant (via \texttt{lgpio}).
-            \item Affiche un compte \`a rebours sur l'\'ecran IPS.
-        \end{itemize}
-        \item \textbf{App} : Reçoit la confirmation et vibre.
-    \end{enumerate}
-\end{frame}
-
-\begin{frame}{Réseau : Stabilité \& Connectivité}
+\begin{frame}{Réseau : Stabilité et Connectivité}
     \begin{block}{Le Défi}
         Les smartphones modernes refusent souvent les connexions Wi-Fi "sans internet" (No Gateway).
     \end{block}
@@ -133,135 +166,160 @@
     \begin{exampleblock}{Solution Finale (V1.1)}
         \begin{itemize}
             \item \textbf{Mode} : Hotspot Standard avec passerelle DHCP activée.
-            \item \textbf{Avantage} : Connexion immédiate et stable sur 100\% des appareils Android/iOS testés.
+            \item \textbf{Avantage} : Connexion immédiate et stable sur 100% des appareils Android/iOS testés.
             \item \textbf{UX} : Bouton "Connecter au Wi-Fi" intégré directement dans l'application.
         \end{itemize}
     \end{exampleblock}
 \end{frame}
 
 % ==============================================================================
-% SECTION 3: MOBILE & UX
+% SECTION 3: DÉFIS TECHNIQUES (8 min)
 % ==============================================================================
-\section{Exp\'erience Mobile}
+\section{Défis Techniques et Solutions}
 
-\begin{frame}{Interface Utilisateur (Vivid Palette)}
+\begin{frame}{1. Hardware : La Révolution Pi 5}
+    Le passage au Raspberry Pi 5 a cassé la compatibilité de nombreuses bibliothèques historiques.
+    
+    \begin{itemize}
+        \item \textbf{Obsolescence} : \texttt{RPi.GPIO} ne fonctionne pas sur la puce RP1 du Pi 5.
+        \item \textbf{Solution} : Migration vers \textbf{\texttt{lgpio}} (Linux GPIO).
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \begin{block}{Innovation : Soft-PWM}
+        Les bibliothèques standard de servos n'étant pas prêtes, nous avons écrit notre propre contrôleur PWM logiciel pour piloter les 5 moteurs SG90 avec précision, sans jitter.
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{2. Fiabilité : Le "Watchdog" (Auto-Guérison)}
+    Le capteur d'empreintes (UART) peut parfois se figer (timeout) en cas d'interférences électriques.
+    
+    \begin{block}{Implémentation d'un Thread de Surveillance}
+        Un thread indépendant vérifie l'état du capteur toutes les 30 secondes.
+    \end{block}
+    
+    \begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
+def fingerprint_watchdog():
+    while True:
+        try:
+            if finger.read_sysparam() != OK: raise Error
+        except:
+            # Soft Reset : Fermer/Rouvrir le port Serie
+            uart.close(); time.sleep(1); uart.open()
+        time.sleep(30)
+    \end{lstlisting}
+\end{frame}
+
+% ==============================================================================
+% SECTION 4: EXPÉRIENCE MOBILE (5 min)
+% ==============================================================================
+\section{Expérience Mobile (Android)}
+
+\begin{frame}{Design System : "Vivid Palette"}
+    L'application (Java) utilise un code couleur sémantique fort pour guider l'utilisateur :
+    
     \begin{columns}
         \begin{column}{0.5\textwidth}
-            Une interface native Android (Java) conçue pour la clarté :
             \begin{itemize}
-                \item \textbf{Vert} : Tout est pr\^et.
-                \item \textbf{Jaune} : Action requise (Wi-Fi).
-                \item \textbf{Rouge} : Danger (Suppression).
+                \item \textcolor[HTML]{2ECC71}{$\blacksquare$ \textbf{Vert (Emerald)}} : Succès, État "Prêt".
+                \item \textcolor[HTML]{F1C40F}{$\blacksquare$ \textbf{Jaune (Sunflower)}} : Action requise, Attente.
+                \item \textcolor[HTML]{E57373}{$\blacksquare$ \textbf{Rouge (Soft Red)}} : Danger, Suppression.
+            \end{itemize}
+            \vspace{0.2cm}
+            \textbf{Micro-interactions} :
+            \begin{itemize}
+                \item Animation "Pop-up" lors de la sélection des canaux.
+                \item Masquage dynamique des menus admin.
             \end{itemize}
         \end{column}
         \begin{column}{0.45\textwidth}
             \centering
-            % TODO: Mettre les vrais screenshots
-            \includegraphics[width=0.45\textwidth]{pic/app_login.png} \hfill
-            \includegraphics[width=0.45\textwidth]{pic/app_dashboard.png}
-            \captionof{figure}{Login \& Dashboard}
+            \includegraphics[width=0.45\textwidth]{pic/app_dashboard.png} \hfill
+            \includegraphics[width=0.45\textwidth]{pic/app_admin.png}
+            \par\vspace{0.2cm}\small Dashboard et Admin Panel
         \end{column}
     \end{columns}
 \end{frame}
 
-% ==============================================================================
-% SECTION 4: HARDWARE & \'ELECTRONIQUE
-% ==============================================================================
-\section{C\^ablage \& \'Electronique}
-
-\begin{frame}{Sch\'ema de C\^ablage (Wiring)}
-    Le Raspberry Pi 5 est le chef d'orchestre, pilotant plusieurs p\'eriph\'eriques simultan\'es.
-    
-    \begin{figure}
-        \centering
-        % TODO: Ins\'erer le sch\'ema de c^ablage (Fritzing ou Photo annot\'ee)
-        % Nom: pic/hardware_wiring.png
-        \includegraphics[width=0.8\textwidth,height=4.5cm,keepaspectratio]{pic/hardware_wiring.png}
-        \caption{Connexions : GPIO (PWM), UART (Fingerprint), SPI (LCD)}
-    \end{figure}
-    
+\begin{frame}{Sécurité et Confidentialité}
     \begin{itemize}
-        \item \textbf{Servos} : GPIO 12, 13, 18, 19, 23 (Soft-PWM).
-        \item \textbf{S\'ecurit\'e} : Alimentation 5V externe s\'epar\'ee pour isoler le Pi du bruit moteur.
+        \item \textbf{Protection Admin} : Le système interdit (API + App) la suppression du compte Administrateur (ID 1).
+        \item \textbf{Droit à l'oubli} : La suppression du compte nettoie la BDD, le Token et les données biométriques sur le matériel.
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Interface Embarqu\'ee (\'Ecran IPS)}
-    L'\'ecran ST7789 (240x240) fournit un feedback visuel imm\'ediat \`a l'utilisateur devant la machine.
-    
-    \begin{figure}
-        \centering
-        % TODO: Ins\'erer une matrice de photos de l'\'ecran (Veille, Compte \`a rebours, Erreur)
-        % Nom: pic/ips_ui_matrix.png
-        \includegraphics[width=0.9\textwidth,height=3.5cm,keepaspectratio]{pic/ips_ui_matrix.png}
-        \caption{\'Etats de l'\'ecran : Veille, Scan, D\'ecompte, Erreur}
-    \end{figure}
-\end{frame}
-
 % ==============================================================================
-% SECTION 5: D\'EVIS & 3D
+% SECTION 5: INGÉNIERIE (3 min)
 % ==============================================================================
-\section{D\'efis Techniques}
+\section{Ingénierie et Fabrication}
 
-\begin{frame}{Le D\'efi du Pi 5 : GPIO \& OS}
-    \begin{alertblock}{Probl\`eme}
-        Le Raspberry Pi 5 utilise une nouvelle puce RP1, rendant \texttt{RPi.GPIO} obsol\`ete.
-    \end{alertblock}
+\begin{frame}{Conception "Code-to-CAD"}
+    Le châssis n'est pas dessiné à la souris, mais \textbf{codé} (OpenSCAD / SolidPython).
     
-    \begin{block}{Solution : lgpio}
-        Réécriture complète de la couche driver (\texttt{servo\_control.py}) pour utiliser \texttt{lgpio}, permettant un contrôle PWM logiciel stable sur 5 canaux simultanés.
-    \end{block}
-\end{frame}
-
-\begin{frame}{Mod\'elisation 3D Param\'etrique}
-    Approche "Code-to-CAD" avec OpenSCAD :
     \begin{columns}
         \begin{column}{0.6\textwidth}
             \begin{itemize}
-                \item Design modulaire (Base, Tiroir, Pousseur).
-                \item Ajustement rapide des tol\'erances pour l'impression 3D.
+                \item \textbf{Paramétrique} : Changer \texttt{capsule\_dia = 37} met à jour tout le modèle (base, tiroirs, rails).
+                \item \textbf{Modulaire} : Les étages sont imprimés séparément et assemblés.
             \end{itemize}
         \end{column}
         \begin{column}{0.35\textwidth}
             \centering
-            % TODO: Rendu 3D ou photo de la pi\`ece
             \includegraphics[width=\textwidth]{pic/3d_render.png} 
+            \par\vspace{0.2cm}\small Rendu OpenSCAD
         \end{column}
     \end{columns}
 \end{frame}
 
+\begin{frame}{Câblage et Intégration}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth,height=4cm,keepaspectratio]{pic/hardware_wiring.png}
+        \par\vspace{0.2cm}\small Intégration dense : Pi 5 + 5 Servos + Écran + Caméra
+    \end{figure}
+    
+    \begin{itemize}
+        \item Alimentation séparée pour les moteurs (stabilité du Pi).
+        \item Gestion des conflits de pins GPIO (PWM vs SPI vs UART).
+    \end{itemize}
+\end{frame}
+
 % ==============================================================================
-% SECTION 6: CONCLUSION
+% SECTION 6: BILAN (2 min)
 % ==============================================================================
 \section{Bilan}
 
-\begin{frame}{\'Etat Final du Projet}
+\begin{frame}{État Final du Projet}
     \begin{table}[]
         \centering
         \rowcolors{2}{gray!10}{white}
         \begin{tabular}{l | l | l}
             \toprule
-            \textbf{Module} & \textbf{Techno} & \textbf{Statut} \\
+            \textbf{Module} & \textbf{Technologie} & \textbf{Statut V1.1} \\
             \midrule
-            App Android & Java / Retrofit & \textcolor{green!60!black}{\textbf{V1.1 Prod}} \\
-            API Server & Python FastAPI & \textcolor{green!60!black}{\textbf{Stable}} \\
-            Hardware & Pi 5 / lgpio & \textcolor{green!60!black}{\textbf{Fonctionnel}} \\
-            M\'ecanique & PLA / OpenSCAD & \textcolor{orange}{\textbf{Assemblage}} \\
+            App Mobile & Android (Java) & \textcolor{green!60!black}{\textbf{Terminé \& Polished}} \\
+            Serveur & Python FastAPI & \textcolor{green!60!black}{\textbf{Stable}} \\
+            Hardware & Pi 5 / lgpio & \textcolor{green!60!black}{\textbf{Auto-Healing}} \\
+            Mécanique & PLA / OpenSCAD & \textcolor{orange}{\textbf{Assemblage}} \\
             \bottomrule
         \end{tabular}
     \end{table}
 \end{frame}
 
 \begin{frame}{Conclusion}
-    \textbf{DistCapsule} est une preuve de concept r\'eussie d'un IoT complet, s\'ecuris\'e et convivial.
+    DistCapsule a évolué d'un simple concept vers un produit IoT complet.
+    \vspace{0.5cm}
+    
+    \textbf{Points Forts :}
+    \begin{itemize}
+        \item Expérience utilisateur fluide (App native, Biométrie).
+        \item Robustesse technique (Watchdog, Architecture découplée).
+        \item Respect de la vie privée (Données locales).
+    \end{itemize}
+    
     \vspace{1cm}
-    \begin{center}
-        \huge \textbf{D\'emonstration ?}
-    \end{center}
-\end{frame}
-
-\begin{frame}[allowframebreaks]{R\'ef\'erences}
-     \printbibliography[heading=none] 
+    \centering
+    \large \textbf{Place à la démonstration !}
 \end{frame}
 
 \end{document}

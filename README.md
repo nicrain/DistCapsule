@@ -103,8 +103,10 @@ L'application (dossier `android/`) a été optimisée pour une fluidité maximal
 *   **Feedback Visuel Avancé** : Animation "Pop-up" lors de la sélection des canaux (style réservation de place) et transitions fluides entre les menus.
 *   **Navigation Fluide** : Ajout de boutons de retour et gestion intelligente du clavier virtuel pour une expérience sans friction.
 *   **Sécurité Administrateur** : Protection contre la suppression accidentelle du compte admin et verrouillage des modifications pour le profil administrateur dans la console de gestion.
-*   **Auto-Guérison (Self-Healing)** : Un "Watchdog" surveille le capteur d'empreintes toutes les 30s et réinitialise automatiquement la connexion UART en cas de blocage.
-*   **Documentation Complète** : Slides LaTeX V2.1 (Visuels & Architecture) et spécifications techniques à jour.
+*   **Version Production V1.1** : Écosystème IoT complet avec application Android native (Java), serveur FastAPI et agent Python sur Pi 5.
+*   **Auto-Guérison (Watchdog)** : Surveillance active du capteur d'empreintes avec réinitialisation automatique en cas de défaillance.
+*   **Soutenance & Documentation** : Support de présentation LaTeX complet (21 slides) détaillant l'architecture AAA, les défis techniques et les choix d'ingénierie.
+*   **Sécurité \& RGPD** : Authentification par token, protection des comptes administrateurs et fonction "Droit à l'oubli" (nettoyage complet des données biométriques).
 
 ---
 

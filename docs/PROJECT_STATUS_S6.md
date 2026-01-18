@@ -35,8 +35,9 @@
     *   **Logic Cleanup**: Suppression du Mode Demo et de la création d'utilisateur côté Admin au profit du self-service. Nettoyage massif des ressources (strings.xml) pour une stabilité de build accrue.
     *   **Sécurité**: Suppression automatique du token d'accès lors de la suppression du compte. Protection contre la suppression accidentelle de l'administrateur.
     *   **Micro-interactions**: Ajout d'un effet "Pop-up" (TranslationY + OvershootInterpolator) sur les boutons de sélection de canal pour un feedback tactile visuel.
-    *   **Fiabilité Matérielle**: Implémentation d'un thread "Watchdog" pour le capteur d'empreintes (DY-50). Il détecte les timeouts UART et effectue un "Soft Reset" automatique sans redémarrage du Pi.
-    *   **Documentation**: Finalisation des diapositives de soutenance (LaTeX V2.1) avec focus sur l'architecture et les défis techniques. 
+    *   **Fiabilité Matérielle**: Implémentation d'un thread "Watchdog" pour le capteur d'empreintes (DY-50). Il détecte les timeouts UART et effectue un "Soft Reset" automatique.
+    *   **Documentation Finale**: Production d'un support de présentation de 20 minutes (LaTeX V3.0) incluant schémas d'architecture, défis techniques (lgpio sur Pi 5) et démonstration de l'UX mobile.
+    *   **Qualité de Code**: Nettoyage intégral des ressources Android (strings.xml), suppression des doublons et passage au full UTF-8 pour la documentation. 
         - Blocage total de la suppression des comptes administrateurs (côté API et App).
         - Interface de gestion dynamique : les boutons d'action sont masqués tant qu'un utilisateur n'est pas sélectionné.
         - Verrouillage automatique de l'UI si le profil sélectionné est l'administrateur.
