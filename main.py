@@ -282,16 +282,16 @@ def main():
 
     time.sleep(0.5)
 
-        # 2. 初始化指纹模块 (Init Fingerprint)
-        try:
-            uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
-            finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
-            if finger.read_sysparam() != adafruit_fingerprint.OK:
-                raise RuntimeError("指纹模块未响应 (Sensor not responding)")
-            print("指纹模块就绪 / Capteur d'empreinte prêt")
-        except Exception as e:
-            print(f"指纹初始化失败 / Erreur Init Fingerprint: {e}")
-            # Do not exit, let the watchdog try to fix it
+    # 2. 初始化指纹模块 (Init Fingerprint)
+    try:
+        uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
+        finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
+        if finger.read_sysparam() != adafruit_fingerprint.OK:
+            raise RuntimeError("指纹模块未响应 (Sensor not responding)")
+        print("指纹模块就绪 / Capteur d'empreinte prêt")
+    except Exception as e:
+        print(f"指纹初始化失败 / Erreur Init Fingerprint: {e}")
+        # Do not exit, let the watchdog try to fix it
     
     try:
         face_rec = FaceRecognizer()
