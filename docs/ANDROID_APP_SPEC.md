@@ -45,33 +45,29 @@ The Android application serves as the primary **Control & Management Interface**
 *   **No Password**: The app uses a device-bound **Token** for authentication.
 *   **First Run (New User)**:
     1.  App scans for the API (`GET /`).
-    2.  User clicks "Register".
-    3.  App generates a UUID Token.
-    4.  **Registration**: App sends Name + Token to server (`POST /users`).
-    5.  Server creates user and binds the token immediately.
-*   **First Run (Existing User - Lost Phone)**:
-    *   *Note*: To prevent identity theft, users cannot self-bind to an existing account.
-    *   **Process**: Ask Admin to reset the old binding, or register as a new user.
-*   **Subsequent Runs**:
-    1.  App sends Token (`POST /auth`).
-    2.  Server returns user profile.
-    3.  App jumps directly to the Dashboard.
+    2.  **One-Click Registration**: User enters Name and clicks "Créer et se connecter".
+    3.  **Auto-Assignment**: The server automatically assigns the first available channel (1-5).
+    4.  **Instant Access**: App saves the token and jumps directly to the Dashboard.
+*   **Auto-Login**: Subsequent runs use the stored Token to log in silently.
 
 ### 3.2 Dashboard (Main Screen)
 *   **Header**: "Bonjour, [Name]".
-*   **Status Card**: Display icons indicating biometric status (e.g., "Face: ✅ | Finger: ❌") so users know if they are fully enrolled.
+*   **Status Card**:
+    *   **Self-Enrollment Buttons**: "Ajouter Face" / "Ajouter Empreinte".
+    *   Buttons turn **Green** ("Mettre à jour") once enrolled.
 *   **Center**:
-    *   If **User** + **Assigned Channel**: Big Green Button `[ DISPENSE ]`.
-    *   If **Admin**: Grid view of 5 Channels with control buttons.
-    *   If **No Channel**: "Waiting for assignment / En attente".
-*   **Footer**: "Channel Map" (List of who owns which channel).
+    *   If **User** + **Assigned Channel**: Big Green Button `[ OBTENIR MON CAFE ]`.
+    *   If **Admin**: Visual Channel Map with 5 interactive buttons.
+*   **Admin Channel Management**:
+    *   **Visual Interface**: 5 Buttons (Red=Occupied, Green=Free, Orange=Selected).
+    *   **Pop-up Animation**: Selected channel pops up visually.
+    *   **Action**: "Attribuer Canal X" or "Retirer le Canal".
 
-### 3.3 Enrollment (Admin Only)
-*   Inside User Details:
-    *   Button `[ Enroll Face ]` -> Triggers Pi camera mode.
-    *   Button `[ Enroll Finger ]` -> Triggers Pi fingerprint sensor mode.
-*   **Feedback**: App should show a toast "Enrollment Started, please follow instructions on the machine screen".
-*   **Best Practice**: The App should automatically **refresh the user list (`GET /users`)** after a few seconds to update the `has_face` / `has_fingerprint` status icons.
+### 3.3 Enrollment (Sync)
+*   **Process**:
+    *   User clicks "Ajouter Empreinte" in App.
+    *   **Hardware Sync**: Pi screen wakes up and shows instructions.
+    *   **Real-time**: App updates button status automatically upon completion.
 
 ---
 

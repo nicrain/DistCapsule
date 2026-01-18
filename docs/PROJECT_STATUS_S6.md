@@ -1,7 +1,7 @@
 # Status du Projet DistCapsule (S6) - 2026-01-02
 # DistCapsule 项目状态报告 (S6)
 
-## 🔵 État Actuel : En Développement (S6 - IoT & Mobile)
+## 🔵 État Actuel : Terminé / Completed (S6 - IoT & Mobile)
 **Focus**: Transition d'un système autonome (Standalone) vers un écosystème connecté (IoT).
 **核心目标**: 从单机智能系统向物联网互联生态转型。
 
@@ -13,9 +13,9 @@
     - **Web API**: 开发轻量级 API 接口，用于手机端获取日志和系统状态 (GET endpoints OK, POST pending).
 
 ### 2. Application Mobile (Android) / 移动端应用
-- [ ] **App Architecture**: 
+- [x] **App Architecture**: 
     - Tech: Android (Kotlin/Java) ou Cross-platform (Flutter).
-    - **App 架构**: 确定技术栈（建议原生 Android Kotlin）。
+    - **App 架构**: 确定技术栈（原生 Android Java）。
 - [x] **Fonctionnalités Clés**:
     - **Dashboard**: Visualisation des niveaux de stock et des derniers accès.
     - **App Control**: Bouton "Ouvrir" via App (Wi-Fi Local).
@@ -23,12 +23,18 @@
     - **核心功能**: 仪表盘、App 无线开锁(Wi-Fi)、实时通知。
 
 ### 3. Sécurité & Stabilité / 安全与稳定
-- [ ] **Network Recovery**: Gestion automatique de la reconnexion Wi-Fi en cas de coupure.
-- [ ] **安全加固**: 网络断连后的自动重连机制。
+- [x] **Network Recovery**: Gestion automatique de la reconnexion Wi-Fi en cas de coupure.
+- [x] **安全加固**: 网络断连后的自动重连机制。
 
 ---
 
 ## 📅 Journal des Modifications (Changelog)
+*   **2026-01-18 (Final S6 Release)**:
+    *   **Android App v1.0**: Application native complète avec connexion automatique, inscription en un clic et gestion des canaux.
+    *   **UX Revolution**: Remplacement des saisies manuelles par une interface visuelle (boutons de canaux, pop-up d'animation).
+    *   **Hardware Sync**: Synchronisation bidirectionnelle Matériel <-> App (les boutons d'enrôlement changent de couleur en temps réel).
+    *   **Stabilité**: Correction des deadlocks de base de données (timeout) et des blocages de capteur d'empreintes (timeout 30s).
+    *   **Zéro Config**: Scripts d'installation automatique pour le Hotspot, l'API et le service principal.
 *   **2026-01-16**: 
     *   **Docs**: Création des diapositives de présentation (`docs/slides/`) avec architecture AAA et histoire du design 3D.
     *   **Fix Caméra**: Correction de la rotation de 90° (Counter-Clockwise) dans `face_system.py` et `face_enroll.py`.

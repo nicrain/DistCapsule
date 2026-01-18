@@ -83,82 +83,59 @@ pip install git+https://github.com/ageitgey/face_recognition_models --break-syst
 *   **UART**: Activez le matériel du port série via `sudo raspi-config`, mais désactivez le shell de connexion. Le module d'empreintes digitales utilise `/dev/ttyAMA0` (GPIO 14/15) sur le Pi 5.
 *   **SPI**: Activez l'interface SPI via `sudo raspi-config` pour l'écran.
 
-### 5. Configuration Réseau (Hotspot hors ligne)
-Pour permettre à l'application Android de contrôler le Pi tout en conservant sa connexion 4G/5G (sans Internet via le Pi), configurez le hotspot en mode "sans passerelle" :
+### 5. Configuration Réseau (Hotspot & API)
+Le système est conçu pour fonctionner de manière autonome. Utilisez le script d'installation tout-en-un pour configurer le Hotspot Wi-Fi, le serveur API et le service principal :
 
 ```bash
-sudo chmod +x tools/setup_manual_hotspot.sh
-sudo ./tools/setup_manual_hotspot.sh
+cd tools
+sudo ./install_service.sh
 ```
-*   Cela crée un réseau Wi-Fi `DistCapsule_Box` (IP: 192.168.4.1).
-*   **Important** : Le téléphone utilisera ce Wi-Fi pour l'API REST mais gardera la 4G pour Internet.
+*   **Service Hotspot** : Crée le Wi-Fi `DistCapsule_Box` (192.168.4.1).
+*   **Service API** : Lance le serveur REST sur le port 8000.
+*   **Service Principal** : Lance la logique de contrôle matériel (`main.py`).
+*   **Tout est automatique** au redémarrage du Pi.
 
-Pour arrêter le hotspot et reconnecter le Pi au Wi-Fi domestique :
-```bash
-sudo ./tools/stop_hotspot.sh
-```
+---
+
+## 📱 Application Android
+
+L'application compagnon (dans le dossier `android/`) offre une interface complète pour les utilisateurs et les administrateurs.
+
+*   **Connexion Automatique** : Détection intelligente de l'IP du Pi.
+*   **Enregistrement Simplifié** : Entrez simplement votre nom, le système attribue automatiquement un canal libre.
+*   **Gestion Administrateur** :
+    *   Attribution visuelle des canaux (boutons interactifs).
+    *   Gestion des utilisateurs (suppression instantanée).
+    *   Contrôle direct du matériel (déverrouillage, enrôlement).
+*   **Utilisateur Standard** :
+    *   Bouton unique "Obtenir mon café".
+    *   Auto-enrôlement (Visage/Empreinte) via l'application.
 
 ---
 
 ## 📖 Guide d'Utilisation
 
 ### 1. Initialiser le Système
-Créer les tables de base de données pour les utilisateurs et les journaux (ne supprime pas les utilisateurs sauf suppression manuelle du .db).
+Créer les tables de base de données (si nécessaire).
 
 ```bash
 python3 tools/setup_database.py
 ```
 
-### 2. Gérer Utilisateurs & Empreintes
-Lancez l'outil de gestion pour lister, enrôler des admins ou des utilisateurs avec allocation de canal (Box 1-5).
+### 2. Premier Démarrage (Admin)
+1.  Connectez votre téléphone au Wi-Fi `DistCapsule_Box`.
+2.  Lancez l'application Android.
+3.  Entrez "Admin" (ou votre nom) pour créer le premier utilisateur.
+4.  Via SSH, élevez ce premier utilisateur au rang d'Admin :
+    ```bash
+    sqlite3 capsule_dispenser.db "UPDATE Users SET auth_level=1 WHERE user_id=1;"
+    ```
+5.  Redémarrez l'application. Vous avez maintenant accès au panneau d'administration.
 
-```bash
-sudo python3 tools/fingerprint_enroll.py
-```
-*   *Remarque : Assurez-vous d'abord que la base de données est initialisée.*
-
-### 3. Test Matériel
-Pour vérifier que tous les composants (Servos, Écran, Empreinte) sont connectés et fonctionnent correctement, exécutez l'outil de test intégré.
-
-```bash
-sudo python3 tools/hardware_test.py
-```
-*   Sélectionnez '1' pour tester tous les servomoteurs.
-*   Sélectionnez '2' pour tester les couleurs de l'écran.
-*   Sélectionnez '3' pour vérifier la connexion du capteur d'empreintes digitales et la capture d'image.
-
-### 4. Enrôlement Visage (Nouveau)
-Pour enregistrer le visage d'un utilisateur pour la reconnaissance faciale :
-
-```bash
-python3 tools/face_enroll.py
-```
-*   Assurez-vous que l'utilisateur existe déjà (ID créé via l'étape 2 ou `add_user.py`).
-*   Suivez les instructions à l'écran pour capturer le visage.
-*   **Note Pi 5**: Le script utilise GStreamer/Libcamera automatiquement.
-
-### 5. Lancer le Programme Principal
-Démarrer le système. Le système démarre en **Mode Veille (Sleep Mode)** (écran éteint) pour économiser l'énergie.
-*   **Pour réveiller** : Appuyez sur le **bouton physique**.
-*   **Durée d'activité** : Le système reste actif pendant 30 secondes après la dernière action.
-
-```bash
-sudo python3 main.py
-```
-
-### 6. Service Automatique (Démarrage)
-Pour installer le service systemd afin que le programme se lance au démarrage :
-
-```bash
-./tools/install_service.sh
-```
-
-### 7. API REST (App Mobile)
-Pour activer le contrôle à distance via l'application Android, démarrez le serveur API :
-```bash
-pip install -r api/requirements.txt
-python3 -m uvicorn api.server:app --host 0.0.0.0 --port 8000
-```
+### 3. Enrôlement
+*   Dans l'application, cliquez sur "Ajouter Face" ou "Ajouter Empreinte".
+*   L'écran du Pi s'allumera et vous guidera.
+*   L'application se mettra à jour (bouton vert) une fois l'enrôlement terminé.
 
 ---
 
@@ -166,34 +143,32 @@ python3 -m uvicorn api.server:app --host 0.0.0.0 --port 8000
 
 | Fichier/Dossier | Description |
 | :--- | :--- |
-| `main.py` | **Application Principale**. Gère la boucle d'authentification et la logique métier. |
-| `api/` | **Web API**. Serveur FastAPI pour l'application mobile Android (Logs/Utilisateurs). |
-| `hardware/` | **Pilotes**. Contient les drivers (`servo_control`, `st7789`, `face_system`). |
-| `tools/` | **Outils**. Scripts d'installation, de test et d'enrôlement (`xxx_enroll.py`). |
-| `docs/` | **Documentation**. Guides de câblage, archives et **présentation (slides/)**. |
-| `capsule_dispenser.db` | **Données**. Base de données SQLite locale. |
+| `main.py` | **Application Principale**. Gère la boucle d'authentification et le matériel. |
+| `api/` | **Web API**. Serveur FastAPI (`server.py`) pour l'app mobile. |
+| `android/` | **Code Source Android**. Projet Android Studio complet. |
+| `hardware/` | **Pilotes**. Drivers (`servo_control`, `st7789`, `enrollment`). |
+| `tools/` | **Scripts**. Installation, tests et maintenance. |
+| `docs/` | **Documentation**. Spécifications, diapositives et archives. |
 
 ---
 
 ## 🔮 Feuille de Route Future
 
-*   **Intégration Caméra**: Ajout du module caméra Raspberry Pi 3 pour l'identification faciale ou le déverrouillage par code QR (authentification secondaire).
-*   **Tableau de Bord Web**: Développement d'une interface Flask/Django locale pour la consultation des journaux à distance, la gestion des utilisateurs et le déverrouillage d'urgence. (En cours: API FastAPI)
-*   **Inventaire & Social**: 
-    *   Suivi du nombre de capsules par canal.
-    *   Fonctionnalité "Partage de capsules" : permet aux utilisateurs d'offrir leurs capsules excédentaires via l'application.
-*   **Boîtier**: Conception d'un boîtier entièrement imprimé en 3D pour cacher les fils et fixer solidement le Pi et l'écran à l'unité de base.
+*   **Intégration Caméra**: Identification faciale via Raspberry Pi Camera 3 (En cours).
+*   **Notifications**: Push notifications sur mobile lors de l'accès.
+*   **Boîtier**: Finalisation du design 3D pour l'intégration des composants.
 
 ---
 
 ## 📜 Histoire & Décisions
 
+*   **2026-01 (S6 - IoT & Mobile)**:
+    *   **Écosystème Complet** : Intégration transparente App <-> API <-> Matériel.
+    *   **UX Mobile** : Application Android native avec authentification par Token et mises à jour en temps réel.
+    *   **Stabilité** : Gestion des conflits de base de données et des timeouts matériels.
 *   **2025-12 (S5)**: 
-    *   **Refonte Multi-threadée**: Migration vers une architecture à threads pour l'asynchronisme de l'IA (visage) et la fluidité de l'UI (compte à rebours linéaire).
-    *   **Gestion Native GPIO**: Migration complète vers `lgpio` pour tous les contrôles (舵机 et boutons) afin de garantir la stabilité sur Pi 5.
-    *   **Optimisation de la Réactivité**: Suppression des délais bloquants (`time.sleep`) au profit d'une détection d'état non-bloquante et d'une synchronisation centralisée des horloges.
-    *   **UI Avancée**: Ajout d'un compte à rebours numérique en temps réel avec changement de couleur dynamique.
-    *   **Refonte des Permissions**: Introduction des niveaux de rôle et de l'allocation des canaux physiques.
+    *   **Refonte Multi-threadée**: Architecture asynchrone pour la fluidité de l'UI.
+    *   **Gestion Native GPIO**: Migration vers `lgpio` pour le Pi 5.
 
 ---
 
