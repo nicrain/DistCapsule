@@ -29,12 +29,16 @@
 ---
 
 ## 📅 Journal des Modifications (Changelog)
-*   **2026-01-18 (Final S6 Release)**:
-    *   **Android App v1.0**: Application native complète avec connexion automatique, inscription en un clic et gestion des canaux.
+*   **2026-01-18 (Final S6 Release - V1.1)**:
+    *   **Android App v1.1**: Refonte totale de l'UX avec une palette de couleurs vive (Vivid Palette), auto-login via Token et saisie d'IP simplifiée.
     *   **UX Revolution**: Remplacement des saisies manuelles par une interface visuelle (boutons de canaux, pop-up d'animation).
     *   **Hardware Sync**: Synchronisation bidirectionnelle Matériel <-> App (les boutons d'enrôlement changent de couleur en temps réel).
     *   **Stabilité**: Correction des deadlocks de base de données (timeout) et des blocages de capteur d'empreintes (timeout 30s).
     *   **Zéro Config**: Scripts d'installation automatique pour le Hotspot, l'API et le service principal.
+*   **2026-01-14 (V1.0 Initial IoT Release)**:
+    *   Intégration du code source de l'application dans le répertoire `android/`.
+    *   Nettoyage des logs (Suppression des Emojis, style professionnel).
+    *   Implémentation de la gestion complète des utilisateurs (`POST /users` pour créer, `DELETE /users` pour supprimer avec nettoyage matériel).
 *   **2026-01-16**: 
     *   **Docs**: Création des diapositives de présentation (`docs/slides/`) avec architecture AAA et histoire du design 3D.
     *   **Fix Caméra**: Correction de la rotation de 90° (Counter-Clockwise) dans `face_system.py` et `face_enroll.py`.
@@ -46,10 +50,7 @@
     *   **API**: Correction de la sérialisation Pydantic/SQLite. Endpoints `/users` et `/logs` fonctionnels.
     *   **IoT**: Implémentation du contrôle App via table `Pending_Commands` (Renommé de Remote -> App).
     *   **Hotspot**: Ajout de la passerelle DHCP (192.168.4.1) pour résoudre les problèmes de connexion Android/iOS.
-    *   **Android**: Intégration du code source de l'application (V1) dans le répertoire `android/`.
-    *   **UX**: Nettoyage des logs (Suppression des Emojis, style professionnel).
     *   **API**: Ajout des statuts biométriques (`has_face`, `has_fingerprint`) dans la réponse `/users`.
-    *   **API**: Implémentation de la gestion complète des utilisateurs (`POST /users` pour créer, `DELETE /users` pour supprimer avec nettoyage matériel).
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).
     *   **Auth**: Simplification du flux (Suppression de `/bind`, intégration du Token dans `/users` pour l'enregistrement direct).
 *   **2026-01-02**: Initialisation de la Phase S6. Archivage de la version S5 (Standalone Stable).

@@ -2,7 +2,7 @@
 
 [![Français](https://img.shields.io/badge/Language-Français-blue.svg)](../README.md)
 
-**平台:** Raspberry Pi 5 (Bookworm OS) | **状态:** 稳定 (S5) | **最后更新:** 2026-01
+**平台:** Raspberry Pi 5 (Bookworm OS) | **状态:** 稳定 (V1.1) | **最后更新:** 2026-01-18
 
 这是一个安全的、支持生物识别的胶囊分配系统。它将标准的胶囊展示架转变为个性化的“信箱”系统，每个用户通过指纹或人脸认证拥有对特定存储通道的专属访问权。系统支持多用户录入、权限分级（管理员/普通用户）以及物理通道的动态分配。
 
@@ -10,111 +10,61 @@
 
 ## ✨ 主要功能
 
-*   **多线程架构**: 人脸识别在后台线程运行，主线程负责 UI 刷新，确保倒计时**平滑线性**，无卡顿。
-*   **智能电源与会话管理**: 
-    *   30秒无操作自动休眠。
-    *   物理按钮支持**唤醒及续命**功能（增加 30s）。
-    *   安全保护：设置 5 分钟强制休眠上限。
-*   **实时交互界面**: 1.3" IPS 屏幕实时显示时间、状态及**秒级倒计时**。倒计时少于 10s 时自动变红提醒。
-*   **多用户角色管理**: 支持 1 个超级管理员和无限候补用户。物理通道（舵机）仅分配给活跃用户（最多 5 人）。
+*   **全自动 IoT 生态**: 集成原生 Android App、FastAPI 后端以及树莓派硬件控制，实现端到端的无缝连接。
+*   **多线程架构**: 独立的人脸识别、UI 刷新和网络指令处理线程，确保在高负载下依然响应迅速。
+*   **智能电源管理**: 30秒无操作自动休眠，物理按钮支持即时唤醒。
+*   **极致 UX 体验 (V1.1)**: 全新 Vivid 配色方案，支持自动登录、一键注册以及可视化的通道分配界面。
 
 ---
 
 ## 🛠 硬件架构
 
-*   **控制器**: Raspberry Pi 5 (推荐 8GB)。
+*   **控制器**: Raspberry Pi 5。
 *   **执行器**: 5x SG90 微型舵机 (9g)。
-*   **传感器**: DY-50 / R307 光学指纹模块 (UART) + Camera Module 3 (IMX708)。
-*   **人机交互**: 1.3" IPS LCD (ST7789) + **唤醒按钮 (Wake-Up Button)**。
-*   **供电**: 舵机必须使用 **外部 5V 电源** (必须与 Pi 共地)。
-
-> **⚠️ 接线警告**: 不要直接从 Pi 的 GPIO 5V 引脚为 5 个舵机供电。请使用外部电源。详见 [WIRING_GUIDE.md](WIRING_GUIDE.md)。
+*   **传感器**: DY-50 光学指纹模块 (UART) + Camera Module 3。
+*   **人机交互**: 1.3" IPS LCD + **智能唤醒按钮**。
 
 ---
 
 ## 🚀 安装与设置
 
-### 1. 系统依赖
+### 5. 网络与 API 配置 (全自动)
+使用一键安装脚本，自动配置 Wi-Fi 热点、API 服务器以及硬件主程序作为系统服务运行：
+
 ```bash
-sudo apt-get update
-sudo apt-get install python3-serial python3-pip python3-lgpio python3-pil python3-rpi.gpio
+cd tools
+sudo ./install_service.sh
 ```
+*   **Wi-Fi SSID**: `DistCapsule_Box` (192.168.4.1)
+*   **API 端口**: 8000
+*   **自启**: 树莓派开机后所有服务将自动启动。
 
-### 2. Python 库
-```bash
-sudo pip3 install adafruit-circuitpython-fingerprint st7789
-```
+---
 
-### 3. 人脸识别环境 (Pi 5 Bookworm)
+## 📱 Android 移动应用 (V1.1)
 
-**前提条件: 安装 GStreamer 插件 (Pi 5 必须)**
-```bash
-sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-    gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
-    gstreamer1.0-libcamera gstreamer1.0-tools
-```
+配套 App（位于 `android/` 目录）已针对 Pi 5 深度优化：
 
-**安装 OpenCV 与 Face Recognition**
-```bash
-sudo apt update
-sudo apt install python3-opencv python3-face-recognition
-```
-
-### 4. 网络配置 (离线热点)
-为了让手机 App 能在没有外网的情况下控制 Pi，同时保持手机自身的 4G/5G 上网，请配置“无网关”热点模式：
-
-**开启热点:**
-```bash
-sudo ./tools/setup_manual_hotspot.sh
-```
-*   这将创建 Wi-Fi `DistCapsule_Box` (IP: 192.168.4.1)。手机连接后会自动保持 4G 上网。
-
-**关闭热点 (恢复正常 Wi-Fi):**
-```bash
-sudo ./tools/stop_hotspot.sh
-```
+*   **Vivid UI**: 采用现代色彩体系（绿宝石、向日葵、珊瑚红），确保高对比度与专业感。
+*   **自动登录**: 注册后下次打开 App 即刻直达控制台。
+*   **简化 IP 输入**: 只需输入 IP，App 自动补全协议与端口。
+*   **可视化选座**: 按钮式通道分配，支持动画反馈与冲突检测。
+*   **实时同步**: 录入指纹或人脸时，手机端与机器屏幕同步状态。
 
 ---
 
 ## 📖 使用指南
 
-### 1. 初始化系统
-创建数据库表及初始化配置。
+### 1. 快速注册
+打开 App，输入姓名点击“创建并连接”。系统会自动分配第一个空闲通道。
+
+### 2. 提升管理员权限
 ```bash
-python3 tools/setup_database.py
+sqlite3 capsule_dispenser.db "UPDATE Users SET auth_level=1 WHERE user_id=1;"
 ```
 
-### 2. 管理指纹用户
-启动指纹管理工具，录入管理员或分配舵机通道。
-```bash
-sudo python3 tools/fingerprint_enroll.py
-```
-
-### 3. 录入人脸
-为现有用户录入人脸数据（支持 SSH 无头模式自动录入）：
-```bash
-python3 tools/face_enroll.py
-```
-
-### 4. 硬件测试
-验证所有组件（舵机、屏幕、指纹、相机）是否工作正常。
-```bash
-sudo python3 tools/hardware_test.py
-```
-
-### 5. 运行主程序
-启动系统。系统默认进入 **休眠模式 (Sleep Mode)**（屏幕关闭）以节省能源。
-*   **唤醒**: 按下 **物理唤醒按钮**。
-*   **自动休眠**: 无操作 30 秒后自动重新进入休眠。
-
-```bash
-sudo python3 main.py
-```
-
-### 6. 设置开机自启
-```bash
-./tools/install_service.sh
-```
+### 3. 生物识别录入
+在 App 中点击“添加面部”或“添加指纹”，树莓派屏幕会自动点亮并引导您完成录入。
 
 ---
 
@@ -122,23 +72,30 @@ sudo python3 main.py
 
 | 文件/目录 | 描述 |
 | :--- | :--- |
-| `main.py` | **核心应用**. 处理认证循环、UI 更新和业务逻辑。 |
-| `hardware/` | **硬件驱动**. 包含舵机、屏幕、人脸识别系统等封装类。 |
-| `tools/` | **工具脚本**. 包含安装、测试、录入等辅助脚本。 |
-| `docs/` | **文档**. 接线指南、中文说明、归档文档及**演示文稿 (slides/)**。 |
-| `capsule_dispenser.db` | **数据库**. 存储用户信息、指纹 ID 及人脸特征。 |
+| `main.py` | 硬件主逻辑。 |
+| `api/server.py` | FastAPI 后端服务。 |
+| `android/` | Android Studio 源代码。 |
+| `hardware/` | 硬件驱动与录入逻辑。 |
+| `tools/` | 安装与维护工具脚本。 |
+
+---
+
+## 🔮 未来计划
+
+*   **远程推送**: 指令执行成功后的手机通知提醒。
+*   **3D 外壳**: 正在完善针对 Pi 5 的全包裹式保护壳设计。
 
 ---
 
 ## 📜 历史与决策
 
-*   **2025-12 (S5)**: 
-    *   **数据库自动迁移**: 优化 `setup_database.py`，实现旧版数据库结构的自动检测与无损升级（自动补充人脸字段）。
-    *   **多线程重构**: 引入 Python `threading` 和 `queue` 模块，将 AI 识别与 UI 刷新分离，极大提升交互流畅度。
-    *   **响应性能优化**: 彻底移除阻塞式延迟 (`time.sleep`)，引入非阻塞按钮检测和统一时间戳同步。
-    *   **全量 lgpio 迁移**: 移除 `RPi.GPIO`，所有 GPIO 操作（舵机、按钮）统一使用 `lgpio`，解决 Pi 5 硬件冲突。
-    *   **UI 体验升级**: 增加秒级动态倒计时和颜色预警。
-    *   **权限与分配**: 实现用户角色分级及物理通道的动态绑定。
+*   **2026-01 (V1.1)**: **体验革命**。重构 Android UI，增加自动登录，修复硬件死锁漏洞。
+*   **2026-01 (V1.0)**: **IoT 闭环**。首次打通 App -> API -> 数据库 -> 硬件链路。
+*   **2025-12 (S5)**: **内核重构**。迁移至 `lgpio` 并实现全异步架构。
 
----## License
+---
+
+*   **注**: 项目已移除 MQTT 支持与库存追踪功能，以确保生物识别访问的核心稳定性。
+
+## License
 MIT License

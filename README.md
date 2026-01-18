@@ -2,7 +2,7 @@
 
 [![中文](https://img.shields.io/badge/Language-中文-red.svg)](./README_CN.md)
 
-**Plateforme:** Raspberry Pi 5 (Bookworm OS) | **État:** Stable (S5) | **Dernière mise à jour:** 2026-01
+**Plateforme:** Raspberry Pi 5 (Bookworm OS) | **État:** Stable (V1.1) | **Dernière mise à jour:** 2026-01-18
 
 Un système de distribution de capsules sécurisé et activé par biométrie. Il transforme un présentoir à capsules standard en un système de "boîte aux lettres" personnalisé où chaque utilisateur a un accès exclusif à un canal de stockage spécifique via une authentification par empreinte digitale. Le système prend en charge l'enregistrement multi-utilisateurs, la hiérarchie des permissions (Admin/Utilisateur) et l'allocation dynamique des canaux physiques.
 
@@ -10,16 +10,11 @@ Un système de distribution de capsules sécurisé et activé par biométrie. Il
 
 ## ✨ Fonctionnalités Clés
 
-*   **Gestion des Rôles Multi-utilisateurs**: Prend en charge 1 super-administrateur et des utilisateurs en liste d'attente illimités. Les canaux physiques (servos) ne sont alloués qu'aux utilisateurs actifs (max 5).
-*   **Architecture Multi-threadée**: Utilise des threads séparés pour la reconnaissance faciale et l'interface utilisateur, garantissant une **mise à jour fluide et linéaire** du compte à rebours sans saccades.
-*   **Gestion de l'Énergie & Session**: 
-    *   Mise en veille automatique après 30s.
-    *   Réveil et **extension de temps** via un bouton physique dédié.
-    *   Sécurité : limite de session maximale de 5 minutes pour éviter les blocages.
-*   **Interface Interactive**: Écran IPS 1,3" affichant l'heure, le statut et un **compte à rebours en temps réel**. La couleur passe au rouge en dessous de 10s.
-*   **Horloge en Temps Réel**: Affiche l'heure du système mise à jour dynamiquement en mode actif.
-*   **Guide d'Enrôlement**: Outil CLI interactif avec sélection du doigt (ex: Right Thumb) et affichage automatique de l'état des utilisateurs actuels.
-*   **Sécurité Biométrique**: Capteur optique DY-50 (compatible R307) pour une identification rapide.
+*   **Gestion des Rôles Multi-utilisateurs**: Authentification par Token persistante avec connexion automatique (Auto-Login).
+*   **Architecture IoT Moderne**: Écosystème complet intégrant l'App Android, le serveur FastAPI et le contrôle matériel en temps réel.
+*   **Architecture Multi-threadée**: Threads séparés pour l'IA (visage), l'UI et la gestion des commandes réseau.
+*   **UX Mobile Avancée (V1.1)**: Interface visuelle et colorée (Vivid Palette) avec animations de sélection et retour haptique visuel.
+
 
 ---
 
@@ -83,59 +78,44 @@ pip install git+https://github.com/ageitgey/face_recognition_models --break-syst
 *   **UART**: Activez le matériel du port série via `sudo raspi-config`, mais désactivez le shell de connexion. Le module d'empreintes digitales utilise `/dev/ttyAMA0` (GPIO 14/15) sur le Pi 5.
 *   **SPI**: Activez l'interface SPI via `sudo raspi-config` pour l'écran.
 
-### 5. Configuration Réseau (Hotspot & API)
-Le système est conçu pour fonctionner de manière autonome. Utilisez le script d'installation tout-en-un pour configurer le Hotspot Wi-Fi, le serveur API et le service principal :
+### 5. Configuration Réseau (Zéro-Config)
+Utilisez le script d'installation automatisé pour configurer le Hotspot, l'API et le contrôleur matériel comme services système :
 
 ```bash
 cd tools
 sudo ./install_service.sh
 ```
-*   **Service Hotspot** : Crée le Wi-Fi `DistCapsule_Box` (192.168.4.1).
-*   **Service API** : Lance le serveur REST sur le port 8000.
-*   **Service Principal** : Lance la logique de contrôle matériel (`main.py`).
-*   **Tout est automatique** au redémarrage du Pi.
+*   **SSID** : `DistCapsule_Box` (IP: 192.168.4.1)
+*   **Port API** : 8000
+*   **Démarrage** : Automatique au boot du Pi.
 
 ---
 
-## 📱 Application Android
+## 📱 Application Android (V1.1)
 
-L'application compagnon (dans le dossier `android/`) offre une interface complète pour les utilisateurs et les administrateurs.
+L'application (dossier `android/`) a été optimisée pour une fluidité maximale :
 
-*   **Connexion Automatique** : Détection intelligente de l'IP du Pi.
-*   **Enregistrement Simplifié** : Entrez simplement votre nom, le système attribue automatiquement un canal libre.
-*   **Gestion Administrateur** :
-    *   Attribution visuelle des canaux (boutons interactifs).
-    *   Gestion des utilisateurs (suppression instantanée).
-    *   Contrôle direct du matériel (déverrouillage, enrôlement).
-*   **Utilisateur Standard** :
-    *   Bouton unique "Obtenir mon café".
-    *   Auto-enrôlement (Visage/Empreinte) via l'application.
+*   **Vivid UI** : Palette de couleurs moderne (Émeraude, Tournesol, Corail) avec texte contrasté pour une lisibilité parfaite.
+*   **Auto-Login** : Une fois enregistré, l'accès au Dashboard est instantané.
+*   **Saisie d'IP Simplifiée** : Entrez simplement l'IP, le protocole et le port sont gérés automatiquement.
+*   **Gestion Visuelle des Canaux** : Système de sélection par boutons avec effet "pop-up" pour une attribution sans erreur.
+*   **Feedback Instantané** : Toasts contextuels pour chaque action matérielle (ex: "Ouverture du canal 3...").
 
 ---
 
 ## 📖 Guide d'Utilisation
 
-### 1. Initialiser le Système
-Créer les tables de base de données (si nécessaire).
+### 1. Inscription
+Ouvrez l'application, entrez votre nom et cliquez sur "Créer et se connecter". Un canal libre vous sera automatiquement attribué si disponible.
 
+### 2. Administration
+Pour activer les privilèges Admin sur un compte :
 ```bash
-python3 tools/setup_database.py
+sqlite3 capsule_dispenser.db "UPDATE Users SET auth_level=1 WHERE user_id=1;"
 ```
 
-### 2. Premier Démarrage (Admin)
-1.  Connectez votre téléphone au Wi-Fi `DistCapsule_Box`.
-2.  Lancez l'application Android.
-3.  Entrez "Admin" (ou votre nom) pour créer le premier utilisateur.
-4.  Via SSH, élevez ce premier utilisateur au rang d'Admin :
-    ```bash
-    sqlite3 capsule_dispenser.db "UPDATE Users SET auth_level=1 WHERE user_id=1;"
-    ```
-5.  Redémarrez l'application. Vous avez maintenant accès au panneau d'administration.
-
-### 3. Enrôlement
-*   Dans l'application, cliquez sur "Ajouter Face" ou "Ajouter Empreinte".
-*   L'écran du Pi s'allumera et vous guidera.
-*   L'application se mettra à jour (bouton vert) une fois l'enrôlement terminé.
+### 3. Enrôlement Biométrique
+Les utilisateurs peuvent lancer l'enrôlement de leur visage ou empreinte directement depuis leur Dashboard. L'écran du Pi s'allume alors automatiquement pour guider l'utilisateur.
 
 ---
 
@@ -143,36 +123,31 @@ python3 tools/setup_database.py
 
 | Fichier/Dossier | Description |
 | :--- | :--- |
-| `main.py` | **Application Principale**. Gère la boucle d'authentification et le matériel. |
-| `api/` | **Web API**. Serveur FastAPI (`server.py`) pour l'app mobile. |
-| `android/` | **Code Source Android**. Projet Android Studio complet. |
-| `hardware/` | **Pilotes**. Drivers (`servo_control`, `st7789`, `enrollment`). |
-| `tools/` | **Scripts**. Installation, tests et maintenance. |
-| `docs/` | **Documentation**. Spécifications, diapositives et archives. |
+| `main.py` | Cœur du système (Hardware Loop). |
+| `api/server.py` | API REST FastAPI. |
+| `android/` | Projet Android Studio (Java). |
+| `hardware/` | Drivers et logique d'enrôlement. |
+| `tools/` | Scripts d'installation et maintenance. |
 
 ---
 
 ## 🔮 Feuille de Route Future
 
-*   **Intégration Caméra**: Identification faciale via Raspberry Pi Camera 3 (En cours).
-*   **Notifications**: Push notifications sur mobile lors de l'accès.
-*   **Boîtier**: Finalisation du design 3D pour l'intégration des composants.
+*   **Notifications Push** : Alertes mobiles en cas d'accès non autorisé.
+*   **Logs Avancés** : Historique détaillé des accès avec photos des visages.
+*   **Design 3D** : Finalisation de la coque de protection.
 
 ---
 
 ## 📜 Histoire & Décisions
 
-*   **2026-01 (S6 - IoT & Mobile)**:
-    *   **Écosystème Complet** : Intégration transparente App <-> API <-> Matériel.
-    *   **UX Mobile** : Application Android native avec authentification par Token et mises à jour en temps réel.
-    *   **Stabilité** : Gestion des conflits de base de données et des timeouts matériels.
-*   **2025-12 (S5)**: 
-    *   **Refonte Multi-threadée**: Architecture asynchrone pour la fluidité de l'UI.
-    *   **Gestion Native GPIO**: Migration vers `lgpio` pour le Pi 5.
+*   **2026-01-18 (V1.1)** : Refonte de l'UX Android, ajout de l'auto-login et sécurisation des timeouts matériels.
+*   **2026-01-14 (V1.0)** : Première release stable IoT (App + API + Pi).
+*   **2025-12 (S5)** : Migration vers `lgpio` et architecture asynchrone.
 
 ---
 
-*   **2024-11**: Suppression de l'Arduino de l'architecture. Le Pi 5 est assez puissant pour gérer toutes les E/S directement.
+*   **Note** : Le projet a abandonné le support MQTT et le suivi des stocks physiques pour se concentrer sur la fiabilité de l'accès biométrique.
 
 ## License
 MIT License

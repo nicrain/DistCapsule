@@ -3,15 +3,13 @@
 **Project Name**: DistCapsule (Smart Coffee Capsule Dispenser)
 **Target Platform**: Android (Min SDK 24+)
 **Backend**: Raspberry Pi 5 (FastAPI REST)
-**Version**: 2.0 (Updated 2026-01-16)
+**Version**: 1.1 (Updated 2026-01-18)
 
 ---
 
 ## 1. Project Overview
 
-The Android application serves as the primary **Control & Management Interface** for the DistCapsule system. It connects to the Raspberry Pi via local Wi-Fi (Hotspot `DistCapsule_Box`) and provides two distinct views based on user roles:
-1.  **Administrator**: Full system management (Users, Channels, Hardware).
-2.  **Standard User**: Personal coffee retrieval and profile management.
+L'application Android sert d'interface de contrôle principale. Elle a été optimisée en version 1.1 avec une **Vivid UI** (palette de couleurs vive et contrastée) pour une meilleure lisibilité et une réactivité accrue.
 
 ---
 
@@ -19,70 +17,47 @@ The Android application serves as the primary **Control & Management Interface**
 
 ### 2.1 Administrator (Admin)
 *   **User Management**:
-    *   Create new users (Name, Permission).
-    *   Assign/Reassign coffee channels (Rails 1-5).
+    *   Assign/Reassign coffee channels (Rails 1-5) via a **Visual Interface** (buttons with pop-up animations).
     *   Trigger remote biometric enrollment (Face/Fingerprint).
-    *   Delete users (including hardware data cleanup).
-    *   *Note*: The App must handle **HTTP 400 errors** if assigning a channel that is already occupied by another user.
+    *   Delete users (instant database update + hardware cleanup).
 *   **Hardware Control**:
-    *   Manually open any channel (Maintenance).
+    *   Manually open any channel.
     *   View real-time channel occupancy map.
 
 ### 2.2 Standard User
 *   **One-Tap Dispense**:
-    *   Large button "Get My Coffee" (Ouvrir mon canal).
-    *   Only works if the user has an assigned channel.
+    *   Large button "Obtenir mon café" (Emerald Green).
 *   **Self-Management**:
-    *   Delete own account (GDPR compliance / Unregister).
-*   **Visualization**:
-    *   View the "Coffee Map" (Which channel is occupied by whom).
+    *   Delete own account.
+    *   **Self-Enrollment**: Launch face/fingerprint enrollment directly from the phone.
 
 ---
 
 ## 3. App Workflow & UX
 
 ### 3.1 Onboarding & Login (Token Based)
-*   **No Password**: The app uses a device-bound **Token** for authentication.
+*   **Auto-Login**: L'application utilise un Token lié à l'appareil. Une fois enregistré, l'utilisateur accède directement au Dashboard.
 *   **First Run (New User)**:
-    1.  App scans for the API (`GET /`).
-    2.  **One-Click Registration**: User enters Name and clicks "Créer et se connecter".
-    3.  **Auto-Assignment**: The server automatically assigns the first available channel (1-5).
-    4.  **Instant Access**: App saves the token and jumps directly to the Dashboard.
-*   **Auto-Login**: Subsequent runs use the stored Token to log in silently.
+    1.  **One-Click Registration**: Entrez votre nom, cliquez sur "Créer et se connecter".
+    2.  Le système attribue automatiquement le premier canal libre.
+    3.  L'application génère et stocke le Token UUID.
 
 ### 3.2 Dashboard (Main Screen)
-*   **Header**: "Bonjour, [Name]".
-*   **Status Card**:
-    *   **Self-Enrollment Buttons**: "Ajouter Face" / "Ajouter Empreinte".
-    *   Buttons turn **Green** ("Mettre à jour") once enrolled.
-*   **Center**:
-    *   If **User** + **Assigned Channel**: Big Green Button `[ OBTENIR MON CAFE ]`.
-    *   If **Admin**: Visual Channel Map with 5 interactive buttons.
-*   **Admin Channel Management**:
-    *   **Visual Interface**: 5 Buttons (Red=Occupied, Green=Free, Orange=Selected).
-    *   **Pop-up Animation**: Selected channel pops up visually.
-    *   **Action**: "Attribuer Canal X" or "Retirer le Canal".
-
-### 3.3 Enrollment (Sync)
-*   **Process**:
-    *   User clicks "Ajouter Empreinte" in App.
-    *   **Hardware Sync**: Pi screen wakes up and shows instructions.
-    *   **Real-time**: App updates button status automatically upon completion.
+*   **Vivid Visuals**:
+    *   **Emerald (#2ECC71)**: Actions réussies / Prêt.
+    *   **Sunflower (#F1C40F)**: En attente / Sélectionné.
+    *   **Coral (#FF5A5F)**: Occupé / Suppression.
+*   **Header**: "Bonjour, [Name] ! Votre café est au Canal [X]." (ou message de bienvenue si pas de canal).
 
 ---
 
 ## 4. Technical Architecture
 
 ### 4.1 Network
-*   **Protocol**: HTTP REST (JSON).
-*   **Address**: `http://192.168.4.1:8000` (Default Hotspot Gateway).
-*   **Constraint**: The phone must stay connected to the Pi's Wi-Fi.
-
-### 4.2 Data Models
-*   **User**: `id`, `name`, `auth_level` (1=Admin, 2=User), `assigned_channel` (1-5 or null), `has_face` (bool), `has_fingerprint` (bool).
-*   **Command**: The App does not control servos directly. It sends **Commands** (`UNLOCK`, `ENROLL`) to the API, which queues them for the Hardware Agent (`main.py`).
+*   **Smart IP Handling**: L'utilisateur entre simplement l'IP (ex: `192.168.4.1`). L'App gère automatiquement le protocole `http://` et le port `:8000`.
+*   **Offline Hotspot**: Connection directe au Pi via `DistCapsule_Box`.
 
 ---
 
 ## 5. Developer Guide (Next Steps)
-For detailed API endpoints, parameters, and JSON examples, please refer to the **[API Reference Documentation](API_REFERENCE.md)**.
+La version 1.1 a supprimé le "Mode Demo" pour garantir l'intégrité des sessions réelles. Tout test doit désormais s'appuyer sur une instance API active.
