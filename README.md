@@ -13,7 +13,7 @@ Un système de distribution de capsules sécurisé et activé par biométrie. Il
 *   **Gestion des Rôles Multi-utilisateurs**: Authentification par Token persistante avec connexion automatique (Auto-Login).
 *   **Architecture IoT Moderne**: Écosystème complet intégrant l'App Android, le serveur FastAPI et le contrôle matériel en temps réel.
 *   **Architecture Multi-threadée**: Threads séparés pour l'IA (visage), l'UI et la gestion des commandes réseau.
-*   **UX Mobile Avancée (V1.1)**: Interface visuelle et colorée (Vivid Palette) avec animations de sélection et retour haptique visuel.
+*   **UX Mobile Avancée (V1.1)**: Interface visuelle et colorée (Vivid Palette), icône d'application personnalisée, animations de sélection et retour haptique visuel.
 
 
 ---

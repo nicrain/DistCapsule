@@ -30,7 +30,7 @@
 
 ## 📅 Journal des Modifications (Changelog)
 *   **2026-01-18 (Final S6 Release - V1.1)**:
-    *   **Android App v1.1**: Refonte totale de l'UX avec une palette de couleurs vive (Vivid Palette), auto-login via Token et saisie d'IP simplifiée.
+    *   **Android App v1.1**: Refonte totale de l'UX avec une palette de couleurs vive (Vivid Palette), icône d'application personnalisée (Coffee Capsule), auto-login via Token et saisie d'IP simplifiée.
     *   **UX Revolution**: Remplacement des saisies manuelles par une interface visuelle (boutons de canaux, pop-up d'animation).
     *   **Hardware Sync**: Synchronisation bidirectionnelle Matériel <-> App (les boutons d'enrôlement changent de couleur en temps réel).
     *   **Stabilité**: Correction des deadlocks de base de données (timeout) et des blocages de capteur d'empreintes (timeout 30s).
