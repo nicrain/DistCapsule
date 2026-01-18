@@ -79,9 +79,10 @@ def run_face_enrollment(disp, face_rec, user_id, db_path, cmd_id=None):
     update_enroll_screen(disp, "ECHEC", "Timeout (20s)", "RED", cmd_id=cmd_id, db_path=db_path)
     time.sleep(2); return False
 
-def run_finger_enrollment(disp, finger, user_id, db_path, cmd_id=None):
-    print(f"开始为指纹录入 ID: {user_id} / Enrollment Finger")
-    update_enroll_screen(disp, "ENROLL FINGER", "Placez doigt\nPlace finger", cmd_id=cmd_id, db_path=db_path)
+def run_finger_enrollment(disp, finger, user_id, db_path, cmd_id=None, finger_label=None):
+    title = f"FINGER: {finger_label}" if finger_label else "ENROLL FINGER"
+    print(f"开始为指纹录入 ID: {user_id} ({finger_label}) / Enrollment")
+    update_enroll_screen(disp, title, "Placez doigt\nPlace finger", cmd_id=cmd_id, db_path=db_path)
     
     start_time = time.time()
     timeout = 30 # 30秒超时
@@ -92,7 +93,6 @@ def run_finger_enrollment(disp, finger, user_id, db_path, cmd_id=None):
             update_enroll_screen(disp, "TIMEOUT", "Trop long", "RED", cmd_id=cmd_id, db_path=db_path)
             time.sleep(2)
             return False
-        # 稍微sleep一下防止CPU空转
     
     if finger.image_2_tz(1) != adafruit_fingerprint.OK:
         update_enroll_screen(disp, "ECHEC", "Erreur Image 1", "RED", cmd_id=cmd_id, db_path=db_path)

@@ -37,7 +37,7 @@ public interface ApiService {
     Call<StatusResponse> enrollFace(@Query("user_id") int userId);
 
     @POST("command/enroll_finger")
-    Call<StatusResponse> enrollFinger(@Query("user_id") int userId);
+    Call<StatusResponse> enrollFinger(@Query("user_id") int userId, @Query("finger_label") String fingerLabel);
 
     @POST("command/unlock")
     Call<StatusResponse> unlock(@Query("channel") int channel);
