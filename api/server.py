@@ -211,15 +211,22 @@ def delete_user(user_id: int):
         if not user:
             conn.close()
             raise HTTPException(status_code=404, detail="User not found")
-        if user['user_id'] == 1:
+        # Protect Admin
+        if user['user_id'] == 1 or user['auth_level'] <= 1:
             conn.close()
-            raise HTTPException(status_code=403, detail="Admin protected")
+            raise HTTPException(status_code=403, detail="Cannot delete Administrator")
 
-        cursor.execute("INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
-                       ("DELETE_USER", user_id, "pending"))
+        # 1. Immediately delete from DB so App sees update instantly
+        cursor.execute("DELETE FROM Users WHERE user_id = ?", (user_id,))
+        
+        # 2. Queue command for hardware cleanup (fingerprint/face)
+        cursor.execute(
+            "INSERT INTO Pending_Commands (command_type, target_id, status) VALUES (?, ?, ?)",
+            ("DELETE_USER", user_id, "pending")
+        )
         conn.commit()
         conn.close()
-        return {"status": "success", "message": "Queued"}
+        return {"status": "success", "message": f"User {user_id} deleted"}
     except HTTPException as he:
         raise he
     except Exception as e:

@@ -1,18 +1,11 @@
 package net.chezxinqi.distcapsule;
 
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
-import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -50,7 +43,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-@SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "distcapsule_prefs";
@@ -63,80 +55,26 @@ public class MainActivity extends AppCompatActivity {
     private TextInputLayout tilBaseUrl;
     private boolean baseUrlEditing = false;
 
-    private Button btnLoadUsers;
-    private Button btnDemo;
-    private Button btnBindUser;
-    private Button btnUnlock;
-    private Button btnDeleteUser;
-    private Button btnAdminAssignChannel;
-    private Button btnAdminEnrollFace;
-    private Button btnAdminEnrollFinger;
-    private Button btnAdminDeleteUser;
-    private Button btnAdminUserManagement;
-    private Button btnAdminHardwareControl;
-    private Button btnAdminMenuCreate;
-    private Button btnAdminMenuAssign;
-    private Button btnAdminMenuDelete;
-    private Button btnUnlock1;
-    private Button btnUnlock2;
-    private Button btnUnlock3;
-    private Button btnUnlock4;
-    private Button btnUnlock5;
+    private Button btnLoadUsers, btnDemo, btnBindUser, btnUnlock, btnDeleteUser;
+    private Button btnAdminAssignChannel, btnAdminEnrollFace, btnAdminEnrollFinger, btnAdminDeleteUser;
+    private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuCreate, btnAdminMenuAssign, btnAdminMenuDelete;
+    private Button btnUnlock1, btnUnlock2, btnUnlock3, btnUnlock4, btnUnlock5;
     private Button btnCreateUser;
 
-    private AutoCompleteTextView etSelectUser;
-    private AutoCompleteTextView etAdminSelectUser;
-    private AutoCompleteTextView etAdminDeleteUser;
-    private EditText etCreateName;
-    private EditText etCreateAuthLevel;
+    private AutoCompleteTextView etSelectUser, etAdminSelectUser, etAdminDeleteUser;
+    private EditText etCreateName, etCreateAuthLevel, etCreateChannel, etAdminChannel;
 
-    private EditText etCreateChannel;
-    private EditText etAdminChannel;
-
-    private TextView tvGreeting;
-    private TextView tvBioSummary;
-    private TextView tvFaceStatus;
-    private TextView tvFingerStatus;
-    private TextView tvChannelStatus;
-    private TextView tvAdminFaceStatus;
-    private TextView tvAdminFingerStatus;
-    private TextView tvActionResultTitle;
-    private TextView tvActionResultDetail;
-    private TextView tvChannel1;
-    private TextView tvChannel2;
-    private TextView tvChannel3;
-    private TextView tvChannel4;
-    private TextView tvChannel5;
+    private TextView tvGreeting, tvBioSummary, tvFaceStatus, tvFingerStatus, tvChannelStatus;
+    private TextView tvAdminFaceStatus, tvAdminFingerStatus, tvActionResultTitle, tvActionResultDetail;
+    private TextView tvChannel1, tvChannel2, tvChannel3, tvChannel4, tvChannel5;
 
     private ImageView ivCafeDashboard;
-    private View screenConnection;
-    private View screenBind;
-    private View screenDashboard;
-    private View splashOverlay;
-    private View mainScroll;
-    private MaterialCardView cardAdmin;
-    private MaterialCardView cardSelfManage;
-    private MaterialCardView cardActions;
-    private MaterialCardView cardStatus;
-    private MaterialCardView cardAdminChannels;
-    private MaterialCardView cardChannelMap;
-    private MaterialCardView cardCreateUser;
-    private MaterialCardView cardActionResult;
-    private ImageButton btnAdminUserBack;
-    private ImageButton btnAdminHardwareBack;
-    private View adminUserHeader;
-    private View adminHardwareHeader;
-    private MaterialCardView cardAdminMenu;
-    private MaterialCardView cardAdminUserMenu;
-    private View sectionAdminUser;
-    private View sectionAdminHardware;
-    private View sectionAdminAssign;
-    private View sectionAdminCreate;
-    private View sectionAdminDelete;
-
-    private ImageView ivHeaderCapsule;
-    private TextView tvSplashTitle;
-    private ImageView ivSplashCapsule;
+    private View screenConnection, screenBind, screenDashboard, splashOverlay;
+    private MaterialCardView cardSelfManage, cardActions, cardStatus, cardAdminChannels, cardChannelMap, cardCreateUser, cardActionResult;
+    private MaterialCardView cardAdminMenu, cardAdminUserMenu;
+    private ImageButton btnAdminUserBack, btnAdminHardwareBack;
+    private View adminUserHeader, adminHardwareHeader;
+    private View sectionAdminUser, sectionAdminHardware, sectionAdminAssign, sectionAdminCreate, sectionAdminDelete;
     private ProgressBar pbLoading;
 
     private final List<User> cachedUsers = new ArrayList<>();
@@ -150,48 +88,43 @@ public class MainActivity extends AppCompatActivity {
     private User selectedAdminUser;
     private User selectedDeleteUser;
     private boolean demoMode = false;
-    private int debugStep = 0;
     private final Handler channelMapHandler = new Handler(Looper.getMainLooper());
+
     private final Runnable channelMapRunnable = new Runnable() {
         @Override
         public void run() {
-            if (screenDashboard == null || screenDashboard.getVisibility() != View.VISIBLE) {
-                return;
-            }
+            if (screenDashboard == null || screenDashboard.getVisibility() != View.VISIBLE) return;
             if (demoMode) {
                 updateChannelMap();
             } else {
                 String baseUrl = resolveBaseUrl();
-                if (!baseUrl.isEmpty()) {
-                    refreshUsers(baseUrl);
-                }
+                if (!baseUrl.isEmpty()) refreshUsers(baseUrl);
             }
             channelMapHandler.postDelayed(this, CHANNEL_MAP_REFRESH_MS);
         }
     };
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        if (screenDashboard != null && screenDashboard.getVisibility() == View.VISIBLE) {
-            startChannelMapUpdates();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        stopChannelMapUpdates();
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        initViews();
+        setupAdapters();
+        setupListeners();
+        setupBaseUrlEditing();
+
+        String savedUrl = loadBaseUrl();
+        etBaseUrl.setText(savedUrl.isEmpty() ? DEFAULT_IP : stripProtocolAndPort(savedUrl));
+        setBaseUrlEditable(false);
+
+        showConnectionStep();
+        playSplash();
+    }
+
+    private void initViews() {
         etBaseUrl = findViewById(R.id.etBaseUrl);
         tilBaseUrl = findViewById(R.id.tilBaseUrl);
-
         btnLoadUsers = findViewById(R.id.btnLoadUsers);
         btnDemo = findViewById(R.id.btnDemo);
         btnBindUser = findViewById(R.id.btnBindUser);
@@ -212,16 +145,13 @@ public class MainActivity extends AppCompatActivity {
         btnUnlock4 = findViewById(R.id.btnUnlock4);
         btnUnlock5 = findViewById(R.id.btnUnlock5);
         btnCreateUser = findViewById(R.id.btnCreateUser);
-
         etSelectUser = findViewById(R.id.etSelectUser);
         etAdminSelectUser = findViewById(R.id.etAdminSelectUser);
         etAdminDeleteUser = findViewById(R.id.etAdminDeleteUser);
         etCreateName = findViewById(R.id.etCreateName);
         etCreateAuthLevel = findViewById(R.id.etCreateAuthLevel);
-
         etCreateChannel = findViewById(R.id.etCreateChannel);
         etAdminChannel = findViewById(R.id.etAdminChannel);
-
         tvGreeting = findViewById(R.id.tvGreeting);
         tvBioSummary = findViewById(R.id.tvBioSummary);
         tvFaceStatus = findViewById(R.id.tvFaceStatus);
@@ -237,13 +167,10 @@ public class MainActivity extends AppCompatActivity {
         tvChannel4 = findViewById(R.id.tvChannel4);
         tvChannel5 = findViewById(R.id.tvChannel5);
         ivCafeDashboard = findViewById(R.id.ivCafeDashboard);
-
         screenConnection = findViewById(R.id.screenConnection);
         screenBind = findViewById(R.id.screenBind);
         screenDashboard = findViewById(R.id.screenDashboard);
         splashOverlay = findViewById(R.id.splashOverlay);
-        mainScroll = findViewById(R.id.mainScroll);
-        cardAdmin = findViewById(R.id.cardAdmin);
         cardSelfManage = findViewById(R.id.cardSelfManage);
         cardActions = findViewById(R.id.cardActions);
         cardStatus = findViewById(R.id.cardStatus);
@@ -262,14 +189,10 @@ public class MainActivity extends AppCompatActivity {
         adminHardwareHeader = findViewById(R.id.adminHardwareHeader);
         btnAdminUserBack = findViewById(R.id.btnAdminUserBack);
         btnAdminHardwareBack = findViewById(R.id.btnAdminHardwareBack);
-
-        ivHeaderCapsule = findViewById(R.id.ivCapsule);
-        tvSplashTitle = findViewById(R.id.tvSplashTitle);
-        ivSplashCapsule = findViewById(R.id.ivSplashCapsule);
         pbLoading = findViewById(R.id.pbLoading);
+    }
 
-        setupAdapters();
-
+    private void setupListeners() {
         btnLoadUsers.setOnClickListener(v -> connectToApi());
         btnDemo.setOnClickListener(v -> enableDemoMode());
         btnBindUser.setOnClickListener(v -> bindSelectedUser());
@@ -291,83 +214,197 @@ public class MainActivity extends AppCompatActivity {
         btnUnlock5.setOnClickListener(v -> unlockSpecificChannel(5));
         btnCreateUser.setOnClickListener(v -> createUser());
         btnAdminUserBack.setOnClickListener(v -> handleAdminUserBack());
-
-
-        setupBaseUrlEditing();
-        String savedUrl = loadBaseUrl();
-        if (savedUrl.isEmpty()) {
-            etBaseUrl.setText(DEFAULT_IP);
-        } else {
-            etBaseUrl.setText(stripProtocolAndPort(savedUrl));
-        }
-        setBaseUrlEditable(false);
-        showConnectionStep();
-        playSplash();
-        setupDebugScreenToggle();
+        btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
     }
 
-    private String stripProtocolAndPort(String url) {
-        if (url == null) return "";
-        String clean = url.replace("http://", "").replace("https://", "");
-        if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
-        if (clean.contains(":8000")) {
-            clean = clean.replace(":8000", "");
+    private void playSplash() {
+        if (splashOverlay != null) {
+            splashOverlay.setVisibility(View.VISIBLE);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> splashOverlay.setVisibility(View.GONE), 2000);
         }
-        return clean;
     }
 
-    private void setupAdapters() {
-        bindAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
-        etSelectUser.setAdapter(bindAdapter);
-        setupDropdown(etSelectUser);
-        etSelectUser.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < bindUsers.size()) {
-                selectedBindUser = bindUsers.get(position);
+    private void prepareNetworkForLocalApi(String baseUrl) {
+        // Implementation for network preparation if needed
+    }
+
+    private void showConnectionStep() {
+        screenConnection.setVisibility(View.VISIBLE);
+        screenBind.setVisibility(View.GONE);
+        screenDashboard.setVisibility(View.GONE);
+        stopChannelMapUpdates();
+    }
+
+    private void showBindStep() {
+        screenConnection.setVisibility(View.GONE);
+        screenBind.setVisibility(View.VISIBLE);
+        screenDashboard.setVisibility(View.GONE);
+        if (cardCreateUser != null) cardCreateUser.setVisibility(View.GONE); // Ensure admin card is hidden
+        stopChannelMapUpdates();
+
+        // Transform Bind Screen into Registration Screen
+        if (etSelectUser != null) {
+            etSelectUser.setAdapter(null); // Disable dropdown
+            etSelectUser.setText("");
+            // Try to set hint if possible, otherwise user sees "Select User" which is acceptable
+            etSelectUser.setHint("Entrez votre nom");
+        }
+        if (btnBindUser != null) {
+            btnBindUser.setText("Créer et se connecter");
+            btnBindUser.setOnClickListener(v -> createAndBindUser());
+        }
+    }
+
+    private void createAndBindUser() {
+        String name = etSelectUser.getText().toString().trim();
+        if (name.isEmpty()) {
+            Toast.makeText(this, "Veuillez entrer un nom", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        setLoading(true);
+        String baseUrl = resolveBaseUrl();
+        ApiService api = apiForBaseUrl(baseUrl);
+        
+        // Step 1: Create User
+        api.createUser(new CreateUserRequest(name, 2, null)).enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User newUser = response.body();
+                    // Step 2: Bind Device
+                    performBind(newUser.getId(), baseUrl);
+                } else {
+                    setLoading(false);
+                    Toast.makeText(MainActivity.this, "Création échouée: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<User> call, Throwable t) {
+                setLoading(false);
+                Toast.makeText(MainActivity.this, "Erreur création: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
 
-        adminAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
-        etAdminSelectUser.setAdapter(adminAdapter);
-        setupDropdown(etAdminSelectUser);
-        etAdminSelectUser.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < adminUsers.size()) {
-                selectedAdminUser = adminUsers.get(position);
-                updateAdminUi(selectedAdminUser);
+    private void performBind(int userId, String baseUrl) {
+        String token = UUID.randomUUID().toString();
+        apiForBaseUrl(baseUrl).bindDevice(new BindRequest(userId, token)).enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                setLoading(false);
+                if (response.isSuccessful()) {
+                    saveToken(token);
+                    // Fetch full user details to ensure current user object is valid
+                    fetchAndEnterDashboard(baseUrl);
+                } else {
+                    Toast.makeText(MainActivity.this, "Liaison échouée: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<StatusResponse> call, Throwable t) {
+                setLoading(false);
+                Toast.makeText(MainActivity.this, "Erreur liaison: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
 
-        etAdminDeleteUser.setAdapter(adminAdapter);
-        setupDropdown(etAdminDeleteUser);
-        etAdminDeleteUser.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < adminUsers.size()) {
-                selectedDeleteUser = adminUsers.get(position);
+    private void fetchAndEnterDashboard(String baseUrl) {
+        setLoading(true);
+        String token = loadToken();
+        apiForBaseUrl(baseUrl).auth(new AuthRequest(token)).enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                setLoading(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    currentUser = response.body();
+                    showDashboardStep();
+                    refreshUsers(baseUrl);
+                } else {
+                    Toast.makeText(MainActivity.this, "Erreur auth après création", Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<User> call, Throwable t) {
+                setLoading(false);
+                Toast.makeText(MainActivity.this, "Erreur réseau après création", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showDashboardStep() {
+        screenConnection.setVisibility(View.GONE);
+        screenBind.setVisibility(View.GONE);
+        screenDashboard.setVisibility(View.VISIBLE);
+        if (cardCreateUser != null) cardCreateUser.setVisibility(View.GONE);
+        if (currentUser != null) {
+            updateDashboardUi(currentUser);
+            boolean isAdmin = currentUser.getAuthLevel() == 1;
+            if (cardStatus != null) cardStatus.setVisibility(isAdmin ? View.GONE : View.VISIBLE);
+            if (cardAdminMenu != null) cardAdminMenu.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+            if (sectionAdminUser != null) sectionAdminUser.setVisibility(View.GONE);
+            if (sectionAdminHardware != null) sectionAdminHardware.setVisibility(isAdmin ? View.GONE : View.VISIBLE);
+            cardAdminChannels.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+            cardChannelMap.setVisibility(View.VISIBLE);
+            cardActions.setVisibility(isAdmin ? View.GONE : View.VISIBLE);
+            cardSelfManage.setVisibility(isAdmin ? View.GONE : View.VISIBLE);
+            if (ivCafeDashboard != null) ivCafeDashboard.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+            if (isAdmin && selectedAdminUser == null) {
+                selectedAdminUser = currentUser;
+                updateAdminUi(currentUser);
+            }
+        }
+        if (cardActionResult != null) cardActionResult.setVisibility(View.GONE);
+        startChannelMapUpdates();
+    }
+
+    private void bindSelectedUser() {
+        if (selectedBindUser == null) {
+            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (demoMode) {
+            currentUser = selectedBindUser;
+            showDashboardStep();
+            return;
+        }
+        String baseUrl = resolveBaseUrl();
+        if (baseUrl.isEmpty()) return;
+        String token = UUID.randomUUID().toString();
+        ApiService api = apiForBaseUrl(baseUrl);
+        setLoading(true);
+        api.bindDevice(new BindRequest(selectedBindUser.getId(), token)).enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                setLoading(false);
+                if (response.isSuccessful()) {
+                    saveToken(token);
+                    currentUser = selectedBindUser;
+                    showDashboardStep();
+                    refreshUsers(baseUrl);
+                } else {
+                    Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<StatusResponse> call, Throwable t) {
+                setLoading(false);
+                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void connectToApi() {
         if (demoMode) {
-            Toast.makeText(this, getString(R.string.toast_demo_enabled), Toast.LENGTH_SHORT).show();
             showBindStep();
             return;
         }
-        String input = etBaseUrl.getText() == null ? "" : etBaseUrl.getText().toString().trim();
-        String normalizedUrl = normalizeBaseUrlOrEmpty(input);
-        if (normalizedUrl.isEmpty()) {
-            normalizedUrl = resolveBaseUrl();
-        }
-        if (normalizedUrl.isEmpty()) {
-            Toast.makeText(this, getString(R.string.toast_base_url_required), Toast.LENGTH_SHORT).show();
-            return;
-        }
+        String input = etBaseUrl.getText().toString().trim();
+        String normalizedUrl = normalizeBaseUrlOrEmpty(input.isEmpty() ? resolveBaseUrl() : input);
+        if (normalizedUrl.isEmpty()) return;
 
         saveBaseUrl(normalizedUrl);
-        etBaseUrl.setText(normalizedUrl);
-        setBaseUrlEditable(false);
-
-        final String baseUrl = normalizedUrl;
-        ApiService api = apiForBaseUrl(baseUrl);
-
+        ApiService api = apiForBaseUrl(normalizedUrl);
         setLoading(true);
         String token = loadToken();
         if (!token.isEmpty()) {
@@ -375,25 +412,23 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<User> call, Response<User> response) {
                     setLoading(false);
-                    if (!response.isSuccessful() || response.body() == null) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        currentUser = response.body();
+                        showDashboardStep();
+                        refreshUsers(normalizedUrl);
+                    } else {
                         clearToken();
-                        loadUsersForBind(baseUrl);
-                        Toast.makeText(MainActivity.this, getString(R.string.toast_auth_failed), Toast.LENGTH_SHORT).show();
-                        return;
+                        loadUsersForBind(normalizedUrl);
                     }
-                    currentUser = response.body();
-                    showDashboardStep();
-                    refreshUsers(baseUrl);
                 }
-
                 @Override
                 public void onFailure(Call<User> call, Throwable t) {
                     setLoading(false);
-                    Toast.makeText(MainActivity.this, getString(R.string.toast_auth_failed), Toast.LENGTH_SHORT).show();
+                    loadUsersForBind(normalizedUrl);
                 }
             });
         } else {
-            loadUsersForBind(baseUrl);
+            loadUsersForBind(normalizedUrl);
         }
     }
 
@@ -404,485 +439,162 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                 setLoading(false);
-                if (!response.isSuccessful() || response.body() == null) {
-                    Toast.makeText(MainActivity.this, getString(R.string.toast_auth_failed), Toast.LENGTH_SHORT).show();
-                    return;
+                if (response.isSuccessful() && response.body() != null) {
+                    cachedUsers.clear();
+                    cachedUsers.addAll(response.body());
+                    updateUserAdapters();
+                    showBindStep();
+                } else {
+                    // Show error toast
+                    String msg = "Error: " + response.code();
+                    Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
                 }
-                cachedUsers.clear();
-                cachedUsers.addAll(response.body());
-                updateUserAdapters();
-                showBindStep();
             }
-
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
                 setLoading(false);
-                Toast.makeText(MainActivity.this, getString(R.string.toast_auth_failed), Toast.LENGTH_SHORT).show();
+                // Show failure toast
+                String msg = "Fail: " + t.getMessage();
+                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void refreshUsers(String baseUrl) {
-        ApiService api = apiForBaseUrl(baseUrl);
-        api.getUsers().enqueue(new Callback<List<User>>() {
+        apiForBaseUrl(baseUrl).getUsers().enqueue(new Callback<List<User>>() {
             @Override
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                if (!response.isSuccessful() || response.body() == null) {
-                    return;
+                if (response.isSuccessful() && response.body() != null) {
+                    cachedUsers.clear();
+                    cachedUsers.addAll(response.body());
+                    updateUserAdapters();
+                    syncCurrentUserFromCache();
                 }
-                cachedUsers.clear();
-                cachedUsers.addAll(response.body());
-                updateUserAdapters();
-                syncCurrentUserFromCache();
             }
-
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
-            }
+            public void onFailure(Call<List<User>> call, Throwable t) {}
         });
     }
 
-    private void scheduleUserRefresh(String baseUrl) {
-        if (baseUrl == null || baseUrl.isEmpty()) {
-            return;
-        }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> refreshUsers(baseUrl), 2500);
+    private void setupAdapters() {
+        bindAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
+        etSelectUser.setAdapter(bindAdapter);
+        setupDropdown(etSelectUser);
+        etSelectUser.setOnItemClickListener((p, v, pos, id) -> {
+            if (pos >= 0 && pos < bindUsers.size()) selectedBindUser = bindUsers.get(pos);
+        });
+
+        adminAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
+        etAdminSelectUser.setAdapter(adminAdapter);
+        setupDropdown(etAdminSelectUser);
+        etAdminSelectUser.setOnItemClickListener((p, v, pos, id) -> {
+            if (pos >= 0 && pos < adminUsers.size()) {
+                selectedAdminUser = adminUsers.get(pos);
+                updateAdminUi(selectedAdminUser);
+            }
+        });
+
+        etAdminDeleteUser.setAdapter(adminAdapter);
+        setupDropdown(etAdminDeleteUser);
+        etAdminDeleteUser.setOnItemClickListener((p, v, pos, id) -> {
+            if (pos >= 0 && pos < adminUsers.size()) selectedDeleteUser = adminUsers.get(pos);
+        });
     }
 
     private void updateUserAdapters() {
-        bindUsers.clear();
-        adminUsers.clear();
-        List<String> bindLabels = new ArrayList<>();
-        List<String> adminLabels = new ArrayList<>();
-        User matchedBind = null;
-        User matchedAdmin = null;
-        User matchedDelete = null;
+        bindUsers.clear(); adminUsers.clear();
+        List<String> labels = new ArrayList<>();
         for (User user : cachedUsers) {
             String label = user.getId() + " - " + user.getName();
-            bindUsers.add(user);
-            adminUsers.add(user);
-            bindLabels.add(label);
-            adminLabels.add(label);
-            if (selectedBindUser != null && user.getId() == selectedBindUser.getId()) {
-                matchedBind = user;
-            }
-            if (selectedAdminUser != null && user.getId() == selectedAdminUser.getId()) {
-                matchedAdmin = user;
-            }
-            if (selectedDeleteUser != null && user.getId() == selectedDeleteUser.getId()) {
-                matchedDelete = user;
-            }
+            bindUsers.add(user); adminUsers.add(user);
+            labels.add(label);
         }
-        selectedBindUser = matchedBind;
-        selectedAdminUser = matchedAdmin;
-        selectedDeleteUser = matchedDelete;
-        bindAdapter.clear();
-        bindAdapter.addAll(bindLabels);
-        bindAdapter.notifyDataSetChanged();
-        adminAdapter.clear();
-        adminAdapter.addAll(adminLabels);
-        adminAdapter.notifyDataSetChanged();
+        bindAdapter.clear(); bindAdapter.addAll(labels); bindAdapter.notifyDataSetChanged();
+        adminAdapter.clear(); adminAdapter.addAll(labels); adminAdapter.notifyDataSetChanged();
         updateChannelMap();
     }
 
-    private void bindSelectedUser() {
-        if (demoMode) {
-            if (selectedBindUser == null) {
-                Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-                return;
+    private void syncCurrentUserFromCache() {
+        if (currentUser == null) return;
+        for (User u : cachedUsers) {
+            if (u.getId() == currentUser.getId()) {
+                currentUser = u;
+                updateDashboardUi(u);
+                break;
             }
-            currentUser = selectedBindUser;
-            showDashboardStep();
-            return;
         }
-        if (selectedBindUser == null) {
-            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) {
-            Toast.makeText(this, getString(R.string.toast_base_url_required), Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String token = UUID.randomUUID().toString();
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.bindDevice(new BindRequest(selectedBindUser.getId(), token)).enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                saveToken(token);
-                currentUser = selectedBindUser;
-                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_success), Toast.LENGTH_SHORT).show();
-                showDashboardStep();
-                refreshUsers(baseUrl);
-            }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
-    private void createUser() {
-        String name = etCreateName.getText() == null ? "" : etCreateName.getText().toString().trim();
-        if (name.isEmpty()) {
-            Toast.makeText(this, getString(R.string.toast_field_required, getString(R.string.field_name)), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String authText = etCreateAuthLevel.getText() == null ? "" : etCreateAuthLevel.getText().toString().trim();
-        if (authText.isEmpty()) {
-            Toast.makeText(this, getString(R.string.toast_field_required, getString(R.string.field_auth_level)), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        int authLevel;
-        try {
-            authLevel = Integer.parseInt(authText);
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, getString(R.string.toast_field_number, getString(R.string.field_auth_level)), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (authLevel != 1 && authLevel != 2) {
-            Toast.makeText(this, getString(R.string.toast_auth_level_invalid), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String channelText = etCreateChannel.getText() == null ? "" : etCreateChannel.getText().toString().trim();
-        Integer channel = null;
-        if (!channelText.isEmpty()) {
-            try {
-                channel = Integer.parseInt(channelText);
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, getString(R.string.toast_field_number, getString(R.string.field_channel)), Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
-        if (demoMode) {
-            int nextId = 1;
-            for (User user : cachedUsers) {
-                nextId = Math.max(nextId, user.getId() + 1);
-            }
-            cachedUsers.add(new User(nextId, name, authLevel, channel, 0, 0, 1));
-            updateUserAdapters();
-            clearCreateUserFields();
-            Toast.makeText(this, getString(R.string.toast_user_created), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.createUser(new CreateUserRequest(name, authLevel, channel)).enqueue(new Callback<User>() {
-            @Override
-            public void onResponse(Call<User> call, Response<User> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                Toast.makeText(MainActivity.this, getString(R.string.toast_user_created), Toast.LENGTH_SHORT).show();
-                clearCreateUserFields();
-                refreshUsers(baseUrl);
-            }
-
-            @Override
-            public void onFailure(Call<User> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
-        });
+    private void setLoading(boolean loading) {
+        if (pbLoading != null) pbLoading.setVisibility(loading ? View.VISIBLE : View.GONE);
     }
 
-    private void clearCreateUserFields() {
-        etCreateName.setText("");
-        etCreateAuthLevel.setText("");
-        etCreateChannel.setText("");
+    private void showAdminUserSection() {
+        if (cardAdminMenu != null) cardAdminMenu.setVisibility(View.GONE);
+        if (sectionAdminUser != null) sectionAdminUser.setVisibility(View.VISIBLE);
+        if (adminUserHeader != null) adminUserHeader.setVisibility(View.VISIBLE);
+        showAdminUserMenu();
+    }
+
+    private void showAdminHardwareSection() {
+        if (cardAdminMenu != null) cardAdminMenu.setVisibility(View.GONE);
+        if (sectionAdminHardware != null) sectionAdminHardware.setVisibility(View.VISIBLE);
+        if (adminHardwareHeader != null) adminHardwareHeader.setVisibility(View.VISIBLE);
+    }
+
+    private void showAdminMenu() {
+        if (cardAdminMenu != null) cardAdminMenu.setVisibility(View.VISIBLE);
+        if (sectionAdminUser != null) sectionAdminUser.setVisibility(View.GONE);
+        if (sectionAdminHardware != null) sectionAdminHardware.setVisibility(View.GONE);
+        if (adminUserHeader != null) adminUserHeader.setVisibility(View.GONE);
+        if (adminHardwareHeader != null) adminHardwareHeader.setVisibility(View.GONE);
+    }
+
+    private void showAdminUserMenu() {
+        if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.VISIBLE);
+        if (sectionAdminAssign != null) sectionAdminAssign.setVisibility(View.GONE);
+        if (sectionAdminCreate != null) sectionAdminCreate.setVisibility(View.GONE);
+        if (sectionAdminDelete != null) sectionAdminDelete.setVisibility(View.GONE);
+    }
+
+    private void showAdminCreateSection() {
+        if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.GONE);
+        if (sectionAdminCreate != null) sectionAdminCreate.setVisibility(View.VISIBLE);
+    }
+
+    private void showAdminAssignSection() {
+        if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.GONE);
+        if (sectionAdminAssign != null) sectionAdminAssign.setVisibility(View.VISIBLE);
+    }
+
+    private void showAdminDeleteSection() {
+        if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.GONE);
+        if (sectionAdminDelete != null) sectionAdminDelete.setVisibility(View.VISIBLE);
+    }
+
+    private void handleAdminUserBack() {
+        if ((sectionAdminAssign != null && sectionAdminAssign.getVisibility() == View.VISIBLE) ||
+            (sectionAdminCreate != null && sectionAdminCreate.getVisibility() == View.VISIBLE) ||
+            (sectionAdminDelete != null && sectionAdminDelete.getVisibility() == View.VISIBLE)) {
+            showAdminUserMenu();
+        } else {
+            showAdminMenu();
+        }
     }
 
     private void unlockChannel() {
-        if (currentUser == null) {
-            return;
-        }
+        if (currentUser == null || currentUser.getAssignedChannel() <= 0) return;
         if (demoMode) {
-            if (currentUser.getAssignedChannel() > 0) {
-                showResultDialog(R.string.action_unlock_title, R.string.action_unlock_detail);
-            } else {
-                Toast.makeText(this, getString(R.string.toast_unlock_unavailable), Toast.LENGTH_SHORT).show();
-            }
-            return;
-        }
-        int channel = currentUser.getAssignedChannel();
-        if (channel <= 0) {
-            Toast.makeText(this, getString(R.string.toast_unlock_unavailable), Toast.LENGTH_SHORT).show();
+            showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
             return;
         }
         String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.unlock(channel).enqueue(new Callback<StatusResponse>() {
+        apiForBaseUrl(baseUrl).unlock(currentUser.getAssignedChannel()).enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                Toast.makeText(MainActivity.this, getString(R.string.toast_unlock_success), Toast.LENGTH_SHORT).show();
-                showResultDialog(R.string.action_unlock_title, R.string.action_unlock_detail);
+                if (response.isSuccessful()) showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
             }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
-        });
-    }
-
-    private void updateBiometric(boolean face) {
-        if (demoMode) {
-            if (currentUser == null) {
-                return;
-            }
-            if (face) {
-                currentUser.setHasFace(true);
-            } else {
-                currentUser.setHasFingerprint(true);
-            }
-            updateDashboardUi(currentUser);
-            Toast.makeText(this, getString(R.string.toast_enroll_started), Toast.LENGTH_SHORT).show();
-            showActionResult(
-                    face ? R.string.action_enroll_face_title : R.string.action_enroll_finger_title,
-                    face ? R.string.action_enroll_face_detail : R.string.action_enroll_finger_detail
-            );
-            return;
-        }
-        if (currentUser == null) {
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        Toast.makeText(this, getString(R.string.toast_enroll_started), Toast.LENGTH_SHORT).show();
-        Call<StatusResponse> call = face ? api.enrollFace(currentUser.getId()) : api.enrollFinger(currentUser.getId());
-        call.enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                refreshUsers(baseUrl);
-                scheduleUserRefresh(baseUrl);
-                showActionResult(
-                        face ? R.string.action_enroll_face_title : R.string.action_enroll_finger_title,
-                        face ? R.string.action_enroll_face_detail : R.string.action_enroll_finger_detail
-                );
-            }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
-        });
-    }
-
-    private void updateAdminBiometric(boolean face) {
-        if (demoMode) {
-            if (selectedAdminUser == null) {
-                Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (face) {
-                selectedAdminUser.setHasFace(true);
-            } else {
-                selectedAdminUser.setHasFingerprint(true);
-            }
-            updateAdminUi(selectedAdminUser);
-            Toast.makeText(this, getString(R.string.toast_enroll_started), Toast.LENGTH_SHORT).show();
-            showActionResult(
-                    face ? R.string.action_enroll_face_title : R.string.action_enroll_finger_title,
-                    face ? R.string.action_enroll_face_detail : R.string.action_enroll_finger_detail
-            );
-            return;
-        }
-        if (selectedAdminUser == null) {
-            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        Toast.makeText(this, getString(R.string.toast_enroll_started), Toast.LENGTH_SHORT).show();
-        Call<StatusResponse> call = face ? api.enrollFace(selectedAdminUser.getId()) : api.enrollFinger(selectedAdminUser.getId());
-        call.enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                refreshUsers(baseUrl);
-                scheduleUserRefresh(baseUrl);
-                showActionResult(
-                        face ? R.string.action_enroll_face_title : R.string.action_enroll_finger_title,
-                        face ? R.string.action_enroll_face_detail : R.string.action_enroll_finger_detail
-                );
-            }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
-        });
-    }
-
-    private void deleteCurrentUser() {
-        if (demoMode) {
-            currentUser = null;
-            showBindStep();
-            showDeletedDialog();
-            return;
-        }
-        if (currentUser == null) {
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.deleteUser(currentUser.getId()).enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                Toast.makeText(MainActivity.this, getString(R.string.toast_user_deleted), Toast.LENGTH_SHORT).show();
-                clearToken();
-                currentUser = null;
-                showBindStep();
-                showDeletedDialog();
-                refreshUsers(baseUrl);
-            }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
-        });
-    }
-
-    private void deleteAdminUser() {
-        if (demoMode) {
-            if (selectedDeleteUser == null) {
-                Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            cachedUsers.removeIf(user -> user.getId() == selectedDeleteUser.getId());
-            selectedDeleteUser = null;
-            etAdminDeleteUser.setText("");
-            updateUserAdapters();
-            showActionResult(R.string.action_delete_title, R.string.action_delete_detail);
-            return;
-        }
-        if (selectedDeleteUser == null) {
-            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.deleteUser(selectedDeleteUser.getId()).enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                Toast.makeText(MainActivity.this, getString(R.string.toast_user_deleted), Toast.LENGTH_SHORT).show();
-                selectedDeleteUser = null;
-                etAdminDeleteUser.setText("");
-                refreshUsers(baseUrl);
-                showActionResult(R.string.action_delete_title, R.string.action_delete_detail);
-            }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
-        });
-    }
-
-    private void assignAdminChannel() {
-        if (selectedAdminUser == null) {
-            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String text = etAdminChannel.getText().toString().trim();
-        Integer channel = null;
-        if (!text.isEmpty()) {
-            try {
-                channel = Integer.parseInt(text);
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, getString(R.string.toast_field_number, getString(R.string.field_channel)), Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
-        if (demoMode) {
-            selectedAdminUser.setAssignedChannel(channel);
-            updateAdminUi(selectedAdminUser);
-            if (currentUser != null && currentUser.getId() == selectedAdminUser.getId()) {
-                updateDashboardUi(currentUser);
-            } else {
-                updateChannelMap();
-            }
-            Toast.makeText(this, getString(R.string.toast_channel_updated), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.updateUser(selectedAdminUser.getId(), new UpdateUserRequest(null, channel)).enqueue(new Callback<User>() {
-            @Override
-            public void onResponse(Call<User> call, Response<User> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    if (response.code() == 400) {
-                        Toast.makeText(MainActivity.this, getString(R.string.toast_channel_occupied), Toast.LENGTH_SHORT).show();
-                    } else {
-                        showHttpError(response.code());
-                    }
-                    return;
-                }
-                Toast.makeText(MainActivity.this, getString(R.string.toast_channel_updated), Toast.LENGTH_SHORT).show();
-                refreshUsers(baseUrl);
-            }
-
-            @Override
-            public void onFailure(Call<User> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
-            }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
         });
     }
 
@@ -891,137 +603,132 @@ public class MainActivity extends AppCompatActivity {
             showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
             return;
         }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) return;
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.unlock(channel).enqueue(new Callback<StatusResponse>() {
+        apiForBaseUrl(resolveBaseUrl()).unlock(channel).enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    showHttpError(response.code());
-                    return;
-                }
-                showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
+                if (response.isSuccessful()) showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
             }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
+        });
+    }
 
+    private void createUser() {
+        String name = etCreateName.getText().toString().trim();
+        if (name.isEmpty()) return;
+        String authText = etCreateAuthLevel.getText().toString().trim();
+        int authLevel = authText.equals("1") ? 1 : 2;
+        String chanText = etCreateChannel.getText().toString().trim();
+        Integer channel = chanText.isEmpty() ? null : Integer.parseInt(chanText);
+
+        if (demoMode) {
+            cachedUsers.add(new User(cachedUsers.size() + 1, name, authLevel, channel, 0, 0, 1));
+            updateUserAdapters();
+            return;
+        }
+        String baseUrl = resolveBaseUrl();
+        apiForBaseUrl(baseUrl).createUser(new CreateUserRequest(name, authLevel, channel)).enqueue(new Callback<User>() {
             @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                showNetworkError();
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful()) refreshUsers(baseUrl);
+            }
+            @Override public void onFailure(Call<User> call, Throwable t) {}
+        });
+    }
+
+    private void deleteCurrentUser() {
+        if (currentUser == null) return;
+        if (demoMode) { currentUser = null; showBindStep(); return; }
+        String baseUrl = resolveBaseUrl();
+        apiForBaseUrl(baseUrl).deleteUser(currentUser.getId()).enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                if (response.isSuccessful()) { currentUser = null; clearToken(); showBindStep(); refreshUsers(baseUrl); }
+            }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
+        });
+    }
+
+    private void deleteAdminUser() {
+        if (selectedDeleteUser == null) return;
+        if (demoMode) { cachedUsers.remove(selectedDeleteUser); updateUserAdapters(); return; }
+        String baseUrl = resolveBaseUrl();
+        apiForBaseUrl(baseUrl).deleteUser(selectedDeleteUser.getId()).enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Utilisateur supprimé", Toast.LENGTH_SHORT).show();
+                    refreshUsers(baseUrl);
+                    // Reset selection
+                    etAdminDeleteUser.setText("");
+                    selectedDeleteUser = null;
+                } else {
+                    Toast.makeText(MainActivity.this, "Échec suppression: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Erreur réseau", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void syncCurrentUserFromCache() {
-        if (currentUser == null) {
-            return;
-        }
-        User matchedCurrent = null;
-        User matchedAdmin = null;
-        for (User user : cachedUsers) {
-            if (user.getId() == currentUser.getId()) {
-                matchedCurrent = user;
+    private void assignAdminChannel() {
+        if (selectedAdminUser == null) return;
+        String text = etAdminChannel.getText().toString().trim();
+        Integer channel = text.isEmpty() ? null : Integer.parseInt(text);
+        if (demoMode) { selectedAdminUser.setAssignedChannel(channel); updateAdminUi(selectedAdminUser); return; }
+        String baseUrl = resolveBaseUrl();
+        apiForBaseUrl(baseUrl).updateUser(selectedAdminUser.getId(), new UpdateUserRequest(null, channel)).enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful()) refreshUsers(baseUrl);
             }
-            if (selectedAdminUser != null && user.getId() == selectedAdminUser.getId()) {
-                matchedAdmin = user;
+            @Override public void onFailure(Call<User> call, Throwable t) {}
+        });
+    }
+
+    private void updateAdminBiometric(boolean face) {
+        if (selectedAdminUser == null) return;
+        if (demoMode) { if (face) selectedAdminUser.setHasFace(true); else selectedAdminUser.setHasFingerprint(true); updateAdminUi(selectedAdminUser); return; }
+        String baseUrl = resolveBaseUrl();
+        ApiService api = apiForBaseUrl(baseUrl);
+        Call<StatusResponse> call = face ? api.enrollFace(selectedAdminUser.getId()) : api.enrollFinger(selectedAdminUser.getId());
+        call.enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                if (response.isSuccessful()) refreshUsers(baseUrl);
             }
-        }
-        if (matchedCurrent != null) {
-            currentUser = matchedCurrent;
-            updateDashboardUi(matchedCurrent);
-        }
-        if (matchedAdmin != null) {
-            selectedAdminUser = matchedAdmin;
-            updateAdminUi(matchedAdmin);
-        }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
+        });
     }
 
     private void updateDashboardUi(User user) {
-        String greeting = "Bonjour, " + user.getName();
-        tvGreeting.setText(greeting);
-        tvGreeting.setVisibility(View.VISIBLE);
-
-        String summary = buildBioSummary(user);
-        tvBioSummary.setText(summary);
-
-        String faceText = user.hasFace() ? getString(R.string.bio_face_ready) : getString(R.string.bio_face_pending);
-        String fingerText = user.hasFingerprint() ? getString(R.string.bio_finger_ready) : getString(R.string.bio_finger_pending);
-        tvFaceStatus.setText(faceText);
-        tvFingerStatus.setText(fingerText);
-
-        boolean isAdmin = user.getAuthLevel() == 1;
-        // standard user does not show direct biometric buttons on this card
-        if (!isAdmin) {
-            btnDeleteUser.setText(R.string.button_delete_self);
-        } else {
-            btnDeleteUser.setText(R.string.button_delete_user);
-        }
-
-        boolean hasChannel = user.getAssignedChannel() > 0;
-        btnUnlock.setEnabled(hasChannel);
-        btnUnlock.setText(R.string.button_unlock);
-        if (hasChannel) {
-            tvChannelStatus.setText(getString(R.string.channel_status_assigned, user.getAssignedChannel()));
-        } else {
-            tvChannelStatus.setText(getString(R.string.channel_status_placeholder));
-        }
+        if (tvGreeting != null) tvGreeting.setText("Bonjour, " + user.getName());
+        if (tvBioSummary != null) tvBioSummary.setText(buildBioSummary(user));
+        if (tvFaceStatus != null) tvFaceStatus.setText(user.hasFace() ? R.string.bio_face_ready : R.string.bio_face_pending);
+        if (tvFingerStatus != null) tvFingerStatus.setText(user.hasFingerprint() ? R.string.bio_finger_ready : R.string.bio_finger_pending);
+        if (tvChannelStatus != null) tvChannelStatus.setText(user.getAssignedChannel() > 0 ? "Canal " + user.getAssignedChannel() : "Aucun canal");
         updateChannelMap();
     }
 
     private void updateAdminUi(User user) {
-        if (user == null) {
-            return;
-        }
-        String faceText = user.hasFace() ? getString(R.string.bio_face_ready) : getString(R.string.bio_face_pending);
-        String fingerText = user.hasFingerprint() ? getString(R.string.bio_finger_ready) : getString(R.string.bio_finger_pending);
-        tvAdminFaceStatus.setText(faceText);
-        tvAdminFingerStatus.setText(fingerText);
-        Integer channel = user.getAssignedChannelOrNull();
-        etAdminChannel.setText(channel == null ? "" : String.valueOf(channel));
-        btnAdminEnrollFace.setText(user.hasFace() ? R.string.button_update_face : R.string.button_enroll_face);
-        btnAdminEnrollFinger.setText(user.hasFingerprint() ? R.string.button_update_finger : R.string.button_enroll_finger);
-        updateBiometricButton(btnAdminEnrollFace, user.hasFace());
-        updateBiometricButton(btnAdminEnrollFinger, user.hasFingerprint());
+        if (user == null) return;
+        if (tvAdminFaceStatus != null) tvAdminFaceStatus.setText(user.hasFace() ? R.string.bio_face_ready : R.string.bio_face_pending);
+        if (tvAdminFingerStatus != null) tvAdminFingerStatus.setText(user.hasFingerprint() ? R.string.bio_finger_ready : R.string.bio_finger_pending);
+        if (etAdminChannel != null) etAdminChannel.setText(user.getAssignedChannel() > 0 ? String.valueOf(user.getAssignedChannel()) : "");
     }
 
     private String buildBioSummary(User user) {
-        boolean face = user.hasFace();
-        boolean finger = user.hasFingerprint();
-        if (face && finger) {
-            return getString(R.string.bio_summary_both);
-        }
-        if (face) {
-            return getString(R.string.bio_summary_face_only);
-        }
-        if (finger) {
-            return getString(R.string.bio_summary_finger_only);
-        }
+        if (user.hasFace() && user.hasFingerprint()) return getString(R.string.bio_summary_both);
+        if (user.hasFace()) return getString(R.string.bio_summary_face_only);
+        if (user.hasFingerprint()) return getString(R.string.bio_summary_finger_only);
         return getString(R.string.bio_summary_none);
     }
 
-    private void updateBiometricButton(Button button, boolean enrolled) {
-        if (!(button instanceof MaterialButton)) {
-            return;
-        }
-        MaterialButton materialButton = (MaterialButton) button;
-        int bgColor = ContextCompat.getColor(this, enrolled ? R.color.bio_ready_bg : R.color.button_tonal_bg);
-        int textColor = ContextCompat.getColor(this, enrolled ? R.color.bio_ready_text : R.color.button_tonal_text);
-        materialButton.setBackgroundTintList(ColorStateList.valueOf(bgColor));
-        materialButton.setTextColor(textColor);
-    }
-
     private void updateChannelMap() {
-        if (tvChannel1 == null) {
-            return;
-        }
         String[] names = new String[6];
-        for (User user : cachedUsers) {
-            Integer channel = user.getAssignedChannelOrNull();
-            if (channel != null && channel >= 1 && channel <= 5) {
-                names[channel] = user.getName();
-            }
+        for (User u : cachedUsers) {
+            int c = u.getAssignedChannel();
+            if (c >= 1 && c <= 5) names[c] = u.getName();
         }
         updateChannelText(tvChannel1, 1, names[1]);
         updateChannelText(tvChannel2, 2, names[2]);
@@ -1030,325 +737,30 @@ public class MainActivity extends AppCompatActivity {
         updateChannelText(tvChannel5, 5, names[5]);
     }
 
-    private void updateChannelText(TextView view, int channel, String name) {
-        String label = name == null ? getString(R.string.channel_slot_empty) : name;
-        String content = getString(R.string.channel_slot_format, channel, label);
-        String text = "● " + content;
-        android.text.SpannableString span = new android.text.SpannableString(text);
-        int dotColor = ContextCompat.getColor(this, name == null ? R.color.channel_dot_taken : R.color.channel_dot_free);
-        span.setSpan(new android.text.style.ForegroundColorSpan(dotColor), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        view.setText(span);
+    private void updateChannelText(TextView tv, int c, String name) {
+        if (tv == null) return;
+        tv.setText(String.format("● Canal %d: %s", c, name == null ? "Vide" : name));
+        tv.setTextColor(ContextCompat.getColor(this, name == null ? android.R.color.darker_gray : R.color.channel_dot_taken));
     }
 
     private void showActionResult(int titleRes, int detailRes) {
-        if (cardActionResult == null || tvActionResultTitle == null || tvActionResultDetail == null) {
-            return;
+        if (cardActionResult != null) {
+            cardActionResult.setVisibility(View.VISIBLE);
+            if (tvActionResultTitle != null) tvActionResultTitle.setText(titleRes);
+            if (tvActionResultDetail != null) tvActionResultDetail.setText(detailRes);
         }
-        cardActionResult.setVisibility(View.VISIBLE);
-        tvActionResultTitle.setText(titleRes);
-        tvActionResultDetail.setText(detailRes);
-    }
-
-    private void showResultDialog(int titleRes, int detailRes) {
-        String message = getString(titleRes) + "\n" + getString(detailRes);
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.section_action_result)
-                .setMessage(message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    private void showDeletedDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.dialog_deleted_title)
-                .setMessage(R.string.dialog_deleted_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
     }
 
     private void enableDemoMode() {
         demoMode = true;
         cachedUsers.clear();
-        User admin = new User(1, "Admin Demo", 1, 2, 1, 1, 1);
-        User user = new User(2, "Utilisateur Demo", 2, 1, 0, 0, 1);
-        cachedUsers.add(admin);
-        cachedUsers.add(user);
+        cachedUsers.add(new User(1, "Admin Demo", 1, 2, 1, 1, 1));
+        cachedUsers.add(new User(2, "User Demo", 2, 1, 0, 0, 1));
         updateUserAdapters();
-        selectedBindUser = null;
-        currentUser = null;
-        selectedDeleteUser = null;
-        Toast.makeText(this, getString(R.string.toast_demo_enabled), Toast.LENGTH_SHORT).show();
         showBindStep();
-        etSelectUser.requestFocus();
-        etSelectUser.post(() -> etSelectUser.showDropDown());
-    }
-
-    private void showConnectionStep() {
-        screenConnection.setVisibility(View.VISIBLE);
-        screenBind.setVisibility(View.GONE);
-        screenDashboard.setVisibility(View.GONE);
-        tvGreeting.setVisibility(View.GONE);
-        stopChannelMapUpdates();
-    }
-
-    private void showBindStep() {
-        screenConnection.setVisibility(View.GONE);
-        screenBind.setVisibility(View.VISIBLE);
-        screenDashboard.setVisibility(View.GONE);
-        tvGreeting.setVisibility(View.GONE);
-        stopChannelMapUpdates();
-    }
-
-    private void showDashboardStep() {
-        screenConnection.setVisibility(View.GONE);
-        screenBind.setVisibility(View.GONE);
-        screenDashboard.setVisibility(View.VISIBLE);
-        if (currentUser != null) {
-            updateDashboardUi(currentUser);
-            boolean admin = currentUser.getAuthLevel() == 1;
-            if (cardStatus != null) {
-                cardStatus.setVisibility(admin ? View.GONE : View.VISIBLE);
-            }
-            if (cardAdminMenu != null) {
-                cardAdminMenu.setVisibility(admin ? View.VISIBLE : View.GONE);
-            }
-            if (sectionAdminUser != null) {
-                sectionAdminUser.setVisibility(View.GONE);
-            }
-            if (sectionAdminHardware != null) {
-                sectionAdminHardware.setVisibility(admin ? View.GONE : View.VISIBLE);
-            }
-            if (adminUserHeader != null) {
-                adminUserHeader.setVisibility(View.GONE);
-            }
-            if (adminHardwareHeader != null) {
-                adminHardwareHeader.setVisibility(View.GONE);
-            }
-            cardAdminChannels.setVisibility(admin ? View.VISIBLE : View.GONE);
-            cardChannelMap.setVisibility(View.VISIBLE);
-            cardActions.setVisibility(admin ? View.GONE : View.VISIBLE);
-            cardSelfManage.setVisibility(admin ? View.GONE : View.VISIBLE);
-            if (ivCafeDashboard != null) {
-                ivCafeDashboard.setVisibility(admin ? View.VISIBLE : View.GONE);
-            }
-            if (admin && selectedAdminUser == null) {
-                selectedAdminUser = currentUser;
-                updateAdminUi(currentUser);
-            }
-        }
-        if (cardActionResult != null) {
-            cardActionResult.setVisibility(View.GONE);
-        }
-        startChannelMapUpdates();
-    }
-
-    private void setLoading(boolean loading) {
-        pbLoading.setVisibility(loading ? View.VISIBLE : View.GONE);
-        btnLoadUsers.setEnabled(!loading);
-        btnBindUser.setEnabled(!loading);
-        btnUnlock.setEnabled(!loading);
-        btnDeleteUser.setEnabled(!loading);
-        btnAdminAssignChannel.setEnabled(!loading);
-        btnAdminEnrollFace.setEnabled(!loading);
-        btnAdminEnrollFinger.setEnabled(!loading);
-        btnAdminDeleteUser.setEnabled(!loading);
-        btnAdminUserManagement.setEnabled(!loading);
-        btnAdminHardwareControl.setEnabled(!loading);
-        btnAdminMenuCreate.setEnabled(!loading);
-        btnAdminMenuAssign.setEnabled(!loading);
-        btnAdminMenuDelete.setEnabled(!loading);
-        btnAdminUserBack.setEnabled(!loading);
-        btnAdminHardwareBack.setEnabled(!loading);
-        btnUnlock1.setEnabled(!loading);
-        btnUnlock2.setEnabled(!loading);
-        btnUnlock3.setEnabled(!loading);
-        btnUnlock4.setEnabled(!loading);
-        btnUnlock5.setEnabled(!loading);
-        btnCreateUser.setEnabled(!loading);
-        if (!loading) {
-            if (currentUser != null) {
-                updateDashboardUi(currentUser);
-            }
-            if (selectedAdminUser != null) {
-                updateAdminUi(selectedAdminUser);
-            }
-        }
-    }
-
-    private void showAdminUserSection() {
-        if (cardAdminMenu != null) {
-            cardAdminMenu.setVisibility(View.GONE);
-        }
-        if (sectionAdminUser != null) {
-            sectionAdminUser.setVisibility(View.VISIBLE);
-        }
-        if (adminUserHeader != null) {
-            adminUserHeader.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminHardware != null) {
-            sectionAdminHardware.setVisibility(View.GONE);
-        }
-        if (adminHardwareHeader != null) {
-            adminHardwareHeader.setVisibility(View.GONE);
-        }
-        showAdminUserMenu();
-        if (ivCafeDashboard != null) {
-            ivCafeDashboard.setVisibility(View.GONE);
-        }
-        if (cardActionResult != null) {
-            cardActionResult.setVisibility(View.GONE);
-        }
-    }
-
-    private void showAdminHardwareSection() {
-        if (cardAdminMenu != null) {
-            cardAdminMenu.setVisibility(View.GONE);
-        }
-        if (sectionAdminHardware != null) {
-            sectionAdminHardware.setVisibility(View.VISIBLE);
-        }
-        if (cardAdminChannels != null) {
-            cardAdminChannels.setVisibility(View.VISIBLE);
-        }
-        if (adminHardwareHeader != null) {
-            adminHardwareHeader.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminUser != null) {
-            sectionAdminUser.setVisibility(View.GONE);
-        }
-        if (adminUserHeader != null) {
-            adminUserHeader.setVisibility(View.GONE);
-        }
-        if (ivCafeDashboard != null) {
-            ivCafeDashboard.setVisibility(View.GONE);
-        }
-        if (cardActionResult != null) {
-            cardActionResult.setVisibility(View.GONE);
-        }
-    }
-
-    private void showAdminMenu() {
-        if (cardAdminMenu != null) {
-            cardAdminMenu.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminUser != null) {
-            sectionAdminUser.setVisibility(View.GONE);
-        }
-        if (sectionAdminHardware != null) {
-            sectionAdminHardware.setVisibility(View.GONE);
-        }
-        if (adminUserHeader != null) {
-            adminUserHeader.setVisibility(View.GONE);
-        }
-        if (adminHardwareHeader != null) {
-            adminHardwareHeader.setVisibility(View.GONE);
-        }
-        showAdminUserMenu();
-        if (ivCafeDashboard != null) {
-            ivCafeDashboard.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void showAdminUserMenu() {
-        if (cardAdminUserMenu != null) {
-            cardAdminUserMenu.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminAssign != null) {
-            sectionAdminAssign.setVisibility(View.GONE);
-        }
-        if (sectionAdminCreate != null) {
-            sectionAdminCreate.setVisibility(View.GONE);
-        }
-        if (sectionAdminDelete != null) {
-            sectionAdminDelete.setVisibility(View.GONE);
-        }
-    }
-
-    private void showAdminCreateSection() {
-        if (cardAdminUserMenu != null) {
-            cardAdminUserMenu.setVisibility(View.GONE);
-        }
-        if (sectionAdminCreate != null) {
-            sectionAdminCreate.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminAssign != null) {
-            sectionAdminAssign.setVisibility(View.GONE);
-        }
-        if (sectionAdminDelete != null) {
-            sectionAdminDelete.setVisibility(View.GONE);
-        }
-    }
-
-    private void showAdminAssignSection() {
-        if (cardAdminUserMenu != null) {
-            cardAdminUserMenu.setVisibility(View.GONE);
-        }
-        if (sectionAdminAssign != null) {
-            sectionAdminAssign.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminCreate != null) {
-            sectionAdminCreate.setVisibility(View.GONE);
-        }
-        if (sectionAdminDelete != null) {
-            sectionAdminDelete.setVisibility(View.GONE);
-        }
-    }
-
-    private void showAdminDeleteSection() {
-        if (cardAdminUserMenu != null) {
-            cardAdminUserMenu.setVisibility(View.GONE);
-        }
-        if (sectionAdminDelete != null) {
-            sectionAdminDelete.setVisibility(View.VISIBLE);
-        }
-        if (sectionAdminAssign != null) {
-            sectionAdminAssign.setVisibility(View.GONE);
-        }
-        if (sectionAdminCreate != null) {
-            sectionAdminCreate.setVisibility(View.GONE);
-        }
-    }
-
-    private void handleAdminUserBack() {
-        boolean inSubSection = false;
-        if (sectionAdminAssign != null && sectionAdminAssign.getVisibility() == View.VISIBLE) {
-            inSubSection = true;
-        }
-        if (sectionAdminCreate != null && sectionAdminCreate.getVisibility() == View.VISIBLE) {
-            inSubSection = true;
-        }
-        if (sectionAdminDelete != null && sectionAdminDelete.getVisibility() == View.VISIBLE) {
-            inSubSection = true;
-        }
-        if (inSubSection) {
-            showAdminUserMenu();
-        } else {
-            showAdminMenu();
-        }
-    }
-
-    private void setupDropdown(AutoCompleteTextView view) {
-        view.setThreshold(0);
-        view.setOnClickListener(v -> view.showDropDown());
-        view.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                view.showDropDown();
-            }
-        });
-    }
-
-    private void showHttpError(int code) {
-        Toast.makeText(this, getString(R.string.error_http, code), Toast.LENGTH_SHORT).show();
-    }
-
-    private void showNetworkError() {
-        Toast.makeText(this, getString(R.string.error_network), Toast.LENGTH_SHORT).show();
     }
 
     private void startChannelMapUpdates() {
-        if (demoMode) {
-            updateChannelMap();
-        }
         channelMapHandler.removeCallbacks(channelMapRunnable);
         channelMapHandler.postDelayed(channelMapRunnable, CHANNEL_MAP_REFRESH_MS);
     }
@@ -1357,89 +769,14 @@ public class MainActivity extends AppCompatActivity {
         channelMapHandler.removeCallbacks(channelMapRunnable);
     }
 
-    private void setupBaseUrlEditing() {
-        tilBaseUrl.setEndIconOnClickListener(v -> {
-            if (baseUrlEditing) {
-                saveBaseUrlFromField();
-                setBaseUrlEditable(false);
-            } else {
-                setBaseUrlEditable(true);
-            }
-        });
-
-        etBaseUrl.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                saveBaseUrlFromField();
-                setBaseUrlEditable(false);
-                return true;
-            }
-            return false;
-        });
-
-        etBaseUrl.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus && baseUrlEditing) {
-                saveBaseUrlFromField();
-                setBaseUrlEditable(false);
-            }
-        });
+    private String resolveBaseUrl() {
+        String saved = loadBaseUrl();
+        return saved.isEmpty() ? normalizeBaseUrlOrEmpty(DEFAULT_IP) : saved;
     }
 
-    private void saveBaseUrlFromField() {
-        String url = normalizeBaseUrlOrEmpty(etBaseUrl.getText().toString().trim());
-        saveBaseUrl(url);
-        if (url.isEmpty()) {
-            Toast.makeText(this, getString(R.string.toast_base_url_cleared), Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, getString(R.string.toast_base_url_saved), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void setBaseUrlEditable(boolean editable) {
-        baseUrlEditing = editable;
-        etBaseUrl.setFocusable(editable);
-        etBaseUrl.setFocusableInTouchMode(editable);
-        etBaseUrl.setCursorVisible(editable);
-        etBaseUrl.setClickable(editable);
-        etBaseUrl.setLongClickable(editable);
-        if (editable) {
-            etBaseUrl.requestFocus();
-            etBaseUrl.setSelection(etBaseUrl.getText() == null ? 0 : etBaseUrl.getText().length());
-            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(etBaseUrl, InputMethodManager.SHOW_IMPLICIT);
-            }
-        } else {
-            etBaseUrl.clearFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.hideSoftInputFromWindow(etBaseUrl.getWindowToken(), 0);
-            }
-        }
-    }
-
-    private void saveBaseUrl(String url) {
-        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        sp.edit().putString(KEY_BASE_URL, url).apply();
-    }
-
-    private String loadBaseUrl() {
-        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        return sp.getString(KEY_BASE_URL, "");
-    }
-
-    private void saveToken(String token) {
-        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        sp.edit().putString(KEY_TOKEN, token).apply();
-    }
-
-    private String loadToken() {
-        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        return sp.getString(KEY_TOKEN, "");
-    }
-
-    private void clearToken() {
-        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        sp.edit().remove(KEY_TOKEN).apply();
+    private ApiService apiForBaseUrl(String baseUrl) {
+        prepareNetworkForLocalApi(baseUrl);
+        return ApiClient.create(baseUrl);
     }
 
     private String normalizeBaseUrlOrEmpty(String input) {
@@ -1448,107 +785,62 @@ public class MainActivity extends AppCompatActivity {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
         }
-        // Auto-add port :8000 if user typed an IP without port
-        // Logic: if url doesn't end with slash and has no port (e.g. http://192.168.4.1)
-        // Heuristic: Check if there is a colon after the protocol part
-        int protocolEnd = url.indexOf("://") + 3;
-        String addressPart = url.substring(protocolEnd);
+        
+        // Fix: Check for port ONLY in the address part (after protocol)
+        // "http://" is 7 chars. 
+        int protocolEndIndex = url.indexOf("://") + 3;
+        String addressPart = url.substring(protocolEndIndex);
+        
+        // If address part has no colon (e.g. "192.168.4.1" or "192.168.4.1/"), add port
         if (!addressPart.contains(":")) {
-            if (addressPart.endsWith("/")) {
+            if (url.endsWith("/")) {
                 url = url.substring(0, url.length() - 1) + ":8000/";
             } else {
                 url = url + ":8000/";
             }
-        } else {
-            if (!url.endsWith("/")) {
-                url = url + "/";
-            }
+        }
+        
+        if (!url.endsWith("/")) {
+            url = url + "/";
         }
         return url;
     }
 
-    private String resolveBaseUrl() {
-        String saved = loadBaseUrl();
-        if (saved == null || saved.isEmpty()) {
-            return normalizeBaseUrlOrEmpty(DEFAULT_IP);
-        }
-        return saved;
+    private void saveBaseUrl(String url) { getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(KEY_BASE_URL, url).apply(); }
+    private String loadBaseUrl() { return getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_BASE_URL, ""); }
+    private void saveToken(String t) { getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(KEY_TOKEN, t).apply(); }
+    private String loadToken() { return getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, ""); }
+    private void clearToken() { getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().remove(KEY_TOKEN).apply(); }
+
+    private String stripProtocolAndPort(String url) {
+        return url.replace("http://", "").replace("https://", "").replace(":8000", "").replace("/", "");
     }
 
-    private ApiService apiForBaseUrl(String baseUrl) {
-        prepareNetworkForLocalApi(baseUrl);
-        return ApiClient.create(baseUrl);
-    }
-    
-    // ...
-
-    private void bindSelectedUser() {
-        if (demoMode) {
-            if (selectedBindUser == null) {
-                Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            currentUser = selectedBindUser;
-            showDashboardStep();
-            return;
-        }
-        if (selectedBindUser == null) {
-            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        if (baseUrl.isEmpty()) {
-            Toast.makeText(this, getString(R.string.toast_base_url_required), Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String token = UUID.randomUUID().toString();
-        ApiService api = apiForBaseUrl(baseUrl);
-        setLoading(true);
-        api.bindDevice(new BindRequest(selectedBindUser.getId(), token)).enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                setLoading(false);
-                if (!response.isSuccessful()) {
-                    Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                saveToken(token);
-                currentUser = selectedBindUser;
-                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_success), Toast.LENGTH_SHORT).show();
-                
-                // FORCE transition to dashboard
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    showDashboardStep();
-                    refreshUsers(baseUrl);
-                });
-            }
-
-            @Override
-            public void onFailure(Call<StatusResponse> call, Throwable t) {
-                setLoading(false);
-                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
-            }
+    private void setupBaseUrlEditing() {
+        if (tilBaseUrl != null) tilBaseUrl.setEndIconOnClickListener(v -> setBaseUrlEditable(!baseUrlEditing));
+        if (etBaseUrl != null) etBaseUrl.setOnEditorActionListener((v, a, e) -> {
+            if (a == EditorInfo.IME_ACTION_DONE) { setBaseUrlEditable(false); return true; }
+            return false;
         });
     }
 
-    // ...
-
-    private void showBindStep() {
-        screenConnection.setVisibility(View.GONE);
-        screenBind.setVisibility(View.VISIBLE);
-        screenDashboard.setVisibility(View.GONE);
-        tvGreeting.setVisibility(View.GONE);
-        stopChannelMapUpdates();
-        if (cardCreateUser != null) {
-            cardCreateUser.setVisibility(View.VISIBLE);
+    private void setBaseUrlEditable(boolean e) {
+        baseUrlEditing = e;
+        if (etBaseUrl == null) return;
+        etBaseUrl.setFocusable(e); etBaseUrl.setFocusableInTouchMode(e);
+        if (e) {
+            etBaseUrl.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(etBaseUrl, InputMethodManager.SHOW_IMPLICIT);
+        } else {
+            String url = normalizeBaseUrlOrEmpty(etBaseUrl.getText().toString().trim());
+            if (!url.isEmpty()) saveBaseUrl(url);
         }
     }
 
-    private void showDashboardStep() {
-        screenConnection.setVisibility(View.GONE);
-        screenBind.setVisibility(View.GONE);
-        screenDashboard.setVisibility(View.VISIBLE);
-        if (cardCreateUser != null) {
-            cardCreateUser.setVisibility(View.GONE);
-        }
+    private void setupDropdown(AutoCompleteTextView v) {
+        v.setThreshold(0);
+        v.setOnClickListener(view -> v.showDropDown());
+        v.setOnFocusChangeListener((view, f) -> { if (f) v.showDropDown(); });
+    }
+}
