@@ -69,14 +69,44 @@ def run_face_enrollment(disp, face_rec, user_id, db_path):
 def run_finger_enrollment(disp, finger, user_id, db_path):
     print(f"开始为指纹录入 ID: {user_id} / Enrollment Finger")
     update_enroll_screen(disp, "ENROLL FINGER", "Placez doigt\nPlace finger")
-    while finger.get_image() != adafruit_fingerprint.OK: pass
-    finger.image_2_tz(1)
+    
+    start_time = time.time()
+    timeout = 30 # 30秒超时
+    
+    # 第一次按压
+    while finger.get_image() != adafruit_fingerprint.OK:
+        if time.time() - start_time > timeout:
+            update_enroll_screen(disp, "TIMEOUT", "Trop long", "RED")
+            time.sleep(2)
+            return False
+        # 稍微sleep一下防止CPU空转
+        # 可以在这里检测一下数据库有没有取消指令? 暂不复杂化
+    
+    if finger.image_2_tz(1) != adafruit_fingerprint.OK:
+        update_enroll_screen(disp, "ECHEC", "Erreur Image 1", "RED")
+        time.sleep(2); return False
+        
     update_enroll_screen(disp, "ETAPE 1 OK", "Retirez doigt\nRemove finger")
     time.sleep(1)
-    while finger.get_image() != adafruit_fingerprint.NOFINGER: pass
+    
+    # 等待移开手指
+    start_time = time.time()
+    while finger.get_image() != adafruit_fingerprint.NOFINGER:
+        if time.time() - start_time > timeout: return False
+        
     update_enroll_screen(disp, "ETAPE 2", "Placez encore\nSame finger")
-    while finger.get_image() != adafruit_fingerprint.OK: pass
-    finger.image_2_tz(2)
+    
+    # 第二次按压
+    start_time = time.time()
+    while finger.get_image() != adafruit_fingerprint.OK:
+        if time.time() - start_time > timeout:
+            update_enroll_screen(disp, "TIMEOUT", "Trop long", "RED")
+            time.sleep(2); return False
+            
+    if finger.image_2_tz(2) != adafruit_fingerprint.OK:
+        update_enroll_screen(disp, "ECHEC", "Erreur Image 2", "RED")
+        time.sleep(2); return False
+        
     if finger.create_model() == adafruit_fingerprint.OK:
         if finger.store_model(user_id) == adafruit_fingerprint.OK:
             try:
@@ -86,5 +116,6 @@ def run_finger_enrollment(disp, finger, user_id, db_path):
             except: pass
             update_enroll_screen(disp, "SUCCES", "Empreinte OK", "GREEN")
             time.sleep(2); return True
+    
     update_enroll_screen(disp, "ECHEC", "Erreur Match", "RED")
     time.sleep(2); return False
