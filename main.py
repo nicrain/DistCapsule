@@ -397,14 +397,18 @@ def main():
                     last_clock_update = current_ts
                 
             last_btn_state = btn_val
-            time.sleep(0.01)
-
-    except KeyboardInterrupt:
-        print("\n用户退出 / Sortie utilisateur")
     finally:
-        if disp: disp.set_backlight(False)
-        if h_gpio is not None: lgpio.gpiochip_close(h_gpio)
-        if face_rec: face_rec.close()
+        if disp: 
+            try: disp.set_backlight(False)
+            except: pass
+        
+        if h_gpio is not None:
+            try: lgpio.gpiochip_close(h_gpio)
+            except Exception: pass # Ignore handle errors on exit
+            
+        if face_rec:
+            try: face_rec.close()
+            except: pass
 
 def reset_fingerprint_sensor():
     global finger, uart
@@ -452,6 +456,12 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n用户退出 / Sortie utilisateur")
     finally:
-        if disp: disp.set_backlight(False)
-        if h_gpio is not None: lgpio.gpiochip_close(h_gpio)
-        if face_rec: face_rec.close()
+        if disp: 
+            try: disp.set_backlight(False)
+            except: pass
+        if h_gpio is not None:
+            try: lgpio.gpiochip_close(h_gpio)
+            except: pass
+        if face_rec:
+            try: face_rec.close()
+            except: pass
