@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean baseUrlEditing = false;
 
     private Button btnLoadUsers, btnDemo, btnBindUser, btnUnlock, btnDeleteUser;
+    private Button btnSelfEnrollFace, btnSelfEnrollFinger;
     private Button btnAdminAssignChannel, btnAdminEnrollFace, btnAdminEnrollFinger, btnAdminDeleteUser;
     private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuCreate, btnAdminMenuAssign, btnAdminMenuDelete;
     private Button btnUnlock1, btnUnlock2, btnUnlock3, btnUnlock4, btnUnlock5;
@@ -133,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
         btnBindUser = findViewById(R.id.btnBindUser);
         btnUnlock = findViewById(R.id.btnUnlock);
         btnDeleteUser = findViewById(R.id.btnDeleteUser);
+        btnSelfEnrollFace = findViewById(R.id.btnSelfEnrollFace);
+        btnSelfEnrollFinger = findViewById(R.id.btnSelfEnrollFinger);
         btnAdminAssignChannel = findViewById(R.id.btnAdminAssignChannel);
         btnAdminEnrollFace = findViewById(R.id.btnAdminEnrollFace);
         btnAdminEnrollFinger = findViewById(R.id.btnAdminEnrollFinger);
@@ -208,6 +211,14 @@ public class MainActivity extends AppCompatActivity {
         btnBindUser.setOnClickListener(v -> bindSelectedUser());
         btnUnlock.setOnClickListener(v -> unlockChannel());
         btnDeleteUser.setOnClickListener(v -> deleteCurrentUser());
+        
+        btnSelfEnrollFace.setOnClickListener(v -> {
+            if (currentUser != null) triggerEnrollment(currentUser.getId(), true);
+        });
+        btnSelfEnrollFinger.setOnClickListener(v -> {
+            if (currentUser != null) triggerEnrollment(currentUser.getId(), false);
+        });
+
         btnAdminAssignChannel.setOnClickListener(v -> assignAdminChannel());
         btnAdminEnrollFace.setOnClickListener(v -> updateAdminBiometric(true));
         btnAdminEnrollFinger.setOnClickListener(v -> updateAdminBiometric(false));
@@ -605,15 +616,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void unlockChannel() {
         if (currentUser == null || currentUser.getAssignedChannel() <= 0) return;
+        int channel = currentUser.getAssignedChannel();
         if (demoMode) {
-            showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
+            Toast.makeText(this, "Ouverture du canal " + channel, Toast.LENGTH_SHORT).show();
             return;
         }
         String baseUrl = resolveBaseUrl();
-        apiForBaseUrl(baseUrl).unlock(currentUser.getAssignedChannel()).enqueue(new Callback<StatusResponse>() {
+        apiForBaseUrl(baseUrl).unlock(channel).enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                if (response.isSuccessful()) showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
+                if (response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Ouverture du canal " + channel, Toast.LENGTH_SHORT).show();
+                }
             }
             @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
         });
@@ -621,13 +635,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void unlockSpecificChannel(int channel) {
         if (demoMode) {
-            showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
+            Toast.makeText(this, "Ouverture du canal " + channel, Toast.LENGTH_SHORT).show();
             return;
         }
         apiForBaseUrl(resolveBaseUrl()).unlock(channel).enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
-                if (response.isSuccessful()) showActionResult(R.string.action_unlock_title, R.string.action_unlock_detail);
+                if (response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Ouverture du canal " + channel, Toast.LENGTH_SHORT).show();
+                }
             }
             @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
         });
@@ -827,12 +843,61 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // New helper to avoid duplicate enrollment logic
+    private void triggerEnrollment(int userId, boolean isFace) {
+        String baseUrl = resolveBaseUrl();
+        if (baseUrl.isEmpty()) return;
+        setLoading(true);
+        ApiService api = apiForBaseUrl(baseUrl);
+        Call<StatusResponse> call = isFace ? api.enrollFace(userId) : api.enrollFinger(userId);
+        call.enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                setLoading(false);
+                if (response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Suivez l'écran de la machine", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "Erreur: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override public void onFailure(Call<StatusResponse> call, Throwable t) {
+                setLoading(false);
+                Toast.makeText(MainActivity.this, "Erreur réseau", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void updateDashboardUi(User user) {
         if (tvGreeting != null) tvGreeting.setText("Bonjour, " + user.getName());
         if (tvBioSummary != null) tvBioSummary.setText(buildBioSummary(user));
         if (tvFaceStatus != null) tvFaceStatus.setText(user.hasFace() ? R.string.bio_face_ready : R.string.bio_face_pending);
         if (tvFingerStatus != null) tvFingerStatus.setText(user.hasFingerprint() ? R.string.bio_finger_ready : R.string.bio_finger_pending);
         if (tvChannelStatus != null) tvChannelStatus.setText(user.getAssignedChannel() > 0 ? "Canal " + user.getAssignedChannel() : "Aucun canal");
+        
+        // Update Self-Enrollment Buttons
+        if (btnSelfEnrollFace != null) {
+            if (user.hasFace()) {
+                btnSelfEnrollFace.setText("Mettre à jour Face");
+                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32));
+                btnSelfEnrollFace.setTextColor(0xFFFFFFFF);
+            } else {
+                btnSelfEnrollFace.setText("Ajouter Face");
+                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00));
+                btnSelfEnrollFace.setTextColor(0xFF000000);
+            }
+        }
+        if (btnSelfEnrollFinger != null) {
+            if (user.hasFingerprint()) {
+                btnSelfEnrollFinger.setText("Mettre à jour Empreinte");
+                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32));
+                btnSelfEnrollFinger.setTextColor(0xFFFFFFFF);
+            } else {
+                btnSelfEnrollFinger.setText("Ajouter Empreinte");
+                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00));
+                btnSelfEnrollFinger.setTextColor(0xFF000000);
+            }
+        }
+
         updateChannelMap();
     }
 
@@ -902,11 +967,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showActionResult(int titleRes, int detailRes) {
-        if (cardActionResult != null) {
-            cardActionResult.setVisibility(View.VISIBLE);
-            if (tvActionResultTitle != null) tvActionResultTitle.setText(titleRes);
-            if (tvActionResultDetail != null) tvActionResultDetail.setText(detailRes);
-        }
+        String msg = getString(titleRes) + ": " + getString(detailRes);
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        // Hide the card if it was visible
+        if (cardActionResult != null) cardActionResult.setVisibility(View.GONE);
     }
 
     private void enableDemoMode() {
