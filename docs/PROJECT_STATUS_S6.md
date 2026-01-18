@@ -33,7 +33,9 @@
     *   **Android App v1.1**: Refonte totale de l'UX (Vivid Palette), icône personnalisée, auto-login via Token.
     *   **Wi-Fi Automation**: Bouton de connexion automatique au hotspot `DistCapsule_Box` avec gestion des permissions.
     *   **Logic Cleanup**: Suppression du Mode Demo et de la création d'utilisateur côté Admin au profit du self-service. Nettoyage massif des ressources (strings.xml) pour une stabilité de build accrue.
-    *   **Sécurité & Protection Admin**: 
+    *   **Sécurité**: Suppression automatique du token d'accès lors de la suppression du compte.
+    *   **Fiabilité Matérielle**: Implémentation d'un thread "Watchdog" pour le capteur d'empreintes (DY-50). Il détecte les timeouts UART et effectue un "Soft Reset" automatique sans redémarrage du Pi.
+    *   **Documentation**: Finalisation des diapositives de soutenance (LaTeX V2.1) avec focus sur l'architecture et les défis techniques. 
         - Blocage total de la suppression des comptes administrateurs (côté API et App).
         - Interface de gestion dynamique : les boutons d'action sont masqués tant qu'un utilisateur n'est pas sélectionné.
         - Verrouillage automatique de l'UI si le profil sélectionné est l'administrateur.

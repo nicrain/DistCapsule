@@ -101,7 +101,8 @@ L'application (dossier `android/`) a été optimisée pour une fluidité maximal
 *   **Saisie d'IP Simplifiée** : Entrez simplement l'IP, le protocole et le port sont gérés automatiquement.
 *   **Gestion de Compte Sécurisée** : Bouton "Supprimer mon compte" avec nettoyage automatique du token local et des données biométriques sur le matériel.
 *   **Sécurité Administrateur** : Protection contre la suppression accidentelle du compte admin et verrouillage des modifications pour le profil administrateur dans la console de gestion.
-*   **Navigation Fluide** : Interface dynamique affichant les contrôles uniquement après sélection d'un utilisateur valide, boutons de retour et gestion intelligente du clavier.
+*   **Auto-Guérison (Self-Healing)** : Un "Watchdog" surveille le capteur d'empreintes toutes les 30s et réinitialise automatiquement la connexion UART en cas de blocage.
+*   **Documentation Complète** : Slides LaTeX V2.1 (Visuels & Architecture) et spécifications techniques à jour.
 
 ---
 

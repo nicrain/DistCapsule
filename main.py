@@ -44,6 +44,8 @@ face_running_event = threading.Event()
 # 核心硬件对象 (全局化以便录入模块调用)
 face_rec = None
 finger = None
+uart = None # Make uart global so we can close it
+finger_lock = threading.Lock() # Thread lock for serial port access
 
 def init_display_system():
     global disp, font_large, font_small
@@ -280,15 +282,16 @@ def main():
 
     time.sleep(0.5)
 
-    try:
-        uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
-        finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
-        if finger.read_sysparam() != adafruit_fingerprint.OK:
-             print("指纹模块不稳定 / Connexion capteur instable...")
-        print(f"指纹模块已就绪 / Capteur Prêt")
-    except Exception as e:
-        print(f"指纹模块初始化失败 / Erreur init capteur: {e}")
-        finger = None
+        # 2. 初始化指纹模块 (Init Fingerprint)
+        try:
+            uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
+            finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
+            if finger.read_sysparam() != adafruit_fingerprint.OK:
+                raise RuntimeError("指纹模块未响应 (Sensor not responding)")
+            print("指纹模块就绪 / Capteur d'empreinte prêt")
+        except Exception as e:
+            print(f"指纹初始化失败 / Erreur Init Fingerprint: {e}")
+            # Do not exit, let the watchdog try to fix it
     
     try:
         face_rec = FaceRecognizer()
@@ -403,5 +406,52 @@ def main():
         if h_gpio is not None: lgpio.gpiochip_close(h_gpio)
         if face_rec: face_rec.close()
 
+def reset_fingerprint_sensor():
+    global finger, uart
+    with finger_lock:
+        print("正在复位指纹模块... / Réinitialisation du capteur...")
+        try:
+            if uart and uart.is_open:
+                uart.close()
+            time.sleep(1)
+            uart = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=1)
+            finger = adafruit_fingerprint.Adafruit_Fingerprint(uart)
+            if finger.read_sysparam() == adafruit_fingerprint.OK:
+                print("指纹模块复位成功 / Capteur restauré")
+                return True
+        except Exception as e:
+            print(f"复位失败 / Échec: {e}")
+    return False
+
+def fingerprint_watchdog():
+    while True:
+        time.sleep(30) # Check every 30 seconds
+        need_reset = False
+        with finger_lock:
+            try:
+                if finger is None or finger.read_sysparam() != adafruit_fingerprint.OK:
+                    need_reset = True
+            except:
+                need_reset = True
+        
+        if need_reset:
+            update_screen("ERREUR / ERROR", "Capteur HS\nRéinit...", (200, 50, 0))
+            if reset_fingerprint_sensor():
+                update_screen("INFO", "Capteur OK", (0, 150, 0))
+                time.sleep(2)
+            else:
+                update_screen("FATAL", "Échec Capteur\nCheck Cable", (255, 0, 0))
+
+# --- Main Execution ---
 if __name__ == "__main__":
-    main()
+    try:
+        # Initialize thread for fingerprint monitoring
+        t_watch = threading.Thread(target=fingerprint_watchdog, daemon=True)
+        t_watch.start()
+        main()
+    except KeyboardInterrupt:
+        print("\n用户退出 / Sortie utilisateur")
+    finally:
+        if disp: disp.set_backlight(False)
+        if h_gpio is not None: lgpio.gpiochip_close(h_gpio)
+        if face_rec: face_rec.close()

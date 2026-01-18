@@ -3,7 +3,7 @@
 ## 📌 Identification
 - **Project Name**: DistCapsule (Smart Capsule Dispenser)
 - **Target Platform**: Raspberry Pi 5 (Bookworm OS)
-- **Current State**: Dev S7 (Android API & App Prep) (Last updated: 2026-01-14)
+- **Current State**: Prod V1.1 (Android Release) (Last updated: 2026-01-18)
 
 ## ⚠️ Environment Constraints
 - **Current Host**: macOS (Darwin) - Development/Refactoring Mode.
@@ -28,42 +28,34 @@
     - Real-time linear countdown UI with color alerts.
 
 ## 🌐 Network Logic
-- **Offline Hotspot**: Configured via `tools/setup_manual_hotspot.sh` (192.168.4.1).
-- **Silent Mode**: No gateway assigned in DHCP to allow phones to keep 4G/5G internet access while connected to the Pi.
+- **Standard Hotspot**: Configured via `tools/setup_manual_hotspot.sh` (192.168.4.1) with Gateway ENABLED for maximum stability on Android 10+.
+- **UX**: One-click Wi-Fi connection button in App.
 
 ## 🚀 Recent Accomplishments
+- **Prod V1.1 (Android Release)**:
+    - **UX Revolution**: Implemented "Vivid Palette" UI (Emerald Green/Sunflower Yellow/Coral Red). Added One-Click Wi-Fi connection logic (Android 9/10+ support).
+    - **Admin Security**: Hardened security logic. Admins cannot delete themselves; Admin profile is locked from editing in the management console.
+    - **Code Quality**: Massive cleanup of `strings.xml` (deduplicated, removed unused resources). Standardized `colors.xml` with clear functional comments.
+    - **Build**: Successfully generated Debug APK.
 - **S7 (Mobile Integration)**:
-    - **Documentation**: Created LaTeX presentation slides in `docs/slides/` featuring AAA architecture and 3D design iteration history.
-    - **Architecture Change**: Removed MQTT from roadmap; decided to focus exclusively on REST API (`FastAPI`) for simplicity and reliability.
     - **API Backend**: Implemented `FastAPI` server in `api/` exposing User and Log data (serialization fixed, tested OK).
     - **App Control**: Implemented local Wi-Fi control (renamed from Remote) linking API to Hardware via `Pending_Commands`.
     - **App Integration**: Successfully merged initial Android Studio project (15MB) into `android/` directory.
     - **Hotspot Fix**: Re-enabled DHCP Gateway option to ensure stable Android/iOS connectivity.
     - **API Enhancements**: Added `has_face`/`has_fingerprint` flags and full User Management (`POST/DELETE` users) with hardware synchronization.
-    - **Style**: Removed emojis from all logs for a professional output format.
     - **Specs**: Created comprehensive Android App specification (`docs/ANDROID_APP_SPEC.md`).
-- **S5 (Intelligent Core) & Fixes**: 
-    - **Camera Fix**: Implemented 90-degree counter-clockwise rotation in `face_system.py` and `face_enroll.py` to match physical mounting.
-    - **UI/UX**: Full bilingual support (Chinese/French) added to Console Logs, CLI Tools, and LCD Display.
-    - **AI Optimization**: Tightened face recognition threshold to 0.68 and clarified log terminology ("Feature Diff") to avoid confusion.
-    - **Wiring**: Updated Servo 2-5 pin assignments to avoid conflicts and improve layout.
-    - **Concurrency**: Implemented robust Thread/Queue/Event architecture. Removed all blocking `time.sleep` from Main Loop.
-    - **Persistence**: Added auto-migration to `setup_database.py` to handle schema updates (e.g., `face_encoding`).
-    - **UI/UX**: Real-time linear countdown and non-blocking button debounce.
 
 ## 🎓 Learning Progress (Python Study)
-- **Status**: Phase 5 (Network & Communication) - **Started**.
+- **Status**: Phase 5 (Network & Communication) - **Completed**.
 - **Completed**: 
-    - Phase 1: Classes & Hardware (`servo_control`, `st7789`).
-    - Phase 2: Logic & Database (`log_access`, `get_user_info`).
-    - Phase 3: Control Flow (`State Machine`, `Timestamps`, `Edge Detection`).
-    - Phase 4: Concurrency (`Threading`, `Queue`, `Event`, `Database Migration`).
-- **Next Lesson**: Phase 5: Network & Communication (API Integration, Retrofit on Android).
+    - Phase 1-4: Hardware, Logic, Concurrency.
+    - Phase 5: Network & Communication (API Integration, Retrofit on Android).
+- **Next Lesson**: Phase 6: System Integration & Deployment.
 
 ## 🔮 Next Steps
-- Android Team: Build the app based on `ANDROID_APP_SPEC.md`.
-- Backend: Finalize biometric enrollment synchronization between App and Hardware.
-- Stability: Optimize database locking for high-frequency polling.
+- **Hardware Deployment**: Final physical assembly (3D printed case).
+- **Live Demo**: Demonstrate full flow: Boot -> Hotspot -> App Connect -> Enroll -> Dispense.
+- **Maintenance**: Monitor SQLite locks during high concurrency.
 
 ## 📝 Operational Mandates
 - **Environment**: Do NOT suggest `sudo` for python scripts (using `lgpio` in user space). Do NOT suggest running hardware scripts on macOS host.
