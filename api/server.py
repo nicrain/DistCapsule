@@ -94,9 +94,11 @@ def create_user(user: UserCreate):
         import datetime
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
+        # Fixed: 'has_face' column does not exist in DB (it is derived from face_encoding).
+        # Removed has_face from INSERT. has_fingerprint exists and defaults to 0.
         cursor.execute("""
-            INSERT INTO Users (name, auth_level, assigned_channel, app_token, created_at, has_face, has_fingerprint, is_active)
-            VALUES (?, ?, ?, ?, ?, 0, 0, 1)
+            INSERT INTO Users (name, auth_level, assigned_channel, app_token, created_at, has_fingerprint, is_active)
+            VALUES (?, ?, ?, ?, ?, 0, 1)
         """, (user.name, user.auth_level, user.assigned_channel, user.app_token, now))
         
         new_id = cursor.lastrowid
