@@ -65,14 +65,14 @@ public class MainActivity extends AppCompatActivity {
     private Button btnLoadUsers, btnDemo, btnBindUser, btnUnlock, btnDeleteUser;
     private Button btnSelfEnrollFace, btnSelfEnrollFinger;
     private Button btnAdminAssignChannel, btnAdminEnrollFace, btnAdminEnrollFinger, btnAdminDeleteUser;
-    private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuCreate, btnAdminMenuAssign, btnAdminMenuDelete;
+    private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuAssign, btnAdminMenuDelete;
     private Button btnUnlock1, btnUnlock2, btnUnlock3, btnUnlock4, btnUnlock5;
+    // New Assign Buttons
     private Button[] btnAssigns = new Button[6]; // Index 1-5
     private Integer selectedAssignChannel = null;
-    private Button btnCreateUser;
 
     private AutoCompleteTextView etSelectUser, etAdminSelectUser, etAdminDeleteUser;
-    private EditText etCreateName, etCreateAuthLevel, etCreateChannel, etAdminChannel;
+    private EditText etAdminChannel;
 
     private TextView tvGreeting, tvBioSummary, tvFaceStatus, tvFingerStatus, tvChannelStatus;
     private TextView tvAdminFaceStatus, tvAdminFingerStatus, tvActionResultTitle, tvActionResultDetail;
@@ -80,11 +80,11 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageView ivCafeDashboard, ivHeaderCapsule, ivSplashCapsule;
     private View screenConnection, screenBind, screenDashboard, splashOverlay, mainScroll;
-    private MaterialCardView cardSelfManage, cardActions, cardStatus, cardAdminChannels, cardChannelMap, cardCreateUser, cardActionResult;
+    private MaterialCardView cardSelfManage, cardActions, cardStatus, cardAdminChannels, cardChannelMap, cardActionResult;
     private MaterialCardView cardAdminMenu, cardAdminUserMenu;
     private ImageButton btnAdminUserBack, btnAdminHardwareBack;
     private View adminUserHeader, adminHardwareHeader;
-    private View sectionAdminUser, sectionAdminHardware, sectionAdminAssign, sectionAdminCreate, sectionAdminDelete;
+    private View sectionAdminUser, sectionAdminHardware, sectionAdminAssign, sectionAdminDelete;
     private ProgressBar pbLoading;
 
     private final List<User> cachedUsers = new ArrayList<>();
@@ -155,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
         btnAdminDeleteUser = findViewById(R.id.btnAdminDeleteUser);
         btnAdminUserManagement = findViewById(R.id.btnAdminUserManagement);
         btnAdminHardwareControl = findViewById(R.id.btnAdminHardwareControl);
-        btnAdminMenuCreate = findViewById(R.id.btnAdminMenuCreate);
         btnAdminMenuAssign = findViewById(R.id.btnAdminMenuAssign);
         btnAdminMenuDelete = findViewById(R.id.btnAdminMenuDelete);
         btnUnlock1 = findViewById(R.id.btnUnlock1);
@@ -170,13 +169,9 @@ public class MainActivity extends AppCompatActivity {
         btnAssigns[4] = findViewById(R.id.btnAssign4);
         btnAssigns[5] = findViewById(R.id.btnAssign5);
         
-        btnCreateUser = findViewById(R.id.btnCreateUser);
         etSelectUser = findViewById(R.id.etSelectUser);
         etAdminSelectUser = findViewById(R.id.etAdminSelectUser);
         etAdminDeleteUser = findViewById(R.id.etAdminDeleteUser);
-        etCreateName = findViewById(R.id.etCreateName);
-        etCreateAuthLevel = findViewById(R.id.etCreateAuthLevel);
-        etCreateChannel = findViewById(R.id.etCreateChannel);
         etAdminChannel = findViewById(R.id.etAdminChannel);
         tvGreeting = findViewById(R.id.tvGreeting);
         tvBioSummary = findViewById(R.id.tvBioSummary);
@@ -207,14 +202,12 @@ public class MainActivity extends AppCompatActivity {
         cardStatus = findViewById(R.id.cardStatus);
         cardAdminChannels = findViewById(R.id.cardAdminChannels);
         cardChannelMap = findViewById(R.id.cardChannelMap);
-        cardCreateUser = findViewById(R.id.cardCreateUser);
         cardActionResult = findViewById(R.id.cardActionResult);
         cardAdminMenu = findViewById(R.id.cardAdminMenu);
         cardAdminUserMenu = findViewById(R.id.cardAdminUserMenu);
         sectionAdminUser = findViewById(R.id.sectionAdminUser);
         sectionAdminHardware = findViewById(R.id.sectionAdminHardware);
         sectionAdminAssign = findViewById(R.id.sectionAdminAssign);
-        sectionAdminCreate = findViewById(R.id.sectionAdminCreate);
         sectionAdminDelete = findViewById(R.id.sectionAdminDelete);
         adminUserHeader = findViewById(R.id.adminUserHeader);
         adminHardwareHeader = findViewById(R.id.adminHardwareHeader);
@@ -225,7 +218,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnLoadUsers.setOnClickListener(v -> connectToApi());
-        // Demo listener removed
         btnBindUser.setOnClickListener(v -> bindSelectedUser());
         btnUnlock.setOnClickListener(v -> unlockChannel());
         btnDeleteUser.setOnClickListener(v -> deleteCurrentUser());
@@ -243,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
         btnAdminDeleteUser.setOnClickListener(v -> deleteAdminUser());
         btnAdminUserManagement.setOnClickListener(v -> showAdminUserSection());
         btnAdminHardwareControl.setOnClickListener(v -> showAdminHardwareSection());
-        btnAdminMenuCreate.setOnClickListener(v -> showAdminCreateSection());
         btnAdminMenuAssign.setOnClickListener(v -> showAdminAssignSection());
         btnAdminMenuDelete.setOnClickListener(v -> showAdminDeleteSection());
         
@@ -253,17 +244,14 @@ public class MainActivity extends AppCompatActivity {
         btnUnlock4.setOnClickListener(v -> unlockSpecificChannel(4));
         btnUnlock5.setOnClickListener(v -> unlockSpecificChannel(5));
         
-        for (int i = 1; i <= 5; i++) {
-            final int ch = i;
-            btnAssigns[i].setOnClickListener(v -> toggleAssignChannel(ch));
-        }
-        
-        btnCreateUser.setOnClickListener(v -> createUser());
-        btnAdminUserBack.setOnClickListener(v -> handleAdminUserBack());
-        btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
-    }
-
-
+                        for (int i = 1; i <= 5; i++) {
+                            final int ch = i;
+                            btnAssigns[i].setOnClickListener(v -> toggleAssignChannel(ch));
+                        }
+                        
+                        btnAdminUserBack.setOnClickListener(v -> handleAdminUserBack());
+                        btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
+                    }
 
     private void showConnectionStep() {
         screenConnection.setVisibility(View.VISIBLE);
@@ -276,7 +264,6 @@ public class MainActivity extends AppCompatActivity {
         screenConnection.setVisibility(View.GONE);
         screenBind.setVisibility(View.VISIBLE);
         screenDashboard.setVisibility(View.GONE);
-        if (cardCreateUser != null) cardCreateUser.setVisibility(View.GONE); // Ensure admin card is hidden
         stopChannelMapUpdates();
 
         // Transform Bind Screen into Registration Screen
@@ -378,7 +365,6 @@ public class MainActivity extends AppCompatActivity {
         screenConnection.setVisibility(View.GONE);
         screenBind.setVisibility(View.GONE);
         screenDashboard.setVisibility(View.VISIBLE);
-        if (cardCreateUser != null) cardCreateUser.setVisibility(View.GONE);
         if (currentUser != null) {
             updateDashboardUi(currentUser);
             boolean isAdmin = currentUser.getAuthLevel() == 1;
@@ -595,13 +581,7 @@ public class MainActivity extends AppCompatActivity {
     private void showAdminUserMenu() {
         if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.VISIBLE);
         if (sectionAdminAssign != null) sectionAdminAssign.setVisibility(View.GONE);
-        if (sectionAdminCreate != null) sectionAdminCreate.setVisibility(View.GONE);
         if (sectionAdminDelete != null) sectionAdminDelete.setVisibility(View.GONE);
-    }
-
-    private void showAdminCreateSection() {
-        if (cardAdminUserMenu != null) cardAdminUserMenu.setVisibility(View.GONE);
-        if (sectionAdminCreate != null) sectionAdminCreate.setVisibility(View.VISIBLE);
     }
 
     private void showAdminAssignSection() {
@@ -616,7 +596,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleAdminUserBack() {
         if ((sectionAdminAssign != null && sectionAdminAssign.getVisibility() == View.VISIBLE) ||
-            (sectionAdminCreate != null && sectionAdminCreate.getVisibility() == View.VISIBLE) ||
             (sectionAdminDelete != null && sectionAdminDelete.getVisibility() == View.VISIBLE)) {
             showAdminUserMenu();
         } else {
@@ -656,29 +635,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             @Override public void onFailure(Call<StatusResponse> call, Throwable t) {}
-        });
-    }
-
-    private void createUser() {
-        String name = etCreateName.getText().toString().trim();
-        if (name.isEmpty()) return;
-        String authText = etCreateAuthLevel.getText().toString().trim();
-        int authLevel = authText.equals("1") ? 1 : 2;
-        String chanText = etCreateChannel.getText().toString().trim();
-        Integer channel = chanText.isEmpty() ? null : Integer.parseInt(chanText);
-
-        if (demoMode) {
-            cachedUsers.add(new User(cachedUsers.size() + 1, name, authLevel, channel, 0, 0, 1));
-            updateUserAdapters();
-            return;
-        }
-        String baseUrl = resolveBaseUrl();
-        apiForBaseUrl(baseUrl).createUser(new CreateUserRequest(name, authLevel, channel)).enqueue(new Callback<User>() {
-            @Override
-            public void onResponse(Call<User> call, Response<User> response) {
-                if (response.isSuccessful()) refreshUsers(baseUrl);
-            }
-            @Override public void onFailure(Call<User> call, Throwable t) {}
         });
     }
 
@@ -817,20 +773,20 @@ public class MainActivity extends AppCompatActivity {
             boolean isHighlight = (selectedAssignChannel != null && selectedAssignChannel == i);
             
             if (isHighlight) {
-                // Selected/Current -> Orange + Pop Up
-                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00)); // Amber
-                btn.setTextColor(0xFF000000);
-                btn.animate().translationY(-15f).setDuration(200).start(); // Pop up effect
-                btn.setElevation(10f); // Add shadow
+                // Selected/Current -> Sunflower Yellow
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFf38942));
+                btn.setTextColor(0xFFFFFFFF);
+                btn.animate().translationY(-15f).setDuration(200).start();
+                btn.setElevation(10f);
             } else if (isOccupiedByOther) {
-                // Occupied -> Red
-                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFC62828)); // Red
+                // Occupied -> Coral Red
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFafaeaa));
                 btn.setTextColor(0xFFFFFFFF);
                 btn.animate().translationY(0f).setDuration(200).start();
                 btn.setElevation(0f);
             } else {
-                // Free -> Green
-                btn.setBackgroundTintList(ColorStateList.valueOf(0xFF4CAF50)); // Green
+                // Free -> Emerald Green
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFacd07e));
                 btn.setTextColor(0xFFFFFFFF);
                 btn.animate().translationY(0f).setDuration(200).start();
                 btn.setElevation(0f);
@@ -878,34 +834,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateDashboardUi(User user) {
-        if (tvGreeting != null) tvGreeting.setText("Bonjour, " + user.getName());
-        if (tvBioSummary != null) tvBioSummary.setText(buildBioSummary(user));
-        if (tvFaceStatus != null) tvFaceStatus.setText(user.hasFace() ? R.string.bio_face_ready : R.string.bio_face_pending);
-        if (tvFingerStatus != null) tvFingerStatus.setText(user.hasFingerprint() ? R.string.bio_finger_ready : R.string.bio_finger_pending);
-        if (tvChannelStatus != null) tvChannelStatus.setText(user.getAssignedChannel() > 0 ? "Canal " + user.getAssignedChannel() : "Aucun canal");
-        
+        String welcome;
+        if (user.getAssignedChannel() > 0) {
+            welcome = "Bonjour, " + user.getName() + " !\n\nVotre café est au Canal " + user.getAssignedChannel() + ".";
+        } else {
+            welcome = "Bonjour, " + user.getName() + " !\nBienvenue chez DistCapsule.";
+        }
+
+        // Hide the old greeting view outside the card
+        if (tvGreeting != null) tvGreeting.setVisibility(View.GONE);
+
+        // Update the card content
+        if (tvBioSummary != null) {
+            tvBioSummary.setText(welcome);
+            tvBioSummary.setVisibility(View.VISIBLE);
+            tvBioSummary.setTextSize(20); // Make it larger and more prominent
+        }
+
+        // Hide all old status detail texts inside the card
+        if (tvFaceStatus != null) tvFaceStatus.setVisibility(View.GONE);
+        if (tvFingerStatus != null) tvFingerStatus.setVisibility(View.GONE);
+        if (tvChannelStatus != null) tvChannelStatus.setVisibility(View.GONE);
+
         // Update Self-Enrollment Buttons
         if (btnSelfEnrollFace != null) {
             if (user.hasFace()) {
                 btnSelfEnrollFace.setText("Mettre à jour Face");
-                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32));
-                btnSelfEnrollFace.setTextColor(0xFFFFFFFF);
+                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnSelfEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnSelfEnrollFace.setText("Ajouter Face");
-                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00));
-                btnSelfEnrollFace.setTextColor(0xFF000000);
+                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e)); // Sunflower Yellow
+                btnSelfEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
         if (btnSelfEnrollFinger != null) {
             if (user.hasFingerprint()) {
                 btnSelfEnrollFinger.setText("Mettre à jour Empreinte");
-                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32));
-                btnSelfEnrollFinger.setTextColor(0xFFFFFFFF);
+                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnSelfEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnSelfEnrollFinger.setText("Ajouter Empreinte");
-                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00));
-                btnSelfEnrollFinger.setTextColor(0xFF000000);
+                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e));
+                btnSelfEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             }
+        }
+
+        if (btnUnlock != null) {
+            btnUnlock.setEnabled(user.getAssignedChannel() > 0);
         }
 
         updateChannelMap();
@@ -922,12 +898,12 @@ public class MainActivity extends AppCompatActivity {
         if (btnAdminEnrollFace != null) {
             if (user.hasFace()) {
                 btnAdminEnrollFace.setText("Mettre à jour Face");
-                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32)); // Dark Green
-                btnAdminEnrollFace.setTextColor(0xFFFFFFFF);
+                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnAdminEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnAdminEnrollFace.setText("Ajouter Face");
-                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00)); // Orange
-                btnAdminEnrollFace.setTextColor(0xFF000000);
+                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e));
+                btnAdminEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
 
@@ -935,12 +911,12 @@ public class MainActivity extends AppCompatActivity {
         if (btnAdminEnrollFinger != null) {
             if (user.hasFingerprint()) {
                 btnAdminEnrollFinger.setText("Mettre à jour Empreinte");
-                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32)); // Dark Green
-                btnAdminEnrollFinger.setTextColor(0xFFFFFFFF);
+                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnAdminEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnAdminEnrollFinger.setText("Ajouter Empreinte");
-                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00)); // Orange
-                btnAdminEnrollFinger.setTextColor(0xFF000000);
+                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e));
+                btnAdminEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
         
