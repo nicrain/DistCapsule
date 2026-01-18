@@ -90,17 +90,30 @@ def create_user(user: UserCreate):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        if user.assigned_channel:
-            cursor.execute("SELECT user_id FROM Users WHERE assigned_channel = ?", (user.assigned_channel,))
+        # Logic: Automatic Channel Assignment
+        final_channel = user.assigned_channel
+        
+        if final_channel:
+            # If manually requested, check conflict
+            cursor.execute("SELECT user_id FROM Users WHERE assigned_channel = ?", (final_channel,))
             if cursor.fetchone():
                 conn.close()
-                raise HTTPException(status_code=400, detail=f"Channel {user.assigned_channel} occupied")
+                raise HTTPException(status_code=400, detail=f"Channel {final_channel} occupied")
+        else:
+            # If not requested, try to auto-assign first free channel
+            cursor.execute("SELECT assigned_channel FROM Users WHERE assigned_channel IS NOT NULL")
+            occupied = {row[0] for row in cursor.fetchall()}
+            for ch in range(1, 6):
+                if ch not in occupied:
+                    final_channel = ch
+                    break
+            # If final_channel is still None, it means full or no auto-assign needed (user stays in queue)
 
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("""
             INSERT INTO Users (name, auth_level, assigned_channel, app_token, created_at, has_fingerprint, is_active)
             VALUES (?, ?, ?, ?, ?, 0, 1)
-        """, (user.name, user.auth_level, user.assigned_channel, user.app_token, now))
+        """, (user.name, user.auth_level, final_channel, user.app_token, now))
         
         new_id = cursor.lastrowid
         conn.commit()
