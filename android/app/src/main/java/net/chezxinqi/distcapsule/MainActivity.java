@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -27,6 +28,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.transition.TransitionManager;
+import android.transition.AutoTransition;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -542,8 +545,11 @@ public class MainActivity extends AppCompatActivity {
                     if (layoutAdminAssignActions != null) layoutAdminAssignActions.setVisibility(View.GONE);
                     Toast.makeText(MainActivity.this, "L\'administrateur ne peut pas être modifié", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Regular User: show actions
-                    if (layoutAdminAssignActions != null) layoutAdminAssignActions.setVisibility(View.VISIBLE);
+                    // Regular User: show actions with animation
+                    if (layoutAdminAssignActions != null && sectionAdminAssign != null) {
+                        TransitionManager.beginDelayedTransition((ViewGroup) sectionAdminAssign, new AutoTransition());
+                        layoutAdminAssignActions.setVisibility(View.VISIBLE);
+                    }
                     updateAdminUi(selectedAdminUser);
                 }
             }
@@ -816,9 +822,14 @@ public class MainActivity extends AppCompatActivity {
             // Logic: If it's the pending selection OR (no pending selection AND it's the current channel)
             boolean isHighlight = (selectedAssignChannel != null && selectedAssignChannel == i);
             
+            // Reset translation for all buttons first (clean state)
+            btn.animate().translationY(0f).setDuration(150).start();
+            
             if (isHighlight) {
                 btn.setBackgroundTintList(ColorStateList.valueOf(0xFFf38942)); // Vivid Orange (Selection)
                 btn.setTextColor(0xFFFFFFFF);
+                // Pop-up effect for selected channel
+                btn.animate().translationY(-12f).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
             } else if (isOccupiedByOther) {
                 btn.setBackgroundTintList(ColorStateList.valueOf(0xFFafaeaa)); // Muted Grey (Occupied)
                 btn.setTextColor(0xFFFFFFFF);

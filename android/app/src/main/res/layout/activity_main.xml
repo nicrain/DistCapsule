@@ -548,6 +548,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical"
+                                android:clipChildren="false"
+                                android:clipToPadding="false"
                                 android:visibility="gone">
 
                                 <TextView
@@ -560,8 +562,10 @@
                                 <LinearLayout
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginTop="8dp"
+                                    android:layout_marginTop="12dp"
                                     android:gravity="center"
+                                    android:clipChildren="false"
+                                    android:clipToPadding="false"
                                     android:orientation="horizontal">
 
                                     <com.google.android.material.button.MaterialButton
