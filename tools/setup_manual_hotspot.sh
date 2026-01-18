@@ -11,13 +11,21 @@ echo "策略: NetworkManager (仅链路) + Dnsmasq (仅 DHCP)"
 
 # 检查 root
 if [ "$EUID" -ne 0 ]; then
-  echo "❌ 请使用 sudo 运行此脚本"
+  echo "[ERROR] 请使用 sudo 运行此脚本"
   exit 1
 fi
 
 # 1. 确保安装 dnsmasq (我们需要它的二进制文件)
 # -y 如果已安装会直接跳过
 apt-get install -y dnsmasq
+
+# 1.1 强力停止系统默认的 dnsmasq 服务 (防止冲突)
+# 尝试停止服务
+systemctl stop dnsmasq 2>/dev/null || true
+systemctl disable dnsmasq 2>/dev/null || true
+# 暴力查杀任何仍在运行的 dnsmasq 进程 (确保端口 67 绝对空闲)
+pkill -x dnsmasq || true
+sleep 1 # 给系统一点时间释放端口
 
 # 2. 清理旧环境
 echo "1. 清理环境..."
@@ -37,6 +45,7 @@ nmcli con modify "$HOTSPOT_SSID" ipv4.method manual
 # 4. 启动热点
 echo "3. 启动 Wi-Fi..."
 nmcli con up "$HOTSPOT_SSID"
+sleep 2 # 等待接口完全就绪
 
 # 5. 手动启动 DHCP 服务 (核心魔法)
 echo "4. 启动独立 DHCP 服务..."
@@ -61,7 +70,7 @@ dnsmasq \
   > /var/log/capsule_dhcp.log 2>&1 &  # 后台运行并记录日志
 
 echo "==========================================="
-echo "✅ 热点已就绪!"
+echo "[OK] 热点已就绪!"
 echo "PID: $!"
 echo "-------------------------------------------"
 echo "逻辑验证:"
