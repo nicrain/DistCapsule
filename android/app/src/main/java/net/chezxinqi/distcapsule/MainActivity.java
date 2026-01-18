@@ -2,12 +2,15 @@ package net.chezxinqi.distcapsule;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -56,13 +59,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_BASE_URL = "base_url";
     private static final String KEY_TOKEN = "auth_token";
     private static final String DEFAULT_IP = "192.168.4.1";
+    private static final String WIFI_SSID = "DistCapsule_Box";
+    private static final String WIFI_PASS = "capsule_admin";
     private static final long CHANNEL_MAP_REFRESH_MS = 10000;
 
     private EditText etBaseUrl;
     private TextInputLayout tilBaseUrl, tilSelectUser;
     private boolean baseUrlEditing = false;
 
-    private Button btnLoadUsers, btnDemo, btnBindUser, btnUnlock, btnDeleteUser;
+    private Button btnLoadUsers, btnConnectWifi, btnBindUser, btnBindBack, btnUnlock, btnDeleteUser;
     private Button btnSelfEnrollFace, btnSelfEnrollFinger;
     private Button btnAdminAssignChannel, btnAdminEnrollFace, btnAdminEnrollFinger, btnAdminDeleteUser;
     private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuAssign, btnAdminMenuDelete;
@@ -143,8 +148,9 @@ public class MainActivity extends AppCompatActivity {
         tilBaseUrl = findViewById(R.id.tilBaseUrl);
         tilSelectUser = findViewById(R.id.tilSelectUser);
         btnLoadUsers = findViewById(R.id.btnLoadUsers);
-        btnDemo = findViewById(R.id.btnDemo);
+        btnConnectWifi = findViewById(R.id.btnConnectWifi);
         btnBindUser = findViewById(R.id.btnBindUser);
+        btnBindBack = findViewById(R.id.btnBindBack);
         btnUnlock = findViewById(R.id.btnUnlock);
         btnDeleteUser = findViewById(R.id.btnDeleteUser);
         btnSelfEnrollFace = findViewById(R.id.btnSelfEnrollFace);
@@ -218,7 +224,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnLoadUsers.setOnClickListener(v -> connectToApi());
+        btnConnectWifi.setOnClickListener(v -> connectToBoxWifi());
         btnBindUser.setOnClickListener(v -> bindSelectedUser());
+        btnBindBack.setOnClickListener(v -> showConnectionStep());
         btnUnlock.setOnClickListener(v -> unlockChannel());
         btnDeleteUser.setOnClickListener(v -> deleteCurrentUser());
         
@@ -278,18 +286,24 @@ public class MainActivity extends AppCompatActivity {
             etSelectUser.setFocusableInTouchMode(true);
             etSelectUser.setCursorVisible(true);
             
-            etSelectUser.setHint("Entrez votre nom");
+            // Fix double hint issue: set hint on Layout, clear hint on Edit
+            if (tilSelectUser != null) {
+                tilSelectUser.setHint(null); // Clear previous hint state
+                tilSelectUser.setHint(getString(R.string.bind_select_user));
+                etSelectUser.setHint(null); // Ensure inner edit is clean
+            }
         }
         if (btnBindUser != null) {
-            btnBindUser.setText("Créer et se connecter");
+            btnBindUser.setText(getString(R.string.button_create_user));
             btnBindUser.setOnClickListener(v -> createAndBindUser());
         }
     }
 
     private void createAndBindUser() {
+        hideKeyboard();
         String name = etSelectUser.getText().toString().trim();
         if (name.isEmpty()) {
-            Toast.makeText(this, "Veuillez entrer un nom", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.toast_field_required, getString(R.string.field_name)), Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -425,6 +439,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void connectToApi() {
+        hideKeyboard();
         if (demoMode) {
             showBindStep();
             return;
@@ -1048,6 +1063,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
     private void setupDropdown(AutoCompleteTextView v) {
         if (v == null) return;
         // Make it read-only: no keyboard, no manual focus
@@ -1060,6 +1083,64 @@ public class MainActivity extends AppCompatActivity {
         v.setOnClickListener(view -> v.showDropDown());
         // For some versions of Android, we also need to catch the click on the parent container
         // But for now, simple click should work.
+    }
+
+    private void connectToBoxWifi() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // Android 10+ logic (System Panel)
+            android.net.wifi.WifiNetworkSpecifier specifier = new android.net.wifi.WifiNetworkSpecifier.Builder()
+                    .setSsid(WIFI_SSID)
+                    .setWpa2Passphrase(WIFI_PASS)
+                    .build();
+
+            android.net.NetworkRequest request = new android.net.NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .setNetworkSpecifier(specifier)
+                    .build();
+
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (connectivityManager != null) {
+                connectivityManager.requestNetwork(request, new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(Network network) {
+                        super.onAvailable(network);
+                        connectivityManager.bindProcessToNetwork(network);
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Connecté à " + WIFI_SSID, Toast.LENGTH_SHORT).show());
+                    }
+
+                    @Override
+                    public void onUnavailable() {
+                        super.onUnavailable();
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Connexion annulée", Toast.LENGTH_SHORT).show());
+                    }
+                });
+            }
+        } else {
+            // Android 9 and below - Programmatic connection
+            try {
+                WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                if (wifiManager != null) {
+                    if (!wifiManager.isWifiEnabled()) {
+                        wifiManager.setWifiEnabled(true);
+                    }
+                    
+                    WifiConfiguration conf = new WifiConfiguration();
+                    conf.SSID = "\"" + WIFI_SSID + "\"";
+                    conf.preSharedKey = "\"" + WIFI_PASS + "\"";
+                    
+                    int netId = wifiManager.addNetwork(conf);
+                    wifiManager.disconnect();
+                    wifiManager.enableNetwork(netId, true);
+                    wifiManager.reconnect();
+                    
+                    Toast.makeText(this, "Tentative de connexion à " + WIFI_SSID + "...", Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "Erreur: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                // Fallback to settings
+                startActivity(new android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS));
+            }
+        }
     }
 
     private void playSplash() {

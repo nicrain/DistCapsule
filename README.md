@@ -97,9 +97,9 @@ L'application (dossier `android/`) a été optimisée pour une fluidité maximal
 
 *   **Vivid UI** : Palette de couleurs moderne (Émeraude, Tournesol, Corail) avec texte contrasté pour une lisibilité parfaite.
 *   **Auto-Login** : Une fois enregistré, l'accès au Dashboard est instantané.
+*   **Connexion Wi-Fi Simplifiée** : Un bouton dédié permet de se connecter automatiquement au hotspot `DistCapsule_Box` sans saisir de mot de passe (Android 10+) ou en ouvrant directement les paramètres (Android 9).
 *   **Saisie d'IP Simplifiée** : Entrez simplement l'IP, le protocole et le port sont gérés automatiquement.
-*   **Gestion Visuelle des Canaux** : Système de sélection par boutons avec effet "pop-up" pour une attribution sans erreur.
-*   **Feedback Instantané** : Toasts contextuels pour chaque action matérielle (ex: "Ouverture du canal 3...").
+*   **Navigation Fluide** : Ajout de boutons de retour et gestion intelligente du clavier virtuel pour une expérience sans friction.
 
 ---
 

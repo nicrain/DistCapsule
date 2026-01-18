@@ -124,15 +124,25 @@
                             android:layout_marginTop="10dp"
                             android:text="@string/button_load_users" />
 
+                        <TextView
+                            style="@style/TextAppearance.DistCapsule.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:gravity="center"
+                            android:textSize="14sp"
+                            android:text="@string/wifi_info_prompt" />
+
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnDemo"
+                            android:id="@+id/btnConnectWifi"
                             style="@style/Widget.DistCapsule.ButtonTonal"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:minHeight="48dp"
                             android:layout_marginTop="8dp"
-                            android:visibility="gone"
-                            android:text="@string/button_demo_mode" />
+                            app:backgroundTint="#F1C40F"
+                            android:textColor="#3F3B3C"
+                            android:text="Connecter au Wi-Fi" />
 
                     </LinearLayout>
 
@@ -207,6 +217,14 @@
                             android:minHeight="48dp"
                             android:layout_marginTop="10dp"
                             android:text="@string/button_bind" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnBindBack"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/button_back" />
 
                     </LinearLayout>
 

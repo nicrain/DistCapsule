@@ -5,7 +5,7 @@
     <string name="screen_subtitle">Console d\'administration locale</string>
     <string name="greeting_placeholder">Bonjour !</string>
     <string name="section_connection">Connexion</string>
-    <string name="section_bind">Choisir un utilisateur</string>
+    <string name="section_bind">Nouvel Utilisateur</string>
     <string name="section_enroll">Inscription utilisateur</string>
     <string name="section_capture">Capture biométrique</string>
     <string name="section_logs">Journaux d\'audit</string>
@@ -18,9 +18,10 @@
     <string name="section_admin_channels">Contrôle des canaux</string>
     <string name="section_create_user">Créer un utilisateur</string>
     <string name="section_self_manage">Gestion personnelle</string>
-    <string name="pi_base_url">Adresse API du Pi</string>
+    <string name="pi_base_url">Adresse IP du DistCapsule</string>
+    <string name="wifi_info_prompt">Si vous n\'êtes pas connecté, rejoignez le réseau :\nSSID : DistCapsule_Box\nMDP : capsule_admin\n(Ou utilisez le bouton ci-dessous)</string>
     <string name="select_user_label">Sélectionner un utilisateur</string>
-    <string name="edit_base_url">Modifier l\'adresse API</string>
+    <string name="edit_base_url">Modifier l\'adresse IP</string>
     <string name="base_url_helper">Touchez le stylo pour modifier, enregistrement automatique</string>
     <string name="button_load_users">Se connecter</string>
     <string name="button_bind">Associer cet utilisateur</string>
@@ -32,7 +33,7 @@
     <string name="button_enroll_finger">Enregistrer Empreinte</string>
     <string name="button_delete_user">Supprimer l\'utilisateur</string>
     <string name="button_delete_self">Supprimer mon compte</string>
-    <string name="button_create_user">Créer l\'utilisateur</string>
+    <string name="button_create_user">Créer et se connecter</string>
     <string name="button_demo_mode">Mode démo</string>
     <string name="button_back">Retour</string>
     <string name="button_admin_user_management">Gestion des utilisateurs</string>
@@ -49,7 +50,7 @@
     <string name="button_channel_3">Canal 3</string>
     <string name="button_channel_4">Canal 4</string>
     <string name="button_channel_5">Canal 5</string>
-    <string name="bind_select_user">Sélectionner votre nom</string>
+    <string name="bind_select_user">Entrez votre nom</string>
     <string name="admin_select_user">Choisir un utilisateur</string>
     <string name="admin_channel_hint">Canal attribué (1-5)</string>
     <string name="create_user_pick">Créer un utilisateur : choisir un profil libre</string>
@@ -98,9 +99,9 @@
     <string name="dialog_deleted_message">Le compte a été supprimé.</string>
     <string name="loading_desc">Chargement</string>
     <string name="logs_list_desc">Liste des journaux</string>
-    <string name="toast_base_url_saved">Adresse API enregistrée</string>
-    <string name="toast_base_url_cleared">Adresse API effacée</string>
-    <string name="toast_base_url_required">Veuillez saisir l\'adresse API du Pi</string>
+    <string name="toast_base_url_saved">Adresse IP enregistrée</string>
+    <string name="toast_base_url_cleared">Adresse IP effacée</string>
+    <string name="toast_base_url_required">Veuillez saisir l\'adresse IP du Pi</string>
     <string name="toast_select_user">Veuillez choisir un utilisateur</string>
     <string name="toast_bind_success">Association réussie</string>
     <string name="toast_bind_failed">Association échouée</string>

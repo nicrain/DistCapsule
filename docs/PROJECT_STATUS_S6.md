@@ -30,11 +30,11 @@
 
 ## 📅 Journal des Modifications (Changelog)
 *   **2026-01-18 (Final S6 Release - V1.1)**:
-    *   **Android App v1.1**: Refonte totale de l'UX avec une palette de couleurs vive (Vivid Palette), icône d'application personnalisée (Coffee Capsule), auto-login via Token et saisie d'IP simplifiée.
-    *   **UX Revolution**: Remplacement des saisies manuelles par une interface visuelle (boutons de canaux, pop-up d'animation).
-    *   **Hardware Sync**: Synchronisation bidirectionnelle Matériel <-> App (les boutons d'enrôlement changent de couleur en temps réel).
-    *   **Stabilité**: Correction des deadlocks de base de données (timeout) et des blocages de capteur d'empreintes (timeout 30s).
-    *   **Zéro Config**: Scripts d'installation automatique pour le Hotspot, l'API et le service principal.
+    *   **Android App v1.1**: Refonte totale de l'UX (Vivid Palette), icône personnalisée, auto-login via Token.
+    *   **Wi-Fi Automation**: Bouton de connexion automatique au hotspot `DistCapsule_Box` avec gestion des permissions.
+    *   **Logic Cleanup**: Suppression du Mode Demo et de la création d'utilisateur côté Admin au profit du self-service.
+    *   **UX Revolution**: Boutons de retour, gestion intelligente du clavier, et messages Toast conviviaux.
+    *   **Stabilité**: Correction des deadlocks de base de données and des blocages de capteur d'empreintes.
 *   **2026-01-14 (V1.0 Initial IoT Release)**:
     *   Intégration du code source de l'application dans le répertoire `android/`.
     *   Nettoyage des logs (Suppression des Emojis, style professionnel).
