@@ -62,10 +62,236 @@ public class MainActivity extends AppCompatActivity {
     private EditText etBaseUrl;
     private TextInputLayout tilBaseUrl;
     private boolean baseUrlEditing = false;
-    // ...
 
-    // ... (in onCreate)
-        btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
+    private Button btnLoadUsers;
+    private Button btnDemo;
+    private Button btnBindUser;
+    private Button btnUnlock;
+    private Button btnDeleteUser;
+    private Button btnAdminAssignChannel;
+    private Button btnAdminEnrollFace;
+    private Button btnAdminEnrollFinger;
+    private Button btnAdminDeleteUser;
+    private Button btnAdminUserManagement;
+    private Button btnAdminHardwareControl;
+    private Button btnAdminMenuCreate;
+    private Button btnAdminMenuAssign;
+    private Button btnAdminMenuDelete;
+    private Button btnUnlock1;
+    private Button btnUnlock2;
+    private Button btnUnlock3;
+    private Button btnUnlock4;
+    private Button btnUnlock5;
+    private Button btnCreateUser;
+
+    private AutoCompleteTextView etSelectUser;
+    private AutoCompleteTextView etAdminSelectUser;
+    private AutoCompleteTextView etAdminDeleteUser;
+    private EditText etCreateName;
+    private EditText etCreateAuthLevel;
+
+    private EditText etCreateChannel;
+    private EditText etAdminChannel;
+
+    private TextView tvGreeting;
+    private TextView tvBioSummary;
+    private TextView tvFaceStatus;
+    private TextView tvFingerStatus;
+    private TextView tvChannelStatus;
+    private TextView tvAdminFaceStatus;
+    private TextView tvAdminFingerStatus;
+    private TextView tvActionResultTitle;
+    private TextView tvActionResultDetail;
+    private TextView tvChannel1;
+    private TextView tvChannel2;
+    private TextView tvChannel3;
+    private TextView tvChannel4;
+    private TextView tvChannel5;
+
+    private ImageView ivCafeDashboard;
+    private View screenConnection;
+    private View screenBind;
+    private View screenDashboard;
+    private View splashOverlay;
+    private View mainScroll;
+    private MaterialCardView cardAdmin;
+    private MaterialCardView cardSelfManage;
+    private MaterialCardView cardActions;
+    private MaterialCardView cardStatus;
+    private MaterialCardView cardAdminChannels;
+    private MaterialCardView cardChannelMap;
+    private MaterialCardView cardCreateUser;
+    private MaterialCardView cardActionResult;
+    private ImageButton btnAdminUserBack;
+    private ImageButton btnAdminHardwareBack;
+    private View adminUserHeader;
+    private View adminHardwareHeader;
+    private MaterialCardView cardAdminMenu;
+    private MaterialCardView cardAdminUserMenu;
+    private View sectionAdminUser;
+    private View sectionAdminHardware;
+    private View sectionAdminAssign;
+    private View sectionAdminCreate;
+    private View sectionAdminDelete;
+
+    private ImageView ivHeaderCapsule;
+    private TextView tvSplashTitle;
+    private ImageView ivSplashCapsule;
+    private ProgressBar pbLoading;
+
+    private final List<User> cachedUsers = new ArrayList<>();
+    private final List<User> bindUsers = new ArrayList<>();
+    private final List<User> adminUsers = new ArrayList<>();
+    private ArrayAdapter<String> bindAdapter;
+    private ArrayAdapter<String> adminAdapter;
+
+    private User currentUser;
+    private User selectedBindUser;
+    private User selectedAdminUser;
+    private User selectedDeleteUser;
+    private boolean demoMode = false;
+    private int debugStep = 0;
+    private final Handler channelMapHandler = new Handler(Looper.getMainLooper());
+    private final Runnable channelMapRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (screenDashboard == null || screenDashboard.getVisibility() != View.VISIBLE) {
+                return;
+            }
+            if (demoMode) {
+                updateChannelMap();
+            } else {
+                String baseUrl = resolveBaseUrl();
+                if (!baseUrl.isEmpty()) {
+                    refreshUsers(baseUrl);
+                }
+            }
+            channelMapHandler.postDelayed(this, CHANNEL_MAP_REFRESH_MS);
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (screenDashboard != null && screenDashboard.getVisibility() == View.VISIBLE) {
+            startChannelMapUpdates();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stopChannelMapUpdates();
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        etBaseUrl = findViewById(R.id.etBaseUrl);
+        tilBaseUrl = findViewById(R.id.tilBaseUrl);
+
+        btnLoadUsers = findViewById(R.id.btnLoadUsers);
+        btnDemo = findViewById(R.id.btnDemo);
+        btnBindUser = findViewById(R.id.btnBindUser);
+        btnUnlock = findViewById(R.id.btnUnlock);
+        btnDeleteUser = findViewById(R.id.btnDeleteUser);
+        btnAdminAssignChannel = findViewById(R.id.btnAdminAssignChannel);
+        btnAdminEnrollFace = findViewById(R.id.btnAdminEnrollFace);
+        btnAdminEnrollFinger = findViewById(R.id.btnAdminEnrollFinger);
+        btnAdminDeleteUser = findViewById(R.id.btnAdminDeleteUser);
+        btnAdminUserManagement = findViewById(R.id.btnAdminUserManagement);
+        btnAdminHardwareControl = findViewById(R.id.btnAdminHardwareControl);
+        btnAdminMenuCreate = findViewById(R.id.btnAdminMenuCreate);
+        btnAdminMenuAssign = findViewById(R.id.btnAdminMenuAssign);
+        btnAdminMenuDelete = findViewById(R.id.btnAdminMenuDelete);
+        btnUnlock1 = findViewById(R.id.btnUnlock1);
+        btnUnlock2 = findViewById(R.id.btnUnlock2);
+        btnUnlock3 = findViewById(R.id.btnUnlock3);
+        btnUnlock4 = findViewById(R.id.btnUnlock4);
+        btnUnlock5 = findViewById(R.id.btnUnlock5);
+        btnCreateUser = findViewById(R.id.btnCreateUser);
+
+        etSelectUser = findViewById(R.id.etSelectUser);
+        etAdminSelectUser = findViewById(R.id.etAdminSelectUser);
+        etAdminDeleteUser = findViewById(R.id.etAdminDeleteUser);
+        etCreateName = findViewById(R.id.etCreateName);
+        etCreateAuthLevel = findViewById(R.id.etCreateAuthLevel);
+
+        etCreateChannel = findViewById(R.id.etCreateChannel);
+        etAdminChannel = findViewById(R.id.etAdminChannel);
+
+        tvGreeting = findViewById(R.id.tvGreeting);
+        tvBioSummary = findViewById(R.id.tvBioSummary);
+        tvFaceStatus = findViewById(R.id.tvFaceStatus);
+        tvFingerStatus = findViewById(R.id.tvFingerStatus);
+        tvChannelStatus = findViewById(R.id.tvChannelStatus);
+        tvAdminFaceStatus = findViewById(R.id.tvAdminFaceStatus);
+        tvAdminFingerStatus = findViewById(R.id.tvAdminFingerStatus);
+        tvActionResultTitle = findViewById(R.id.tvActionResultTitle);
+        tvActionResultDetail = findViewById(R.id.tvActionResultDetail);
+        tvChannel1 = findViewById(R.id.tvChannel1);
+        tvChannel2 = findViewById(R.id.tvChannel2);
+        tvChannel3 = findViewById(R.id.tvChannel3);
+        tvChannel4 = findViewById(R.id.tvChannel4);
+        tvChannel5 = findViewById(R.id.tvChannel5);
+        ivCafeDashboard = findViewById(R.id.ivCafeDashboard);
+
+        screenConnection = findViewById(R.id.screenConnection);
+        screenBind = findViewById(R.id.screenBind);
+        screenDashboard = findViewById(R.id.screenDashboard);
+        splashOverlay = findViewById(R.id.splashOverlay);
+        mainScroll = findViewById(R.id.mainScroll);
+        cardAdmin = findViewById(R.id.cardAdmin);
+        cardSelfManage = findViewById(R.id.cardSelfManage);
+        cardActions = findViewById(R.id.cardActions);
+        cardStatus = findViewById(R.id.cardStatus);
+        cardAdminChannels = findViewById(R.id.cardAdminChannels);
+        cardChannelMap = findViewById(R.id.cardChannelMap);
+        cardCreateUser = findViewById(R.id.cardCreateUser);
+        cardActionResult = findViewById(R.id.cardActionResult);
+        cardAdminMenu = findViewById(R.id.cardAdminMenu);
+        cardAdminUserMenu = findViewById(R.id.cardAdminUserMenu);
+        sectionAdminUser = findViewById(R.id.sectionAdminUser);
+        sectionAdminHardware = findViewById(R.id.sectionAdminHardware);
+        sectionAdminAssign = findViewById(R.id.sectionAdminAssign);
+        sectionAdminCreate = findViewById(R.id.sectionAdminCreate);
+        sectionAdminDelete = findViewById(R.id.sectionAdminDelete);
+        adminUserHeader = findViewById(R.id.adminUserHeader);
+        adminHardwareHeader = findViewById(R.id.adminHardwareHeader);
+        btnAdminUserBack = findViewById(R.id.btnAdminUserBack);
+        btnAdminHardwareBack = findViewById(R.id.btnAdminHardwareBack);
+
+        ivHeaderCapsule = findViewById(R.id.ivCapsule);
+        tvSplashTitle = findViewById(R.id.tvSplashTitle);
+        ivSplashCapsule = findViewById(R.id.ivSplashCapsule);
+        pbLoading = findViewById(R.id.pbLoading);
+
+        setupAdapters();
+
+        btnLoadUsers.setOnClickListener(v -> connectToApi());
+        btnDemo.setOnClickListener(v -> enableDemoMode());
+        btnBindUser.setOnClickListener(v -> bindSelectedUser());
+        btnUnlock.setOnClickListener(v -> unlockChannel());
+        btnDeleteUser.setOnClickListener(v -> deleteCurrentUser());
+        btnAdminAssignChannel.setOnClickListener(v -> assignAdminChannel());
+        btnAdminEnrollFace.setOnClickListener(v -> updateAdminBiometric(true));
+        btnAdminEnrollFinger.setOnClickListener(v -> updateAdminBiometric(false));
+        btnAdminDeleteUser.setOnClickListener(v -> deleteAdminUser());
+        btnAdminUserManagement.setOnClickListener(v -> showAdminUserSection());
+        btnAdminHardwareControl.setOnClickListener(v -> showAdminHardwareSection());
+        btnAdminMenuCreate.setOnClickListener(v -> showAdminCreateSection());
+        btnAdminMenuAssign.setOnClickListener(v -> showAdminAssignSection());
+        btnAdminMenuDelete.setOnClickListener(v -> showAdminDeleteSection());
+        btnUnlock1.setOnClickListener(v -> unlockSpecificChannel(1));
+        btnUnlock2.setOnClickListener(v -> unlockSpecificChannel(2));
+        btnUnlock3.setOnClickListener(v -> unlockSpecificChannel(3));
+        btnUnlock4.setOnClickListener(v -> unlockSpecificChannel(4));
+        btnUnlock5.setOnClickListener(v -> unlockSpecificChannel(5));
+        btnCreateUser.setOnClickListener(v -> createUser());
+        btnAdminUserBack.setOnClickListener(v -> handleAdminUserBack());
+
 
         setupBaseUrlEditing();
         String savedUrl = loadBaseUrl();
