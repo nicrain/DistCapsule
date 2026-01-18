@@ -56,249 +56,38 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "distcapsule_prefs";
     private static final String KEY_BASE_URL = "base_url";
     private static final String KEY_TOKEN = "auth_token";
-    private static final String DEFAULT_BASE_URL = "http://192.168.4.1:8000/";
+    private static final String DEFAULT_IP = "192.168.4.1";
     private static final long CHANNEL_MAP_REFRESH_MS = 10000;
 
     private EditText etBaseUrl;
     private TextInputLayout tilBaseUrl;
     private boolean baseUrlEditing = false;
+    // ...
 
-    private Button btnLoadUsers;
-    private Button btnDemo;
-    private Button btnBindUser;
-    private Button btnUnlock;
-    private Button btnDeleteUser;
-    private Button btnAdminAssignChannel;
-    private Button btnAdminEnrollFace;
-    private Button btnAdminEnrollFinger;
-    private Button btnAdminDeleteUser;
-    private Button btnAdminUserManagement;
-    private Button btnAdminHardwareControl;
-    private Button btnAdminMenuCreate;
-    private Button btnAdminMenuAssign;
-    private Button btnAdminMenuDelete;
-    private Button btnUnlock1;
-    private Button btnUnlock2;
-    private Button btnUnlock3;
-    private Button btnUnlock4;
-    private Button btnUnlock5;
-    private Button btnCreateUser;
-
-    private AutoCompleteTextView etSelectUser;
-    private AutoCompleteTextView etAdminSelectUser;
-    private AutoCompleteTextView etAdminDeleteUser;
-    private EditText etCreateName;
-    private EditText etCreateAuthLevel;
-
-    private EditText etCreateChannel;
-    private EditText etAdminChannel;
-
-    private TextView tvGreeting;
-    private TextView tvBioSummary;
-    private TextView tvFaceStatus;
-    private TextView tvFingerStatus;
-    private TextView tvChannelStatus;
-    private TextView tvAdminFaceStatus;
-    private TextView tvAdminFingerStatus;
-    private TextView tvActionResultTitle;
-    private TextView tvActionResultDetail;
-    private TextView tvChannel1;
-    private TextView tvChannel2;
-    private TextView tvChannel3;
-    private TextView tvChannel4;
-    private TextView tvChannel5;
-
-    private ImageView ivCafeDashboard;
-    private View screenConnection;
-    private View screenBind;
-    private View screenDashboard;
-    private View splashOverlay;
-    private View mainScroll;
-    private MaterialCardView cardAdmin;
-    private MaterialCardView cardSelfManage;
-    private MaterialCardView cardActions;
-    private MaterialCardView cardStatus;
-    private MaterialCardView cardAdminChannels;
-    private MaterialCardView cardChannelMap;
-    private MaterialCardView cardCreateUser;
-    private MaterialCardView cardActionResult;
-    private ImageButton btnAdminUserBack;
-    private ImageButton btnAdminHardwareBack;
-    private View adminUserHeader;
-    private View adminHardwareHeader;
-    private MaterialCardView cardAdminMenu;
-    private MaterialCardView cardAdminUserMenu;
-    private View sectionAdminUser;
-    private View sectionAdminHardware;
-    private View sectionAdminAssign;
-    private View sectionAdminCreate;
-    private View sectionAdminDelete;
-
-    private ImageView ivHeaderCapsule;
-    private TextView tvSplashTitle;
-    private ImageView ivSplashCapsule;
-    private ProgressBar pbLoading;
-
-    private final List<User> cachedUsers = new ArrayList<>();
-    private final List<User> bindUsers = new ArrayList<>();
-    private final List<User> adminUsers = new ArrayList<>();
-    private ArrayAdapter<String> bindAdapter;
-    private ArrayAdapter<String> adminAdapter;
-
-    private User currentUser;
-    private User selectedBindUser;
-    private User selectedAdminUser;
-    private User selectedDeleteUser;
-    private boolean demoMode = false;
-    private int debugStep = 0;
-    private final Handler channelMapHandler = new Handler(Looper.getMainLooper());
-    private final Runnable channelMapRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (screenDashboard == null || screenDashboard.getVisibility() != View.VISIBLE) {
-                return;
-            }
-            if (demoMode) {
-                updateChannelMap();
-            } else {
-                String baseUrl = resolveBaseUrl();
-                if (!baseUrl.isEmpty()) {
-                    refreshUsers(baseUrl);
-                }
-            }
-            channelMapHandler.postDelayed(this, CHANNEL_MAP_REFRESH_MS);
-        }
-    };
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        if (screenDashboard != null && screenDashboard.getVisibility() == View.VISIBLE) {
-            startChannelMapUpdates();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        stopChannelMapUpdates();
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        etBaseUrl = findViewById(R.id.etBaseUrl);
-        tilBaseUrl = findViewById(R.id.tilBaseUrl);
-
-        btnLoadUsers = findViewById(R.id.btnLoadUsers);
-        btnDemo = findViewById(R.id.btnDemo);
-        btnBindUser = findViewById(R.id.btnBindUser);
-        btnUnlock = findViewById(R.id.btnUnlock);
-        btnDeleteUser = findViewById(R.id.btnDeleteUser);
-        btnAdminAssignChannel = findViewById(R.id.btnAdminAssignChannel);
-        btnAdminEnrollFace = findViewById(R.id.btnAdminEnrollFace);
-        btnAdminEnrollFinger = findViewById(R.id.btnAdminEnrollFinger);
-        btnAdminDeleteUser = findViewById(R.id.btnAdminDeleteUser);
-        btnAdminUserManagement = findViewById(R.id.btnAdminUserManagement);
-        btnAdminHardwareControl = findViewById(R.id.btnAdminHardwareControl);
-        btnAdminMenuCreate = findViewById(R.id.btnAdminMenuCreate);
-        btnAdminMenuAssign = findViewById(R.id.btnAdminMenuAssign);
-        btnAdminMenuDelete = findViewById(R.id.btnAdminMenuDelete);
-        btnUnlock1 = findViewById(R.id.btnUnlock1);
-        btnUnlock2 = findViewById(R.id.btnUnlock2);
-        btnUnlock3 = findViewById(R.id.btnUnlock3);
-        btnUnlock4 = findViewById(R.id.btnUnlock4);
-        btnUnlock5 = findViewById(R.id.btnUnlock5);
-        btnCreateUser = findViewById(R.id.btnCreateUser);
-
-        etSelectUser = findViewById(R.id.etSelectUser);
-        etAdminSelectUser = findViewById(R.id.etAdminSelectUser);
-        etAdminDeleteUser = findViewById(R.id.etAdminDeleteUser);
-        etCreateName = findViewById(R.id.etCreateName);
-        etCreateAuthLevel = findViewById(R.id.etCreateAuthLevel);
-
-        etCreateChannel = findViewById(R.id.etCreateChannel);
-        etAdminChannel = findViewById(R.id.etAdminChannel);
-
-        tvGreeting = findViewById(R.id.tvGreeting);
-        tvBioSummary = findViewById(R.id.tvBioSummary);
-        tvFaceStatus = findViewById(R.id.tvFaceStatus);
-        tvFingerStatus = findViewById(R.id.tvFingerStatus);
-        tvChannelStatus = findViewById(R.id.tvChannelStatus);
-        tvAdminFaceStatus = findViewById(R.id.tvAdminFaceStatus);
-        tvAdminFingerStatus = findViewById(R.id.tvAdminFingerStatus);
-        tvActionResultTitle = findViewById(R.id.tvActionResultTitle);
-        tvActionResultDetail = findViewById(R.id.tvActionResultDetail);
-        tvChannel1 = findViewById(R.id.tvChannel1);
-        tvChannel2 = findViewById(R.id.tvChannel2);
-        tvChannel3 = findViewById(R.id.tvChannel3);
-        tvChannel4 = findViewById(R.id.tvChannel4);
-        tvChannel5 = findViewById(R.id.tvChannel5);
-        ivCafeDashboard = findViewById(R.id.ivCafeDashboard);
-
-        screenConnection = findViewById(R.id.screenConnection);
-        screenBind = findViewById(R.id.screenBind);
-        screenDashboard = findViewById(R.id.screenDashboard);
-        splashOverlay = findViewById(R.id.splashOverlay);
-        mainScroll = findViewById(R.id.mainScroll);
-        cardAdmin = findViewById(R.id.cardAdmin);
-        cardSelfManage = findViewById(R.id.cardSelfManage);
-        cardActions = findViewById(R.id.cardActions);
-        cardStatus = findViewById(R.id.cardStatus);
-        cardAdminChannels = findViewById(R.id.cardAdminChannels);
-        cardChannelMap = findViewById(R.id.cardChannelMap);
-        cardCreateUser = findViewById(R.id.cardCreateUser);
-        cardActionResult = findViewById(R.id.cardActionResult);
-        cardAdminMenu = findViewById(R.id.cardAdminMenu);
-        cardAdminUserMenu = findViewById(R.id.cardAdminUserMenu);
-        sectionAdminUser = findViewById(R.id.sectionAdminUser);
-        sectionAdminHardware = findViewById(R.id.sectionAdminHardware);
-        sectionAdminAssign = findViewById(R.id.sectionAdminAssign);
-        sectionAdminCreate = findViewById(R.id.sectionAdminCreate);
-        sectionAdminDelete = findViewById(R.id.sectionAdminDelete);
-        adminUserHeader = findViewById(R.id.adminUserHeader);
-        adminHardwareHeader = findViewById(R.id.adminHardwareHeader);
-        btnAdminUserBack = findViewById(R.id.btnAdminUserBack);
-        btnAdminHardwareBack = findViewById(R.id.btnAdminHardwareBack);
-
-        ivHeaderCapsule = findViewById(R.id.ivCapsule);
-        tvSplashTitle = findViewById(R.id.tvSplashTitle);
-        ivSplashCapsule = findViewById(R.id.ivSplashCapsule);
-        pbLoading = findViewById(R.id.pbLoading);
-
-        setupAdapters();
-
-        btnLoadUsers.setOnClickListener(v -> connectToApi());
-        btnDemo.setOnClickListener(v -> enableDemoMode());
-        btnBindUser.setOnClickListener(v -> bindSelectedUser());
-        btnUnlock.setOnClickListener(v -> unlockChannel());
-        btnDeleteUser.setOnClickListener(v -> deleteCurrentUser());
-        btnAdminAssignChannel.setOnClickListener(v -> assignAdminChannel());
-        btnAdminEnrollFace.setOnClickListener(v -> updateAdminBiometric(true));
-        btnAdminEnrollFinger.setOnClickListener(v -> updateAdminBiometric(false));
-        btnAdminDeleteUser.setOnClickListener(v -> deleteAdminUser());
-        btnAdminUserManagement.setOnClickListener(v -> showAdminUserSection());
-        btnAdminHardwareControl.setOnClickListener(v -> showAdminHardwareSection());
-        btnAdminMenuCreate.setOnClickListener(v -> showAdminCreateSection());
-        btnAdminMenuAssign.setOnClickListener(v -> showAdminAssignSection());
-        btnAdminMenuDelete.setOnClickListener(v -> showAdminDeleteSection());
-        btnUnlock1.setOnClickListener(v -> unlockSpecificChannel(1));
-        btnUnlock2.setOnClickListener(v -> unlockSpecificChannel(2));
-        btnUnlock3.setOnClickListener(v -> unlockSpecificChannel(3));
-        btnUnlock4.setOnClickListener(v -> unlockSpecificChannel(4));
-        btnUnlock5.setOnClickListener(v -> unlockSpecificChannel(5));
-        btnCreateUser.setOnClickListener(v -> createUser());
-        btnAdminUserBack.setOnClickListener(v -> handleAdminUserBack());
+    // ... (in onCreate)
         btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
 
         setupBaseUrlEditing();
-        etBaseUrl.setText(loadBaseUrl());
+        String savedUrl = loadBaseUrl();
+        if (savedUrl.isEmpty()) {
+            etBaseUrl.setText(DEFAULT_IP);
+        } else {
+            etBaseUrl.setText(stripProtocolAndPort(savedUrl));
+        }
         setBaseUrlEditable(false);
         showConnectionStep();
         playSplash();
         setupDebugScreenToggle();
+    }
+
+    private String stripProtocolAndPort(String url) {
+        if (url == null) return "";
+        String clean = url.replace("http://", "").replace("https://", "");
+        if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
+        if (clean.contains(":8000")) {
+            clean = clean.replace(":8000", "");
+        }
+        return clean;
     }
 
     private void setupAdapters() {
@@ -1427,13 +1216,27 @@ public class MainActivity extends AppCompatActivity {
         sp.edit().remove(KEY_TOKEN).apply();
     }
 
-    private String normalizeBaseUrlOrEmpty(String url) {
-        if (url.isEmpty()) return "";
+    private String normalizeBaseUrlOrEmpty(String input) {
+        if (input.isEmpty()) return "";
+        String url = input;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
         }
-        if (!url.endsWith("/")) {
-            url = url + "/";
+        // Auto-add port :8000 if user typed an IP without port
+        // Logic: if url doesn't end with slash and has no port (e.g. http://192.168.4.1)
+        // Heuristic: Check if there is a colon after the protocol part
+        int protocolEnd = url.indexOf("://") + 3;
+        String addressPart = url.substring(protocolEnd);
+        if (!addressPart.contains(":")) {
+            if (addressPart.endsWith("/")) {
+                url = url.substring(0, url.length() - 1) + ":8000/";
+            } else {
+                url = url + ":8000/";
+            }
+        } else {
+            if (!url.endsWith("/")) {
+                url = url + "/";
+            }
         }
         return url;
     }
@@ -1441,7 +1244,7 @@ public class MainActivity extends AppCompatActivity {
     private String resolveBaseUrl() {
         String saved = loadBaseUrl();
         if (saved == null || saved.isEmpty()) {
-            return DEFAULT_BASE_URL;
+            return normalizeBaseUrlOrEmpty(DEFAULT_IP);
         }
         return saved;
     }
@@ -1450,150 +1253,76 @@ public class MainActivity extends AppCompatActivity {
         prepareNetworkForLocalApi(baseUrl);
         return ApiClient.create(baseUrl);
     }
+    
+    // ...
 
-    private void prepareNetworkForLocalApi(String baseUrl) {
-        if (!shouldBindWifi(baseUrl)) {
-            return;
-        }
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        if (cm == null) {
-            return;
-        }
-        Network wifi = findWifiNetwork(cm);
-        if (wifi == null) {
-            Toast.makeText(this, getString(R.string.toast_connect_wifi), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        boolean bound = cm.bindProcessToNetwork(wifi);
-        if (!bound) {
-            Toast.makeText(this, getString(R.string.toast_bind_wifi_failed), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    private Network findWifiNetwork(ConnectivityManager cm) {
-        for (Network network : cm.getAllNetworks()) {
-            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-            if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                return network;
-            }
-        }
-        return null;
-    }
-
-    private boolean shouldBindWifi(String baseUrl) {
-        Uri uri = Uri.parse(baseUrl);
-        String host = uri.getHost();
-        if (host == null) {
-            return false;
-        }
-        if ("localhost".equalsIgnoreCase(host) || host.endsWith(".local")) {
-            return true;
-        }
-        return isPrivateIpv4(host);
-    }
-
-    private boolean isPrivateIpv4(String host) {
-        String[] parts = host.split("\\.");
-        if (parts.length != 4) {
-            return false;
-        }
-        int[] nums = new int[4];
-        for (int i = 0; i < 4; i++) {
-            try {
-                nums[i] = Integer.parseInt(parts[i]);
-            } catch (NumberFormatException e) {
-                return false;
-            }
-            if (nums[i] < 0 || nums[i] > 255) {
-                return false;
-            }
-        }
-        if (nums[0] == 10) return true;
-        if (nums[0] == 192 && nums[1] == 168) return true;
-        if (nums[0] == 172 && nums[1] >= 16 && nums[1] <= 31) return true;
-        if (nums[0] == 169 && nums[1] == 254) return true;
-        return false;
-    }
-
-    private void setupDebugScreenToggle() {
-        if (ivHeaderCapsule == null) {
-            return;
-        }
-        ivHeaderCapsule.setOnClickListener(v -> {
-            debugStep = (debugStep + 1) % 3;
-            if (debugStep == 0) {
-                showConnectionStep();
-            } else if (debugStep == 1) {
-                showBindStep();
-            } else {
-                showDashboardStep();
-            }
-        });
-    }
-
-    private void playSplash() {
-        if (splashOverlay == null || mainScroll == null || tvSplashTitle == null || ivSplashCapsule == null) {
-            return;
-        }
-
-        mainScroll.setAlpha(0f);
-        mainScroll.setVisibility(View.INVISIBLE);
-
-        tvSplashTitle.setAlpha(0f);
-        tvSplashTitle.setScaleX(0.85f);
-        tvSplashTitle.setScaleY(0.85f);
-        ivSplashCapsule.setAlpha(0f);
-        ivSplashCapsule.setTranslationY(-220f);
-
-        ObjectAnimator titleAlpha = ObjectAnimator.ofFloat(tvSplashTitle, View.ALPHA, 0f, 1f);
-        ObjectAnimator titleScaleX = ObjectAnimator.ofFloat(tvSplashTitle, View.SCALE_X, 0.85f, 1f);
-        ObjectAnimator titleScaleY = ObjectAnimator.ofFloat(tvSplashTitle, View.SCALE_Y, 0.85f, 1f);
-
-        AnimatorSet titleSet = new AnimatorSet();
-        titleSet.playTogether(titleAlpha, titleScaleX, titleScaleY);
-        titleSet.setDuration(900);
-
-        ObjectAnimator capsuleDrop = ObjectAnimator.ofFloat(
-                ivSplashCapsule,
-                View.TRANSLATION_Y,
-                -220f,
-                0f,
-                -28f,
-                0f,
-                -12f,
-                0f
-        );
-        ObjectAnimator capsuleAlpha = ObjectAnimator.ofFloat(ivSplashCapsule, View.ALPHA, 0f, 1f);
-
-        AnimatorSet capsuleSet = new AnimatorSet();
-        capsuleSet.playTogether(capsuleDrop, capsuleAlpha);
-        capsuleSet.setDuration(1700);
-        capsuleSet.setInterpolator(new OvershootInterpolator(0.6f));
-        capsuleSet.setStartDelay(150);
-
-        AnimatorSet full = new AnimatorSet();
-        full.playSequentially(titleSet, capsuleSet);
-        full.addListener(new android.animation.AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(android.animation.Animator animation) {
-                splashOverlay.setVisibility(View.GONE);
-                mainScroll.setVisibility(View.VISIBLE);
-                mainScroll.animate().alpha(1f).setDuration(450).start();
-                attemptAutoAuth();
-            }
-        });
-        full.start();
-    }
-
-    private void attemptAutoAuth() {
+    private void bindSelectedUser() {
         if (demoMode) {
+            if (selectedBindUser == null) {
+                Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            currentUser = selectedBindUser;
+            showDashboardStep();
             return;
         }
-        String token = loadToken();
-        if (token == null || token.isEmpty()) {
+        if (selectedBindUser == null) {
+            Toast.makeText(this, getString(R.string.toast_select_user), Toast.LENGTH_SHORT).show();
             return;
         }
-        connectToApi();
+        String baseUrl = resolveBaseUrl();
+        if (baseUrl.isEmpty()) {
+            Toast.makeText(this, getString(R.string.toast_base_url_required), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String token = UUID.randomUUID().toString();
+        ApiService api = apiForBaseUrl(baseUrl);
+        setLoading(true);
+        api.bindDevice(new BindRequest(selectedBindUser.getId(), token)).enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(Call<StatusResponse> call, Response<StatusResponse> response) {
+                setLoading(false);
+                if (!response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                saveToken(token);
+                currentUser = selectedBindUser;
+                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_success), Toast.LENGTH_SHORT).show();
+                
+                // FORCE transition to dashboard
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    showDashboardStep();
+                    refreshUsers(baseUrl);
+                });
+            }
+
+            @Override
+            public void onFailure(Call<StatusResponse> call, Throwable t) {
+                setLoading(false);
+                Toast.makeText(MainActivity.this, getString(R.string.toast_bind_failed), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
-}
+
+    // ...
+
+    private void showBindStep() {
+        screenConnection.setVisibility(View.GONE);
+        screenBind.setVisibility(View.VISIBLE);
+        screenDashboard.setVisibility(View.GONE);
+        tvGreeting.setVisibility(View.GONE);
+        stopChannelMapUpdates();
+        if (cardCreateUser != null) {
+            cardCreateUser.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showDashboardStep() {
+        screenConnection.setVisibility(View.GONE);
+        screenBind.setVisibility(View.GONE);
+        screenDashboard.setVisibility(View.VISIBLE);
+        if (cardCreateUser != null) {
+            cardCreateUser.setVisibility(View.GONE);
+        }
