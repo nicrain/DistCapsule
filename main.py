@@ -182,7 +182,8 @@ def check_app_commands():
                 time.sleep(0.5) 
                 
                 if face_rec:
-                    success = enrollment.run_face_enrollment(disp, face_rec, target_id, DATABASE_NAME)
+                    # Pass cmd_id for status sync
+                    success = enrollment.run_face_enrollment(disp, face_rec, target_id, DATABASE_NAME, cmd_id=cmd_id)
                     if success:
                         print("录入成功，重新加载人脸库...")
                         face_rec.load_faces_from_db()
@@ -201,7 +202,8 @@ def check_app_commands():
                 time.sleep(0.5)
                 
                 if finger:
-                    enrollment.run_finger_enrollment(disp, finger, target_id, DATABASE_NAME)
+                    # Pass cmd_id for status sync
+                    enrollment.run_finger_enrollment(disp, finger, target_id, DATABASE_NAME, cmd_id=cmd_id)
                 else:
                     update_screen("ERREUR", "Capteur HS", (200, 0, 0))
                     time.sleep(2)

@@ -316,3 +316,26 @@ def enroll_finger(user_id: int):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/command/poll/{user_id}")
+def poll_command_status(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Get the latest command for this user (target_id)
+        # We only care about ENROLL commands for now
+        cursor.execute("""
+            SELECT cmd_id, command_type, status, detail_message, created_at 
+            FROM Pending_Commands 
+            WHERE target_id = ? AND command_type IN ('ENROLL_FACE', 'ENROLL_FINGER')
+            ORDER BY created_at DESC LIMIT 1
+        """, (user_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return dict(row)
+        else:
+            return {"status": "none", "detail_message": ""}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Poll Error: {str(e)}")
