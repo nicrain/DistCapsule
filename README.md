@@ -99,6 +99,7 @@ L'application (dossier `android/`) a été optimisée pour une fluidité maximal
 *   **Auto-Login** : Une fois enregistré, l'accès au Dashboard est instantané.
 *   **Connexion Wi-Fi Simplifiée** : Un bouton dédié permet de se connecter automatiquement au hotspot `DistCapsule_Box` sans saisir de mot de passe (Android 10+) ou en ouvrant directement les paramètres (Android 9).
 *   **Saisie d'IP Simplifiée** : Entrez simplement l'IP, le protocole et le port sont gérés automatiquement.
+*   **Gestion de Compte Sécurisée** : Bouton "Supprimer mon compte" avec nettoyage automatique du token local et des données biométriques sur le matériel.
 *   **Navigation Fluide** : Ajout de boutons de retour et gestion intelligente du clavier virtuel pour une expérience sans friction.
 
 ---

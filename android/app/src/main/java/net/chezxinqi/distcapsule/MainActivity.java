@@ -790,23 +790,14 @@ public class MainActivity extends AppCompatActivity {
             boolean isHighlight = (selectedAssignChannel != null && selectedAssignChannel == i);
             
             if (isHighlight) {
-                // Selected/Current -> Sunflower Yellow
-                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFf38942));
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFf38942)); // Vivid Orange (Selection)
                 btn.setTextColor(0xFFFFFFFF);
-                btn.animate().translationY(-15f).setDuration(200).start();
-                btn.setElevation(10f);
             } else if (isOccupiedByOther) {
-                // Occupied -> Coral Red
-                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFafaeaa));
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFafaeaa)); // Muted Grey (Occupied)
                 btn.setTextColor(0xFFFFFFFF);
-                btn.animate().translationY(0f).setDuration(200).start();
-                btn.setElevation(0f);
             } else {
-                // Free -> Emerald Green
-                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFacd07e));
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFacd07e)); // Soft Green (Free)
                 btn.setTextColor(0xFFFFFFFF);
-                btn.animate().translationY(0f).setDuration(200).start();
-                btn.setElevation(0f);
             }
         }
     }
@@ -877,22 +868,22 @@ public class MainActivity extends AppCompatActivity {
         if (btnSelfEnrollFace != null) {
             if (user.hasFace()) {
                 btnSelfEnrollFace.setText("Mettre à jour Face");
-                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842)); // Emerald Green (Ready)
                 btnSelfEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnSelfEnrollFace.setText("Ajouter Face");
-                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e)); // Sunflower Yellow
+                btnSelfEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e)); // Sunflower Yellow (Pending)
                 btnSelfEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
         if (btnSelfEnrollFinger != null) {
             if (user.hasFingerprint()) {
                 btnSelfEnrollFinger.setText("Mettre à jour Empreinte");
-                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842)); // Emerald Green (Ready)
                 btnSelfEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnSelfEnrollFinger.setText("Ajouter Empreinte");
-                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e));
+                btnSelfEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e)); // Sunflower Yellow (Pending)
                 btnSelfEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
@@ -915,24 +906,23 @@ public class MainActivity extends AppCompatActivity {
         if (btnAdminEnrollFace != null) {
             if (user.hasFace()) {
                 btnAdminEnrollFace.setText("Mettre à jour Face");
-                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842)); // Emerald Green (Ready)
                 btnAdminEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnAdminEnrollFace.setText("Ajouter Face");
-                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e));
+                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e)); // Sunflower Yellow (Pending)
                 btnAdminEnrollFace.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
 
-        // Fingerprint Button Logic
         if (btnAdminEnrollFinger != null) {
             if (user.hasFingerprint()) {
                 btnAdminEnrollFinger.setText("Mettre à jour Empreinte");
-                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842));
+                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF8dc842)); // Emerald Green (Ready)
                 btnAdminEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             } else {
                 btnAdminEnrollFinger.setText("Ajouter Empreinte");
-                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e));
+                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFf4d22e)); // Sunflower Yellow (Pending)
                 btnAdminEnrollFinger.setTextColor(0xFF3F3B3C); // Dark Grey
             }
         }
