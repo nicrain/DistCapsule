@@ -26,6 +26,7 @@
     <color name="button_tonal_text">#1E1511</color>
     <color name="bio_ready_bg">#BBD8C2</color>
     <color name="bio_ready_text">#1B3A25</color>
+    <color name="button_danger_bg">#E57373</color>
     <color name="channel_dot_free">#C8C0B8</color>
     <color name="channel_dot_taken">#7FB48A</color>
     <color name="gold_light">#F4E3B4</color>
