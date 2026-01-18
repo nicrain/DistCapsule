@@ -171,10 +171,31 @@ def update_user(user_id: int, update_data: UserUpdate):
             conn.close()
             raise HTTPException(status_code=404, detail="User not found")
 
+        # 2. Handle Channel Logic
+        if update_data.assigned_channel is not None:
+            # Special case: 0 means "Release Channel" (Set to NULL)
+            if update_data.assigned_channel == 0:
+                update_data.assigned_channel = None
+            else:
+                # Check conflict only if assigning a valid channel (1-5)
+                cursor.execute("SELECT user_id FROM Users WHERE assigned_channel = ? AND user_id != ?", 
+                               (update_data.assigned_channel, user_id))
+                conflict_user = cursor.fetchone()
+                if conflict_user:
+                    conn.close()
+                    raise HTTPException(status_code=400, detail=f"Channel {update_data.assigned_channel} is already assigned to user {conflict_user['user_id']}")
+
+        # 3. Dynamic Update
+        # Allow 0 to pass through as explicit update
         data_dict = update_data.model_dump(exclude_unset=True)
+        
+        # If we manually set it to None (from 0), ensure it's in data_dict
+        if update_data.assigned_channel is None and "assigned_channel" in update_data.model_fields_set:
+             data_dict["assigned_channel"] = None
+
         if not data_dict:
              conn.close()
-             raise HTTPException(status_code=400, detail="No fields")
+             raise HTTPException(status_code=400, detail="No fields provided")
 
         update_fields = []
         params = []

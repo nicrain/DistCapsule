@@ -59,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
     private Button btnAdminAssignChannel, btnAdminEnrollFace, btnAdminEnrollFinger, btnAdminDeleteUser;
     private Button btnAdminUserManagement, btnAdminHardwareControl, btnAdminMenuCreate, btnAdminMenuAssign, btnAdminMenuDelete;
     private Button btnUnlock1, btnUnlock2, btnUnlock3, btnUnlock4, btnUnlock5;
+    // New Assign Buttons
+    private Button[] btnAssigns = new Button[6]; // Index 1-5
+    private Integer selectedAssignChannel = null;
     private Button btnCreateUser;
 
     private AutoCompleteTextView etSelectUser, etAdminSelectUser, etAdminDeleteUser;
@@ -144,6 +147,13 @@ public class MainActivity extends AppCompatActivity {
         btnUnlock3 = findViewById(R.id.btnUnlock3);
         btnUnlock4 = findViewById(R.id.btnUnlock4);
         btnUnlock5 = findViewById(R.id.btnUnlock5);
+        
+        btnAssigns[1] = findViewById(R.id.btnAssign1);
+        btnAssigns[2] = findViewById(R.id.btnAssign2);
+        btnAssigns[3] = findViewById(R.id.btnAssign3);
+        btnAssigns[4] = findViewById(R.id.btnAssign4);
+        btnAssigns[5] = findViewById(R.id.btnAssign5);
+        
         btnCreateUser = findViewById(R.id.btnCreateUser);
         etSelectUser = findViewById(R.id.etSelectUser);
         etAdminSelectUser = findViewById(R.id.etAdminSelectUser);
@@ -212,6 +222,12 @@ public class MainActivity extends AppCompatActivity {
         btnUnlock3.setOnClickListener(v -> unlockSpecificChannel(3));
         btnUnlock4.setOnClickListener(v -> unlockSpecificChannel(4));
         btnUnlock5.setOnClickListener(v -> unlockSpecificChannel(5));
+        
+        for (int i = 1; i <= 5; i++) {
+            final int ch = i;
+            btnAssigns[i].setOnClickListener(v -> toggleAssignChannel(ch));
+        }
+        
         btnCreateUser.setOnClickListener(v -> createUser());
         btnAdminUserBack.setOnClickListener(v -> handleAdminUserBack());
         btnAdminHardwareBack.setOnClickListener(v -> showAdminMenu());
@@ -694,17 +710,106 @@ public class MainActivity extends AppCompatActivity {
 
     private void assignAdminChannel() {
         if (selectedAdminUser == null) return;
-        String text = etAdminChannel.getText().toString().trim();
-        Integer channel = text.isEmpty() ? null : Integer.parseInt(text);
+        Integer channel = selectedAssignChannel;
+        
         if (demoMode) { selectedAdminUser.setAssignedChannel(channel); updateAdminUi(selectedAdminUser); return; }
         String baseUrl = resolveBaseUrl();
-        apiForBaseUrl(baseUrl).updateUser(selectedAdminUser.getId(), new UpdateUserRequest(null, channel)).enqueue(new Callback<User>() {
+        
+        // Pass 0 to indicate "Release Channel" so JSON is not empty
+        Integer apiValue = (channel == null) ? 0 : channel;
+        
+        apiForBaseUrl(baseUrl).updateUser(selectedAdminUser.getId(), new UpdateUserRequest(null, apiValue)).enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
-                if (response.isSuccessful()) refreshUsers(baseUrl);
+                if (response.isSuccessful()) {
+                    refreshUsers(baseUrl);
+                    if (channel != null) {
+                        Toast.makeText(MainActivity.this, selectedAdminUser.getName() + " assigné au Canal " + channel, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Canal retiré pour " + selectedAdminUser.getName(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "Canal occupé ou erreur: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
             }
             @Override public void onFailure(Call<User> call, Throwable t) {}
         });
+    }
+    
+    private void toggleAssignChannel(int channel) {
+        if (selectedAdminUser == null) return;
+        
+        // Check if occupied by OTHER user
+        for (User u : cachedUsers) {
+            if (u.getId() != selectedAdminUser.getId() && u.getAssignedChannel() == channel) {
+                Toast.makeText(this, "Canal déjà occupé par " + u.getName(), Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+        
+        if (selectedAssignChannel != null && selectedAssignChannel == channel) {
+            selectedAssignChannel = null; // Deselect
+        } else {
+            selectedAssignChannel = channel;
+        }
+        updateAssignChannelUi();
+        updateAssignButtonText();
+    }
+    
+    private void updateAssignButtonText() {
+        if (btnAdminAssignChannel == null) return;
+        if (selectedAssignChannel != null) {
+            btnAdminAssignChannel.setText("Attribuer Canal " + selectedAssignChannel);
+        } else {
+            if (selectedAdminUser != null && selectedAdminUser.getAssignedChannel() > 0) {
+                btnAdminAssignChannel.setText("Retirer le Canal");
+            } else {
+                btnAdminAssignChannel.setText("Attribuer");
+            }
+        }
+    }
+    
+    private void updateAssignChannelUi() {
+        if (selectedAdminUser == null) return;
+        int currentAssigned = selectedAdminUser.getAssignedChannel();
+        
+        for (int i = 1; i <= 5; i++) {
+            Button btn = btnAssigns[i];
+            if (btn == null) continue;
+            
+            boolean isOccupiedByOther = false;
+            for (User u : cachedUsers) {
+                if (u.getId() != selectedAdminUser.getId() && u.getAssignedChannel() == i) {
+                    isOccupiedByOther = true;
+                    break;
+                }
+            }
+            
+            btn.setEnabled(true);
+            
+            // Logic: If it's the pending selection OR (no pending selection AND it's the current channel)
+            boolean isHighlight = (selectedAssignChannel != null && selectedAssignChannel == i);
+            
+            if (isHighlight) {
+                // Selected/Current -> Orange + Pop Up
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00)); // Amber
+                btn.setTextColor(0xFF000000);
+                btn.animate().translationY(-15f).setDuration(200).start(); // Pop up effect
+                btn.setElevation(10f); // Add shadow
+            } else if (isOccupiedByOther) {
+                // Occupied -> Red
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFFC62828)); // Red
+                btn.setTextColor(0xFFFFFFFF);
+                btn.animate().translationY(0f).setDuration(200).start();
+                btn.setElevation(0f);
+            } else {
+                // Free -> Green
+                btn.setBackgroundTintList(ColorStateList.valueOf(0xFF4CAF50)); // Green
+                btn.setTextColor(0xFFFFFFFF);
+                btn.animate().translationY(0f).setDuration(200).start();
+                btn.setElevation(0f);
+            }
+        }
     }
 
     private void updateAdminBiometric(boolean face) {
@@ -733,9 +838,41 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateAdminUi(User user) {
         if (user == null) return;
-        if (tvAdminFaceStatus != null) tvAdminFaceStatus.setText(user.hasFace() ? R.string.bio_face_ready : R.string.bio_face_pending);
-        if (tvAdminFingerStatus != null) tvAdminFingerStatus.setText(user.hasFingerprint() ? R.string.bio_finger_ready : R.string.bio_finger_pending);
-        if (etAdminChannel != null) etAdminChannel.setText(user.getAssignedChannel() > 0 ? String.valueOf(user.getAssignedChannel()) : "");
+        
+        // Hide text status, use buttons instead
+        if (tvAdminFaceStatus != null) tvAdminFaceStatus.setVisibility(View.GONE);
+        if (tvAdminFingerStatus != null) tvAdminFingerStatus.setVisibility(View.GONE);
+        
+        // Face Button Logic
+        if (btnAdminEnrollFace != null) {
+            if (user.hasFace()) {
+                btnAdminEnrollFace.setText("Mettre à jour Face");
+                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32)); // Dark Green
+                btnAdminEnrollFace.setTextColor(0xFFFFFFFF);
+            } else {
+                btnAdminEnrollFace.setText("Ajouter Face");
+                btnAdminEnrollFace.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00)); // Orange
+                btnAdminEnrollFace.setTextColor(0xFF000000);
+            }
+        }
+
+        // Fingerprint Button Logic
+        if (btnAdminEnrollFinger != null) {
+            if (user.hasFingerprint()) {
+                btnAdminEnrollFinger.setText("Mettre à jour Empreinte");
+                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFF2E7D32)); // Dark Green
+                btnAdminEnrollFinger.setTextColor(0xFFFFFFFF);
+            } else {
+                btnAdminEnrollFinger.setText("Ajouter Empreinte");
+                btnAdminEnrollFinger.setBackgroundTintList(ColorStateList.valueOf(0xFFFF8F00)); // Orange
+                btnAdminEnrollFinger.setTextColor(0xFF000000);
+            }
+        }
+        
+        // Sync selection state
+        selectedAssignChannel = (user.getAssignedChannel() > 0) ? user.getAssignedChannel() : null;
+        updateAssignChannelUi();
+        updateAssignButtonText();
     }
 
     private String buildBioSummary(User user) {
