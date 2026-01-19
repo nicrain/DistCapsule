@@ -85,7 +85,7 @@
         \end{column}
         \begin{column}{0.38\textwidth}
             \begin{figure}
-                \includegraphics[width=\textwidth,height=4cm,keepaspectratio]{pic/amazon_ref.jpg}
+                \includegraphics[width=\textwidth,height=4cm,keepaspectratio]{pic/espace_cafe.png}
                 \caption{Situation actuelle (Stockage passif)}
             \end{figure}
         \end{column}
@@ -93,16 +93,25 @@
 \end{frame}
 
 \begin{frame}{Notre Solution : DistCapsule}
-    Transformer un simple présentoir en un \textbf{écosystème IoT} intelligent.
+    Transformer un simple présentoir en un \textbf{système embarqué} intelligent.
     
-    \vspace{0.5cm}
-    \begin{block}{Proposition de Valeur}
-        \begin{itemize}
-            \item \textbf{Centralisation} : Une tour compacte stockant 5 variétés.
-            \item \textbf{Personnalisation} : Chaque utilisateur a ses droits d'accès.
-            \item \textbf{Fluidité} : Distribution sans contact (Biométrie) ou via Mobile.
-        \end{itemize}
-    \end{block}
+    \vspace{0.3cm}
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{block}{Proposition de Valeur}
+                \begin{itemize}
+                    \item \textbf{Centralisation} : Une tour compacte stockant 5 variétés.
+                    \item \textbf{Personnalisation} : Chaque utilisateur a ses droits d'accès.
+                    \item \textbf{Fluidité} : Distribution Biométrique ou via Mobile.
+                \end{itemize}
+            \end{block}
+        \end{column}
+        \begin{column}{0.35\textwidth}
+            \centering
+            \includegraphics[width=\textwidth,height=4cm,keepaspectratio]{pic/amazon_ref.jpg}
+            \par\vspace{0.2cm}\small Présentoir à transformer
+        \end{column}
+    \end{columns}
 \end{frame}
 
 % ==============================================================================
@@ -110,27 +119,27 @@
 % ==============================================================================
 \section{Architecture Technique}
 
-\begin{frame}{Architecture 3-Tiers}
+\begin{frame}{Architecture AAA (3-Tiers)}
     Pour garantir la stabilité, nous avons découplé les responsabilités en trois couches distinctes :
     
     \vspace{0.3cm}
     \begin{center}
     \begin{tikzpicture}[node distance=2.5cm, auto, thick]
-        % Nodes
-        \node[draw, fill=green!20, minimum size=1cm, align=center] (App) {\textbf{Android App}\\(Java)};
-        \node[draw, fill=blue!20, minimum size=1cm, align=center, right of=App, node distance=5cm] (API) {\textbf{API Server}\\(FastAPI)};
-        \node[draw, fill=red!20, minimum size=1cm, align=center, right of=API, node distance=5cm] (Core) {\textbf{Core Agent}\\(Python)};
+        % Nodes - AAA Convention
+        \node[draw, fill=green!20, minimum size=1cm, align=center] (Android) {\textbf{Android}\\(Client)};
+        \node[draw, fill=blue!20, minimum size=1cm, align=center, right of=Android, node distance=5cm] (Agent) {\textbf{Agent Artificiel}\\(FastAPI)};
+        \node[draw, fill=red!20, minimum size=1cm, align=center, right of=Agent, node distance=5cm] (Arduino) {\textbf{Arduino}\\(Raspberry Pi 5)};
         
-        % Arrows
-        \draw[<->] (App) -- node[above] {HTTP/JSON} node[below] {Token} (API);
-        \draw[<->] (API) -- node[above] {SQLite} node[below] {Queue} (Core);
+        % Arrows - Simplified labels
+        \draw[<->] (Android) -- node[above] {REST API} (Agent);
+        \draw[<->] (Agent) -- node[above] {Commands} (Arduino);
     \end{tikzpicture}
     \end{center}
     
     \begin{itemize}
-        \item \textbf{App} : Interface de commande (Client Léger).
-        \item \textbf{API} : Passerelle de sécurité et gestion des données.
-        \item \textbf{Core} : Gestion du matériel (Boucle infinie, non-bloquante).
+        \item \textbf{Android} : Interface utilisateur mobile (Java).
+        \item \textbf{Agent} : Passerelle de sécurité et orchestration (Python).
+        \item \textbf{Arduino} : Contrôle matériel temps réel (lgpio, Servos, Capteurs).
     \end{itemize}
 \end{frame}
 
@@ -158,26 +167,72 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Réseau : Stabilité et Connectivité}
-    \begin{block}{Le Défi}
-        Les smartphones modernes refusent souvent les connexions Wi-Fi "sans internet" (No Gateway).
-    \end{block}
+\begin{frame}{Réseau : Topologie et Configuration}
+    \begin{center}
+    \begin{tikzpicture}[node distance=2.5cm, auto, thick]
+        % Nodes
+        \node[draw, fill=green!20, minimum size=0.8cm, align=center] (Phone) {\textbf{Android}\\App};
+        \node[draw, fill=red!20, minimum width=2.5cm, minimum height=1.2cm, align=center, right of=Phone, node distance=5cm] (Pi) {\textbf{Raspberry Pi 5}\\wlan0 (Hotspot) + eth0};
+        \node[draw, fill=blue!20, minimum size=0.8cm, align=center, right of=Pi, node distance=5cm] (PC) {\textbf{PC Admin}\\Internet + SSH};
+        
+        % Arrows
+        \draw[<->] (Phone) -- node[above] {\scriptsize Wi-Fi} node[below] {\scriptsize 192.168.4.x} (Pi);
+        \draw[<->] (Pi) -- node[above] {\scriptsize RJ45} node[below] {\scriptsize 192.168.3.x} (PC);
+    \end{tikzpicture}
+    \end{center}
     
-    \begin{exampleblock}{Solution Finale (V1.1)}
-        \begin{itemize}
-            \item \textbf{Mode} : Hotspot Standard avec passerelle DHCP activée.
-            \item \textbf{Avantage} : Connexion immédiate et stable sur 100% des appareils Android/iOS testés.
-            \item \textbf{UX} : Bouton "Connecter au Wi-Fi" intégré directement dans l'application.
-        \end{itemize}
-    \end{exampleblock}
+    \vspace{0.2cm}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \textbf{Interface Hotspot (wlan0) :}
+            \begin{itemize}
+                \item \textbf{SSID} : \texttt{DistCapsule\_Box}
+                \item \textbf{IP} : \texttt{192.168.4.1}
+                \item \textbf{Port API} : \texttt{8000}
+                \item \textbf{Sécurité} : WPA2 + Token
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Interface Ethernet (eth0) :}
+            \begin{itemize}
+                \item \textbf{IP} : \texttt{192.168.3.14}
+                \item \textbf{Usage} : SSH, Internet (Git, Pip install, Mises à jour)
+                \item \textbf{Internet} : Accès via PC (ICS)
+            \end{itemize}
+        \end{column}
+    \end{columns}
 \end{frame}
 
 % ==============================================================================
-% SECTION 3: DÉFIS TECHNIQUES (8 min)
+% SECTION 3: ARDUINO (Matériel)
 % ==============================================================================
-\section{Défis Techniques et Solutions}
+\section{Arduino (Raspberry Pi 5 - Matériel)}
 
-\begin{frame}{1. Hardware : La Révolution Pi 5}
+\begin{frame}{Raspberry Pi 5 : Composants Intégrés}
+    \begin{columns}
+        \begin{column}{0.57\textwidth}
+            \textbf{Périphériques Connectés :}
+            \begin{itemize}
+                \item \textbf{5x Servos SG90} : PWM logiciel, GPIO 18/6/12/13/19.
+                \item \textbf{DY-50} : Empreintes digitales (UART 57600).
+                \item \textbf{Camera Module 3} : Reconnaissance faciale (CSI, IMX708).
+                \item \textbf{ST7789 LCD} : Écran 240×240 (SPI).
+                \item \textbf{Bouton Wake-Up} : Réveil système (GPIO 26).
+            \end{itemize}
+            
+            \begin{block}{Alimentation}
+                Pi 5 : USB-C 27W \par Servos : 5V externe (masse commune)
+            \end{block}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \centering
+            \includegraphics[width=\textwidth,height=4cm,keepaspectratio]{pic/hardware_wiring.jpg}
+            \par\vspace{0.2cm}\small Câblage réel du prototype
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Défi Hardware : La Révolution Pi 5}
     Le passage au Raspberry Pi 5 a cassé la compatibilité de nombreuses bibliothèques historiques.
     
     \begin{itemize}
@@ -187,33 +242,202 @@
     
     \vspace{0.3cm}
     \begin{block}{Innovation : Soft-PWM}
-        Les bibliothèques standard de servos n'étant pas prêtes, nous avons écrit notre propre contrôleur PWM logiciel pour piloter les 5 moteurs SG90 avec précision, sans jitter.
+        Pi 5 : 4 canaux HW-PWM (1 réservé ventilateur) $\rightarrow$ Soft-PWM pour 5 servos.
     \end{block}
 \end{frame}
 
-\begin{frame}[fragile]{2. Fiabilité : Le "Watchdog" (Auto-Guérison)}
-    Le capteur d'empreintes (UART) peut parfois se figer (timeout) en cas d'interférences électriques.
+\begin{frame}{Câblage et Intégration}
+    \begin{center}
+    \begin{tikzpicture}[node distance=1cm, auto, thick, scale=0.7, every node/.style={scale=0.7}]
+        % Central Pi
+        \node[draw, fill=red!20, minimum width=2cm, minimum height=1cm, align=center] (Pi) {\textbf{Pi 5}\\GPIO};
+        
+        % Direct connections (no breadboard)
+        \node[draw, fill=blue!20, minimum width=1.2cm, align=center, above left=0.8cm and 1.2cm of Pi] (LCD) {\textbf{LCD}\\SPI};
+        \node[draw, fill=purple!20, minimum width=1.2cm, align=center, above right=0.8cm and 1.2cm of Pi] (Cam) {\textbf{Cam}\\CSI};
+        
+        % Breadboard (soldered)
+        \node[draw, fill=yellow!40, minimum width=3cm, minimum height=0.6cm, align=center, below=1.2cm of Pi] (Bread) {\textbf{Breadboard} (soudé)};
+        
+        % Through breadboard
+        \node[draw, fill=orange!20, minimum width=1.5cm, align=center, below left=0.6cm and 0.3cm of Bread] (Servos) {\textbf{5x SG90}};
+        \node[draw, fill=green!20, minimum width=1.2cm, align=center, below=0.6cm of Bread] (Finger) {\textbf{DY-50}};
+        \node[draw, fill=gray!20, minimum width=1cm, align=center, below right=0.6cm and 0.3cm of Bread] (Btn) {\textbf{Btn}};
+        
+        % External 5V
+        \node[draw, fill=red!40, minimum width=1cm, align=center, left=2cm of Bread] (Power) {\textbf{5V}};
+        
+        % Direct connections
+        \draw[<->, thick, blue] (Pi) -- node[left] {\tiny direct} (LCD);
+        \draw[->, thick, purple] (Cam) -- node[right] {\tiny direct} (Pi);
+        
+        % Via breadboard
+        \draw[<->, thick] (Pi) -- (Bread);
+        \draw[->] (Bread) -- (Servos);
+        \draw[<->] (Bread) -- (Finger);
+        \draw[->] (Bread) -- (Btn);
+        \draw[->, red] (Power) -- node[above] {\tiny 5V} (Servos);
+        \draw[->, dashed] (Power) |- (Bread);
+    \end{tikzpicture}
+    \end{center}
     
-    \begin{block}{Implémentation d'un Thread de Surveillance}
-        Un thread indépendant vérifie l'état du capteur toutes les 30 secondes.
+    \begin{itemize}
+        \item \textbf{Connexions directes} : LCD (SPI) + Camera (CSI).
+        \item \textbf{Via breadboard soudé} : Servos, Capteur, Bouton + 5V externe.
+    \end{itemize}
+\end{frame}
+
+% ==============================================================================
+% SECTION 4: AGENT ARTIFICIEL (Backend)
+% ==============================================================================
+\section{Agent Artificiel (Backend)}
+
+\begin{frame}{Core Agent : Architecture Multi-Threadée}
+    Le fichier \texttt{main.py} orchestre toutes les opérations matérielles en temps réel.
+    
+    \vspace{0.3cm}
+    \begin{block}{Modèle Producer-Consumer}
+        \begin{itemize}
+            \item \textbf{Thread Principal} : Gestion UI, GPIO, polling des commandes API.
+            \item \textbf{Thread Face Worker} : Scan facial en arrière-plan (non-bloquant).
+            \item \textbf{Thread Watchdog} : Surveillance UART (désactivé).
+        \end{itemize}
+    \end{block}
+    
+    \vspace{0.2cm}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \textbf{Gestion de l'Énergie :}
+            \begin{itemize}
+                \item 30s inactivité $\rightarrow$ Veille auto.
+                \item 5 min max $\rightarrow$ Timeout session.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{API FastAPI :}
+            \begin{itemize}
+                \item \texttt{/users} : CRUD utilisateurs.
+                \item \texttt{/command/*} : Unlock, Enroll.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Approche Testée : Watchdog (Auto-Guérison)}
+    \begin{alertblock}{Problème Identifié}
+        Le capteur d'empreintes (UART) peut se figer en cas d'interférences électriques.
+    \end{alertblock}
+    
+    \begin{block}{Solution Envisagée : Thread de Surveillance}
+        Un thread vérifie l'état du capteur toutes les 30s et tente un soft-reset.
     \end{block}
     
     \begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
 def fingerprint_watchdog():
     while True:
-        try:
-            if finger.read_sysparam() != OK: raise Error
-        except:
-            # Soft Reset : Fermer/Rouvrir le port Serie
-            uart.close(); time.sleep(1); uart.open()
+        if finger.read_sysparam() != OK:
+            uart.close(); time.sleep(1); uart.open()  # Soft Reset
         time.sleep(30)
     \end{lstlisting}
+    
+    \begin{exampleblock}{Résultat}
+        \textbf{Désactivé} : Le soft-reset ne résout pas les défaillances matérielles réelles.
+        $\rightarrow$ Seul un redémarrage physique fonctionne.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Base de Données : SQLite Schema}
+    Architecture de stockage local avec 4 tables principales :
+    
+    \vspace{0.2cm}
+    \begin{table}[]
+        \centering
+        \footnotesize
+        \rowcolors{2}{gray!10}{white}
+        \begin{tabular}{l | l | l}
+            \toprule
+            \textbf{Table} & \textbf{Colonnes Clés} & \textbf{Rôle} \\
+            \midrule
+            \texttt{Users} & user\_id, name, face\_encoding, has\_fingerprint & Profils utilisateurs \\
+            \texttt{Access\_Logs} & timestamp, event\_type, status & Historique d'accès \\
+            \texttt{Pending\_Commands} & command\_type, target\_id, status & File de commandes API \\
+            \texttt{System\_Settings} & key\_name, value & Configuration système \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.2cm}
+    \begin{block}{Points Clés}
+        \begin{itemize}
+            \item \textbf{face\_encoding} : Vecteur 128D stocké en JSON.
+            \item \textbf{Pending\_Commands} : Communication asynchrone App $\leftrightarrow$ Hardware.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Workflow Biométrique}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \textbf{Enrôlement Visage :}
+            \begin{enumerate}
+                \item App envoie \texttt{POST /enroll\_face}
+                \item Commande insérée en BDD
+                \item Core Agent détecte (polling)
+                \item Caméra active, détection visage
+                \item Encodage 128D $\rightarrow$ SQLite
+                \item Confirmation sur écran LCD
+            \end{enumerate}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Enrôlement Empreinte :}
+            \begin{enumerate}
+                \item App envoie \texttt{POST /enroll\_finger}
+                \item Écran LCD : "Placez doigt"
+                \item 1ère capture $\rightarrow$ Template 1
+                \item "Retirez, placez à nouveau"
+                \item 2ème capture $\rightarrow$ Template 2
+                \item Fusion modèle $\rightarrow$ Stocké ID
+            \end{enumerate}
+        \end{column}
+    \end{columns}
+    
+    \vspace{0.3cm}
+    \begin{alertblock}{Timeout Sécurité}
+        20s (visage) / 30s (empreinte) sans action $\rightarrow$ Annulation automatique.
+    \end{alertblock}
 \end{frame}
 
 % ==============================================================================
-% SECTION 4: EXPÉRIENCE MOBILE (5 min)
+% SECTION 5: ANDROID (Client)
 % ==============================================================================
-\section{Expérience Mobile (Android)}
+\section{Android (Client)}
+
+\begin{frame}{Application Android : Stack Technique}
+    \begin{columns}
+        \begin{column}{0.55\textwidth}
+            \textbf{Technologies :}
+            \begin{itemize}
+                \item \textbf{Langage} : Java natif (Android Studio).
+                \item \textbf{Réseau} : Retrofit2 + OkHttp.
+                \item \textbf{Auth} : Token UUID (SharedPreferences).
+                \item \textbf{Min SDK} : API 24 (Android 7.0+).
+            \end{itemize}
+            
+            \vspace{0.3cm}
+            \textbf{Fonctionnalités Clés :}
+            \begin{itemize}
+                \item Auto-Login via Token persistant.
+                \item Connexion Wi-Fi one-click (Android 10+).
+                \item Enrôlement biométrique à distance.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \centering
+            \includegraphics[width=0.7\textwidth]{pic/app_dashboard.png}
+            \par\vspace{0.2cm}\small Dashboard Utilisateur
+        \end{column}
+    \end{columns}
+\end{frame}
 
 \begin{frame}{Design System : "Vivid Palette"}
     L'application (Java) utilise un code couleur sémantique fort pour guider l'utilisateur :
@@ -249,7 +473,7 @@ def fingerprint_watchdog():
 \end{frame}
 
 % ==============================================================================
-% SECTION 5: INGÉNIERIE (3 min)
+% SECTION 6: INGÉNIERIE (3 min)
 % ==============================================================================
 \section{Ingénierie et Fabrication}
 
@@ -271,21 +495,8 @@ def fingerprint_watchdog():
     \end{columns}
 \end{frame}
 
-\begin{frame}{Câblage et Intégration}
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.8\textwidth,height=4cm,keepaspectratio]{pic/hardware_wiring.png}
-        \par\vspace{0.2cm}\small Intégration dense : Pi 5 + 5 Servos + Écran + Caméra
-    \end{figure}
-    
-    \begin{itemize}
-        \item Alimentation séparée pour les moteurs (stabilité du Pi).
-        \item Gestion des conflits de pins GPIO (PWM vs SPI vs UART).
-    \end{itemize}
-\end{frame}
-
 % ==============================================================================
-% SECTION 6: BILAN (2 min)
+% SECTION 7: BILAN (2 min)
 % ==============================================================================
 \section{Bilan}
 
@@ -306,6 +517,35 @@ def fingerprint_watchdog():
     \end{table}
 \end{frame}
 
+\begin{frame}{Démonstration : Captures d'Écran}
+    \begin{columns}
+        \begin{column}{0.32\textwidth}
+            \centering
+            \includegraphics[width=0.9\textwidth]{pic/app_login.png}
+            \par\vspace{0.2cm}\small \textbf{Login}\\Inscription one-click
+        \end{column}
+        \begin{column}{0.32\textwidth}
+            \centering
+            \includegraphics[width=0.9\textwidth]{pic/app_dashboard.png}
+            \par\vspace{0.2cm}\small \textbf{Dashboard}\\Accès utilisateur
+        \end{column}
+        \begin{column}{0.32\textwidth}
+            \centering
+            \includegraphics[width=0.9\textwidth]{pic/app_admin.png}
+            \par\vspace{0.2cm}\small \textbf{Admin}\\Gestion canaux
+        \end{column}
+    \end{columns}
+    
+    \vspace{0.3cm}
+    \begin{block}{Interface Vivid Palette}
+        \begin{itemize}
+            \item \textcolor[HTML]{2ECC71}{$\blacksquare$} Vert = Prêt \quad
+            \textcolor[HTML]{F1C40F}{$\blacksquare$} Jaune = Sélection \quad
+            \textcolor[HTML]{E57373}{$\blacksquare$} Rouge = Danger
+        \end{itemize}
+    \end{block}
+\end{frame}
+
 \begin{frame}{Conclusion}
     DistCapsule a évolué d'un simple concept vers un produit IoT complet.
     \vspace{0.5cm}
@@ -313,7 +553,7 @@ def fingerprint_watchdog():
     \textbf{Points Forts :}
     \begin{itemize}
         \item Expérience utilisateur fluide (App native, Biométrie).
-        \item Robustesse technique (Watchdog, Architecture découplée).
+        \item Robustesse technique (Multi-thread, Architecture découplée).
         \item Respect de la vie privée (Données locales).
     \end{itemize}
     

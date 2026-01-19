@@ -26,7 +26,7 @@ import hardware.enrollment as enrollment
 # --- 全局配置 (Constants) ---
 SERIAL_PORT = "/dev/ttyAMA0" # 树莓派5 的 UART0 接口
 BAUD_RATE = 57600            # 通信波特率 (必须与指纹模块一致)
-UNLOCK_TIME = 5              # 舵机开锁保持时间 (秒)
+UNLOCK_TIME = 2.5            # 舵机开锁保持时间 (秒)
 DATABASE_NAME = "capsule_dispenser.db"
 SCREEN_TIMEOUT = 30          # 屏幕自动休眠倒计时
 MAX_SESSION_TIME = 300       # 最大活跃时间 (5分钟)
