@@ -449,9 +449,9 @@ def fingerprint_watchdog():
 # --- Main Execution ---
 if __name__ == "__main__":
     try:
-        # Initialize thread for fingerprint monitoring
-        t_watch = threading.Thread(target=fingerprint_watchdog, daemon=True)
-        t_watch.start()
+        # [DISABLED] Fingerprint watchdog - does not fix hardware failures
+        # t_watch = threading.Thread(target=fingerprint_watchdog, daemon=True)
+        # t_watch.start()
         main()
     except KeyboardInterrupt:
         print("\n用户退出 / Sortie utilisateur")
