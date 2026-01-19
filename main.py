@@ -136,7 +136,7 @@ def perform_unlock(user_id, method="Fingerprint", override_channel=None):
         display_msg = f"{user_name} #{assigned_channel}\n({method})"
         update_screen("ACCES", display_msg, bg_color, progress=1.0)
         servos[assigned_channel].unlock()
-        steps = UNLOCK_TIME * 20 
+        steps = int(UNLOCK_TIME * 20) 
         for i in range(steps, 0, -1):
             prog = i / steps
             update_screen("OUVERTURE", display_msg, bg_color, progress=prog)
