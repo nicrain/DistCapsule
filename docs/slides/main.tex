@@ -24,7 +24,7 @@
 
 %% --- Metadata ---
 \title[DistCapsule]{DistCapsule : Distributeur Connecté}
-\subtitle{Système IoT Biométrique sur Raspberry Pi 5}
+\subtitle{Système Embarqué Connecté sur Raspberry Pi 5}
 \author[Z. Wang \& X. Tang]{Zhaoyu WANG et Xinqi TANG}
 \date[\today]{Soutenance Finale -- \today}
 \institute[M2 MIASHS]{Université Paris 8 \\ Master Technologies et Handicaps}
@@ -283,7 +283,7 @@
     
     \begin{itemize}
         \item \textbf{Connexions directes} : LCD (SPI) + Camera (CSI).
-        \item \textbf{Via breadboard soudé} : Servos, Capteur, Bouton + 5V externe.
+        \item \textbf{Via breadboard} : Servos, Capteur, Bouton + 5V externe + \textbf{condo 500\textmu F}.
     \end{itemize}
 \end{frame}
 
@@ -323,88 +323,83 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}[fragile]{Approche Testée : Watchdog (Auto-Guérison)}
+\begin{frame}{Approche Testée : Watchdog (Auto-Guérison)}
     \begin{alertblock}{Problème Identifié}
-        Le capteur d'empreintes (UART) peut se figer en cas d'interférences électriques.
+        Le capteur d'empreintes (UART) peut se bloquer de façon aléatoire (cause inconnue).
     \end{alertblock}
     
-    \begin{block}{Solution Envisagée : Thread de Surveillance}
-        Un thread vérifie l'état du capteur toutes les 30s et tente un soft-reset.
+    \begin{block}{Solution Envisagée}
+        Thread de surveillance : vérifie l'état toutes les 30s, tente un soft-reset UART.
     \end{block}
     
-    \begin{lstlisting}[language=Python, basicstyle=\tiny\ttfamily]
-def fingerprint_watchdog():
-    while True:
-        if finger.read_sysparam() != OK:
-            uart.close(); time.sleep(1); uart.open()  # Soft Reset
-        time.sleep(30)
-    \end{lstlisting}
-    
-    \begin{exampleblock}{Résultat}
-        \textbf{Désactivé} : Le soft-reset ne résout pas les défaillances matérielles réelles.
-        $\rightarrow$ Seul un redémarrage physique fonctionne.
+    \begin{exampleblock}{Résultat \& Contournement}
+        \textbf{Désactivé} : Le soft-reset ne résout pas le blocage. \\
+        $\rightarrow$ \textbf{Fallback} : Reconnaissance faciale + App restent fonctionnels. \\
+        $\rightarrow$ Seul un \textbf{redémarrage électrique} restaure le capteur.
     \end{exampleblock}
 \end{frame}
 
 \begin{frame}{Base de Données : SQLite Schema}
     Architecture de stockage local avec 4 tables principales :
     
-    \vspace{0.2cm}
+    \vspace{0.3cm}
     \begin{table}[]
         \centering
         \footnotesize
         \rowcolors{2}{gray!10}{white}
         \begin{tabular}{l | l | l}
             \toprule
-            \textbf{Table} & \textbf{Colonnes Clés} & \textbf{Rôle} \\
+            \textbf{Table} & \textbf{Rôle} & \textcolor{gray}{\textit{Notes}} \\
             \midrule
-            \texttt{Users} & user\_id, name, face\_encoding, has\_fingerprint & Profils utilisateurs \\
-            \texttt{Access\_Logs} & timestamp, event\_type, status & Historique d'accès \\
-            \texttt{Pending\_Commands} & command\_type, target\_id, status & File de commandes API \\
-            \texttt{System\_Settings} & key\_name, value & Configuration système \\
+            \texttt{Users} & Profils utilisateurs & \textcolor{gray}{\scriptsize face\_encoding, has\_fingerprint} \\
+            \texttt{Access\_Logs} & Historique d'accès & \textcolor{gray}{\scriptsize timestamp, event\_type} \\
+            \texttt{Pending\_Commands} & File commandes API & \textcolor{gray}{\scriptsize status: pending/completed} \\
+            \texttt{System\_Settings} & Configuration & \textcolor{gray}{\scriptsize clé-valeur} \\
             \bottomrule
         \end{tabular}
     \end{table}
     
-    \vspace{0.2cm}
-    \begin{block}{Points Clés}
-        \begin{itemize}
-            \item \textbf{face\_encoding} : Vecteur 128D stocké en JSON.
-            \item \textbf{Pending\_Commands} : Communication asynchrone App $\leftrightarrow$ Hardware.
-        \end{itemize}
+    \vspace{0.3cm}
+    \begin{block}{Communication App $\leftrightarrow$ Hardware}
+        Via \texttt{Pending\_Commands} : App insère $\rightarrow$ Core Agent poll $\rightarrow$ Exécute.
     \end{block}
 \end{frame}
 
 \begin{frame}{Workflow Biométrique}
-    \begin{columns}
-        \begin{column}{0.48\textwidth}
-            \textbf{Enrôlement Visage :}
-            \begin{enumerate}
-                \item App envoie \texttt{POST /enroll\_face}
-                \item Commande insérée en BDD
-                \item Core Agent détecte (polling)
-                \item Caméra active, détection visage
-                \item Encodage 128D $\rightarrow$ SQLite
-                \item Confirmation sur écran LCD
-            \end{enumerate}
-        \end{column}
-        \begin{column}{0.48\textwidth}
-            \textbf{Enrôlement Empreinte :}
-            \begin{enumerate}
-                \item App envoie \texttt{POST /enroll\_finger}
-                \item Écran LCD : "Placez doigt"
-                \item 1ère capture $\rightarrow$ Template 1
-                \item "Retirez, placez à nouveau"
-                \item 2ème capture $\rightarrow$ Template 2
-                \item Fusion modèle $\rightarrow$ Stocké ID
-            \end{enumerate}
-        \end{column}
-    \end{columns}
-    
-    \vspace{0.3cm}
-    \begin{alertblock}{Timeout Sécurité}
-        20s (visage) / 30s (empreinte) sans action $\rightarrow$ Annulation automatique.
-    \end{alertblock}
+    \begin{center}
+    \begin{tikzpicture}[node distance=0.6cm, auto, thick, scale=0.75, every node/.style={scale=0.75}]
+        % Face enrollment flow (left)
+        \node[draw, fill=green!20, minimum width=2cm, align=center] (F1) {\textbf{Visage}};
+        \node[draw, fill=blue!10, below=of F1, minimum width=2cm, align=center] (F2) {App: POST};
+        \node[draw, fill=blue!10, below=of F2, minimum width=2cm, align=center] (F3) {Caméra ON};
+        \node[draw, fill=blue!10, below=of F3, minimum width=2cm, align=center] (F4) {Détection};
+        \node[draw, fill=blue!10, below=of F4, minimum width=2cm, align=center] (F5) {Encode 128D};
+        \node[draw, fill=green!30, below=of F5, minimum width=2cm, align=center] (F6) {SQLite};
+        
+        \draw[->] (F1) -- (F2);
+        \draw[->] (F2) -- (F3);
+        \draw[->] (F3) -- (F4);
+        \draw[->] (F4) -- (F5);
+        \draw[->] (F5) -- (F6);
+        
+        % Fingerprint enrollment flow (right)
+        \node[draw, fill=orange!20, minimum width=2cm, align=center, right=3cm of F1] (P1) {\textbf{Empreinte}};
+        \node[draw, fill=blue!10, below=of P1, minimum width=2cm, align=center] (P2) {App: POST};
+        \node[draw, fill=blue!10, below=of P2, minimum width=2cm, align=center] (P3) {1ère capture};
+        \node[draw, fill=blue!10, below=of P3, minimum width=2cm, align=center] (P4) {Retirer doigt};
+        \node[draw, fill=blue!10, below=of P4, minimum width=2cm, align=center] (P5) {2ème capture};
+        \node[draw, fill=orange!30, below=of P5, minimum width=2cm, align=center] (P6) {Stocké ID};
+        
+        \draw[->] (P1) -- (P2);
+        \draw[->] (P2) -- (P3);
+        \draw[->] (P3) -- (P4);
+        \draw[->] (P4) -- (P5);
+        \draw[->] (P5) -- (P6);
+        
+        % Timeout note
+        \node[draw, fill=red!20, minimum width=5cm, align=center, below=0.8cm of F6, xshift=2.5cm] (T) {\textbf{Timeout} : 20s (visage) / 30s (empreinte)};
+    \end{tikzpicture}
+    \end{center}
 \end{frame}
 
 % ==============================================================================
@@ -465,11 +460,70 @@ def fingerprint_watchdog():
     \end{columns}
 \end{frame}
 
+\begin{frame}{UX : Parcours Utilisateur}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \textbf{Nouvel Utilisateur :}
+            \begin{enumerate}
+                \item Lancement App
+                \item Token absent $\rightarrow$ Inscription
+                \item Nom + Génération Token UUID
+                \item Redirection vers Dashboard
+            \end{enumerate}
+            
+            \vspace{0.3cm}
+            \textbf{Utilisateur Existant :}
+            \begin{enumerate}
+                \item Lancement App
+                \item Token détecté $\rightarrow$ Auto-Login
+                \item Accès direct Dashboard
+            \end{enumerate}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Interface selon Rôle :}
+            
+            \vspace{0.2cm}
+            \textbf{Admin (auth\_level $\leq$ 1) :}
+            \begin{itemize}
+                \item Gestion des canaux
+                \item Création/Suppression users
+                \item Enrôlement biométrique
+            \end{itemize}
+            
+            \vspace{0.2cm}
+            \textbf{Utilisateur Standard :}
+            \begin{itemize}
+                \item Déverrouillage One-Tap
+                \item Gestion de son profil
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
 \begin{frame}{Sécurité et Confidentialité}
-    \begin{itemize}
-        \item \textbf{Protection Admin} : Le système interdit (API + App) la suppression du compte Administrateur (ID 1).
-        \item \textbf{Droit à l'oubli} : La suppression du compte nettoie la BDD, le Token et les données biométriques sur le matériel.
-    \end{itemize}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \textbf{Protection des Données :}
+            \begin{itemize}
+                \item \textbf{Stockage local} : Aucun cloud, tout sur Pi.
+                \item \textbf{Biométrie} : Encodage 128D (non-réversible).
+                \item \textbf{Token UUID} : Auth sans mot de passe.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Règles Métier :}
+            \begin{itemize}
+                \item \textbf{Admin protégé} : auth\_level $\leq$ 1 non-supprimable.
+                \item \textbf{Droit à l'oubli} : Suppression complète (BDD + capteur).
+                \item \textbf{Isolation} : Hotspot local, pas d'internet.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+    
+    \vspace{0.3cm}
+    \begin{block}{RGPD : Conformité par Design}
+        Données biométriques jamais transmises $\rightarrow$ Traitement 100\% local.
+    \end{block}
 \end{frame}
 
 % ==============================================================================
@@ -477,22 +531,68 @@ def fingerprint_watchdog():
 % ==============================================================================
 \section{Ingénierie et Fabrication}
 
-\begin{frame}{Conception "Code-to-CAD"}
-    Le châssis n'est pas dessiné à la souris, mais \textbf{codé} (OpenSCAD / SolidPython).
-    
+\begin{frame}{Conception 3D}
     \begin{columns}
-        \begin{column}{0.6\textwidth}
+        \begin{column}{0.55\textwidth}
+            \textbf{Modélisation 3D :}
             \begin{itemize}
-                \item \textbf{Paramétrique} : Changer \texttt{capsule\_dia = 37} met à jour tout le modèle (base, tiroirs, rails).
-                \item \textbf{Modulaire} : Les étages sont imprimés séparément et assemblés.
+                \item Code Python (SolidPython2)
+                \item Génère fichiers \texttt{.scad}
+                \item Rendu via OpenSCAD
+            \end{itemize}
+            
+            \vspace{0.3cm}
+            \textbf{Fabrication :}
+            \begin{itemize}
+                \item \textbf{Matériau} : PLA
+                \item \textbf{Temps} : $\sim$4 jours d'impression
+                \item \textbf{Pièces} : 8 modules assemblés
+                \item \textbf{Dimensions} : 260 × 260 × 15 mm
             \end{itemize}
         \end{column}
-        \begin{column}{0.35\textwidth}
+        \begin{column}{0.4\textwidth}
             \centering
             \includegraphics[width=\textwidth]{pic/3d_render.png} 
             \par\vspace{0.2cm}\small Rendu OpenSCAD
         \end{column}
     \end{columns}
+\end{frame}
+
+\begin{frame}{Impression 3D : Avancement}
+    \begin{columns}
+        \begin{column}{0.55\textwidth}
+            \textbf{État des Pièces :}
+            \begin{table}[]
+                \footnotesize
+                \rowcolors{2}{gray!10}{white}
+                \begin{tabular}{l | l}
+                    \toprule
+                    \textbf{Pièce} & \textbf{Statut} \\
+                    \midrule
+                    Base & \textcolor{green!60!black}{\textbf{OK}} \\
+                    Tiroir & \textcolor{orange}{\textbf{En cours}} \\
+                    Bras servo (×5) & \textcolor{orange}{\textbf{2/5}} \\
+                    Poussoir (test) & \textcolor{green!60!black}{\textbf{OK}} \\
+                    Support périph. & \textcolor{gray}{À concevoir} \\
+                    \bottomrule
+                \end{tabular}
+            \end{table}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \textbf{Inspiration :}
+            \par Amazon "Capsule Rangement"
+            
+            \vspace{0.5cm}
+            \textbf{Poussoir :}
+            \par Pièce expérimentale pour éjecter les capsules automatiquement.
+        \end{column}
+    \end{columns}
+    
+    \vspace{0.2cm}
+    \begin{block}{Leçon Apprise}
+        Imprimer de \textbf{petits prototypes} d'abord pour tester dimensions/assemblage. \\
+        \textit{Conseil précieux de Dom — gain de temps et matériau !}
+    \end{block}
 \end{frame}
 
 % ==============================================================================
@@ -501,20 +601,38 @@ def fingerprint_watchdog():
 \section{Bilan}
 
 \begin{frame}{État Final du Projet}
-    \begin{table}[]
-        \centering
-        \rowcolors{2}{gray!10}{white}
-        \begin{tabular}{l | l | l}
-            \toprule
-            \textbf{Module} & \textbf{Technologie} & \textbf{Statut V1.1} \\
-            \midrule
-            App Mobile & Android (Java) & \textcolor{green!60!black}{\textbf{Terminé \& Polished}} \\
-            Serveur & Python FastAPI & \textcolor{green!60!black}{\textbf{Stable}} \\
-            Hardware & Pi 5 / lgpio & \textcolor{green!60!black}{\textbf{Auto-Healing}} \\
-            Mécanique & PLA / OpenSCAD & \textcolor{orange}{\textbf{Assemblage}} \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \textbf{Stack Technique :}
+            \begin{table}[]
+                \footnotesize
+                \rowcolors{2}{gray!10}{white}
+                \begin{tabular}{l | l}
+                    \toprule
+                    \textbf{Module} & \textbf{Technologie} \\
+                    \midrule
+                    App Mobile & Android (Java) \\
+                    Backend & Python FastAPI \\
+                    Hardware & Pi 5 / lgpio \\
+                    Mécanique & PLA / SolidPython \\
+                    \bottomrule
+                \end{tabular}
+            \end{table}
+        \end{column}
+        \begin{column}{0.45\textwidth}
+            \textbf{Prochaines Étapes :}
+            \begin{itemize}
+                \item Finaliser impression 3D
+                \item Concevoir support périph.
+                \item Enquêter blocage UART
+            \end{itemize}
+        \end{column}
+    \end{columns}
+    
+    \vspace{0.3cm}
+    \begin{block}{Retour d'Expérience}
+        Projet complet : Hardware + Software + Mobile + Fabrication.
+    \end{block}
 \end{frame}
 
 \begin{frame}{Démonstration : Captures d'Écran}
@@ -546,20 +664,93 @@ def fingerprint_watchdog():
     \end{block}
 \end{frame}
 
+\begin{frame}[fragile]{Réflexion : Utilisation de l'IA}
+    \begin{columns}
+        \begin{column}{0.48\textwidth}
+            \textbf{Outils Utilisés :}
+            \begin{itemize}
+                \item \textbf{Gemini} (principal)
+                \item Codex (GPT)
+                \item Copilot (Claude Opus)
+            \end{itemize}
+            
+            \vspace{0.2cm}
+            \textbf{Avantages :}
+            \begin{itemize}
+                \item Productivité accrue
+                \item Prototypage rapide
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Limites Constatées :}
+            \begin{itemize}
+                \item Bibliothèques obsolètes
+                \item Solutions inutilement complexes
+                \item Bugs subtils à relire
+            \end{itemize}
+            
+            \vspace{0.2cm}
+            \textbf{Mon Apprentissage :}
+            \begin{itemize}
+                \item Relecture du code
+                \item Compréhension de l'architecture
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Exemple de Bug IA : Timestamps Incohérents}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \textbf{Code IA Original :}
+            \begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
+    last_activity_time = time.time()
+    session_start_time = time.time()
+    last_clock_update = time.time()
+    system_state = "ACTIVE"
+            \end{lstlisting}
+            \vspace{0.2cm}
+            \textcolor{red}{$\times$ 3 appels $\rightarrow$ 3 timestamps différents}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Code Corrigé :}
+            \begin{lstlisting}[language=Python, basicstyle=\scriptsize\ttfamily]
+    now = time.time()
+    last_activity_time = now
+    session_start_time = now
+    last_clock_update = now
+    system_state = "ACTIVE"
+            \end{lstlisting}
+            \vspace{0.2cm}
+            \textcolor{green!60!black}{$\checkmark$ 1 appel $\rightarrow$ timestamps synchronisés}
+        \end{column}
+    \end{columns}
+    
+    \vspace{0.3cm}
+    \begin{block}{Résultat}
+        Avant : Affichage secondes saccadé (0.1s - 2s irrégulier). \\
+        Après : Mise à jour fluide et régulière.
+    \end{block}
+\end{frame}
+
 \begin{frame}{Conclusion}
-    DistCapsule a évolué d'un simple concept vers un produit IoT complet.
+    DistCapsule a évolué d'un simple concept vers un \textbf{prototype fonctionnel} de distributeur connecté, basé sur un \textbf{système embarqué} (Raspberry Pi 5).
     \vspace{0.5cm}
     
-    \textbf{Points Forts :}
+    \textbf{Points forts :}
     \begin{itemize}
-        \item Expérience utilisateur fluide (App native, Biométrie).
-        \item Robustesse technique (Multi-thread, Architecture découplée).
-        \item Respect de la vie privée (Données locales).
+        \item Expérience utilisateur fluide (App native, biométrie, parcours simple).
+        \item Architecture logicielle découplée (3-tiers, FastAPI, Core Agent multi-thread).
+        \item Respect de la vie privée (traitement et stockage 100\% local).
     \end{itemize}
-    
-    \vspace{1cm}
+\end{frame}
+
+\begin{frame}{Merci}
     \centering
-    \large \textbf{Place à la démonstration !}
+    \includegraphics[width=0.9\textwidth,height=0.65\textheight,keepaspectratio]{pic/DistCapsule.jpg}
+    
+    \vspace{0.5cm}
+    \Large \textbf{Place à la démonstration !}
 \end{frame}
 
 \end{document}
