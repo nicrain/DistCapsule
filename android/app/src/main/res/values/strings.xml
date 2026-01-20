@@ -16,7 +16,7 @@
     <string name="section_admin_channels">Contrôle des canaux</string>
     <string name="section_self_manage">Gestion personnelle</string>
     <string name="pi_base_url">Adresse IP du DistCapsule</string>
-    <string name="wifi_info_prompt">Si vous n\'êtes pas connecté, rejoignez le réseau :\nSSID : DistCapsule_Box\nMDP : capsule_admin\n(Ou utilisez le bouton ci-dessous)</string>
+    <string name="wifi_info_prompt">Veuillez vous connecter au Wi-Fi du DistCapsule :\nSSID : DistCapsule_Box\nMDP : capsule_admin\n(Ou utilisez le bouton ci-dessous)</string>
     <string name="edit_base_url">Modifier l\'adresse IP</string>
     <string name="button_load_users">Se connecter</string>
     <string name="button_bind">Associer cet utilisateur</string>
