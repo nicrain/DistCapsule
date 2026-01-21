@@ -13,10 +13,27 @@
 \usecolortheme{dolphin}
 \usefonttheme{professionalfonts}
 
+% --- Slide numbers (e.g. 5/20) ---
+\setbeamertemplate{navigation symbols}{}
+\makeatletter
+\setbeamertemplate{footline}{%
+    \ifbeamer@noframenumbering
+        % hide slide numbers on frames marked as noframenumbering
+    \else
+        \leavevmode%
+        \hbox{%
+        \begin{beamercolorbox}[wd=\paperwidth,ht=2.25ex,dp=1ex,right]{footline}%
+            \usebeamerfont{footline}\insertframenumber/\inserttotalframenumber\hspace*{2ex}
+        \end{beamercolorbox}}%
+        \vskip0pt%
+    \fi
+}
+\makeatother
+
 \usepackage{csquotes}
 
 \AtBeginSection[]{
-\begin{frame}
+\begin{frame}[noframenumbering]
     \frametitle{Sommaire}
     \tableofcontents[currentsection]
 \end{frame}
@@ -55,13 +72,13 @@
 
 {
 \logo{}
-\begin{frame}
+\begin{frame}[noframenumbering]
     \titlepage   
 \end{frame}
 }
 
 % --- Global Table of Contents ---
-\begin{frame}{Plan de la présentation}
+\begin{frame}[noframenumbering]{Plan de la présentation}
     \tableofcontents
 \end{frame}
 
