@@ -1,0 +1,325 @@
+% !TEX program = pdflatex
+\documentclass[a4paper,12pt]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\usepackage{graphicx}
+\graphicspath{{../slides/pic/}}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{gray!70},
+  stringstyle=\color{green!40!black},
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  showstringspaces=false
+}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+
+
+\title{DistCapsule : Distributeur connecté biométrique\\Rapport technique (Raspberry Pi 5)}
+\author{Zhaoyu WANG \and Xinqi TANG}
+\date{\today}
+
+\begin{document}
+
+% Page de titre sans numéro
+\pagenumbering{gobble}
+\maketitle
+
+% Préliminaires (numérotation romaine)
+\cleardoublepage
+\pagenumbering{roman}
+\pagestyle{plain}
+
+\begin{abstract}
+DistCapsule a pour objectif de transformer un présentoir à capsules (5 canaux) en un système embarqué \textbf{sécurisé et personnalisé}.
+L’accès aux canaux est contrôlé par biométrie (empreinte et/ou visage) avec gestion multi-utilisateurs et hiérarchie des droits (admin / utilisateur).
+
+L’architecture suit un modèle AAA (3-tiers) : \textbf{Android} pour l’IHM, \textbf{FastAPI} comme passerelle (authentification, orchestration et insertion en base), et \textbf{Raspberry Pi 5} comme exécutant (polling des commandes, contrôle des servos, affichage, biométrie locale).
+Ce rapport synthétise les choix techniques, l’implémentation (code) et les résultats obtenus.
+\end{abstract}
+
+\cleardoublepage
+\tableofcontents
+
+% Corps du rapport (numérotation arabe)
+\cleardoublepage
+\pagenumbering{arabic}
+
+\chapter{Contexte et objectifs}
+\section{Constat}
+Dans un espace café partagé, les capsules sont souvent mélangées ou stockées de manière dispersée, ce qui entraîne :
+\begin{itemize}
+  \item une occupation inutile
+  \item une organisation difficile (capsules mélangées, accès non contrôlé) ;
+\end{itemize}
+
+\section{Objectifs et contraintes}
+En s’appuyant sur le cahier des charges et sur l’implémentation finale, les objectifs sont :
+\begin{itemize}
+  \item transformer le présentoir en un système à \textbf{5 canaux indépendants} (logique de « boîte aux lettres ») ;
+  \item supporter au moins 5 utilisateurs, avec deux rôles : \textbf{administrateur / utilisateur} ;
+  \item réaliser la biométrie et le stockage \textbf{en local} (pas de cloud) ;
+  \item fournir une app Android pour l’inscription, l’affectation des canaux, l’enrôlement et l’ouverture ;
+  \item s’adapter aux spécificités du Raspberry Pi 5, notamment la compatibilité GPIO.
+\end{itemize}
+
+\chapter{Architecture globale (AAA / 3-tiers)}
+\section{Rôles des composants}
+Le système est structuré en trois couches :
+\begin{itemize}
+  \item \textbf{Android (Client)} : interface utilisateur, persistance du token, gestion des comptes et affectation visuelle des canaux.
+  \item \textbf{FastAPI (Gateway)} : API REST, authentification via token, accès SQLite, mise en file des commandes (table \texttt{Pending\_Commands}).
+  \item \textbf{Core Agent (Executor, Pi 5)} : polling des commandes, action matérielle (servos/écran), biométrie locale, journalisation.
+\end{itemize}
+
+\section{Schéma d'architecture}
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=2.6cm, auto, thick]
+    \node[draw, fill=green!20, minimum height=1.2cm, minimum width=3.2cm, align=center] (Android) {\textbf{Android}\\Client};
+    \node[draw, fill=blue!20, minimum height=1.2cm, minimum width=3.4cm, align=center, right=3.5cm of Android] (API) {\textbf{FastAPI}\\Gateway};
+    \node[draw, fill=red!20, minimum height=1.2cm, minimum width=3.6cm, align=center, right=3.5cm of API] (Pi) {\textbf{Raspberry Pi 5}\\Core Agent};
+
+    \draw[<->] (Android) -- node[above] {REST / JSON} (API);
+    \draw[<->] (API) -- node[above] {SQLite\,+ Polling} (Pi);
+  \end{tikzpicture}
+  \caption{Architecture AAA (3-tiers) de DistCapsule}
+\end{figure}
+
+\section{Flux de données (workflow)}
+Exemple : l'utilisateur demande l'ouverture d'un canal depuis l'application.
+\begin{enumerate}
+  \item l'app envoie \texttt{POST /command/unlock?channel=\{1..5\}} ;
+  \item FastAPI insère une entrée dans \texttt{Pending\_Commands} (statut \texttt{pending}) ;
+  \item le Core Agent récupère la commande la plus ancienne, passe en \texttt{processing} ;
+  \item le Core Agent actionne le servo, met à jour l'écran, et journalise dans \texttt{Access\_Logs} ;
+  \item la commande est marquée \texttt{completed} ; l'app peut consulter l'état pour les commandes d'enrôlement via \texttt{/command/poll/\{user\_id\}}.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{data_flow.png}
+  \caption{Schéma de flux (support de présentation)}
+\end{figure}
+
+\section{Réseau : topologie et mode de déploiement}
+Pour fonctionner sans Internet, le Raspberry Pi 5 opère en mode point d'accès Wi-Fi (hotspot) :
+\begin{itemize}
+  \item SSID : \texttt{DistCapsule\_Box} (réseau typique \texttt{192.168.4.x}, Pi souvent \texttt{192.168.4.1}) ;
+  \item API : port \texttt{8000} ;
+  \item administration : liaison Ethernet \texttt{eth0} vers un PC (réseau typique \texttt{192.168.3.x}, Pi souvent \texttt{192.168.3.14}) pour SSH et diagnostic.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=2.5cm, auto, thick]
+    \node[draw, fill=green!20, minimum size=0.9cm, align=center] (Phone) {\textbf{Android} App};
+    \node[draw, fill=red!20, minimum width=3.2cm, minimum height=1.2cm, align=center, right=4.0cm of Phone] (Pi) {\textbf{Raspberry Pi 5}\\wlan0 (Hotspot) + eth0};
+    \node[draw, fill=blue!20, minimum size=0.9cm, align=center, right=4.0cm of Pi] (PC) {\textbf{PC Admin}\\SSH/Logs};
+    \draw[<->] (Phone) -- node[above] {Wi-Fi} node[below] {192.168.4.x} (Pi);
+    \draw[<->] (Pi) -- node[above] {RJ45} node[below] {192.168.3.x} (PC);
+  \end{tikzpicture}
+  \caption{Topologie réseau (hotspot Wi-Fi + Ethernet)}
+\end{figure}
+
+\chapter{Matériel et câblage}
+\section{Périphériques intégrés}
+\begin{itemize}
+  \item Contrôleur : Raspberry Pi 5 ;
+  \item Actionneurs : 5 servomoteurs SG90 ;
+  \item Capteurs : empreinte DY-50 (UART), Camera Module 3 (CSI) ;
+  \item IHM locale : écran IPS 1.3\," ST7789 (SPI) + bouton de réveil (GPIO 26).
+\end{itemize}
+
+\section{Câblage et alimentation}
+\subsection{Servos : mapping GPIO (Soft-PWM)}
+L'implémentation utilise \texttt{lgpio} en PWM logiciel pour piloter 5 servos (contournement des canaux PWM matériels limités sur Pi 5) :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\toprule
+Canal (servo) & BCM GPIO & Broche (Pin) & Remarque \\
+\midrule
+1 & 18 & Pin 12 & Compatible PWM matériel, utilisé en PWM logiciel \\
+2 & 6  & Pin 31 & Soft-PWM \\
+3 & 12 & Pin 32 & Soft-PWM \\
+4 & 13 & Pin 33 & Soft-PWM \\
+5 & 19 & Pin 35 & Soft-PWM \\
+\bottomrule
+\end{tabular}
+\caption{Mapping des canaux vers GPIO (implémentation + guide de câblage)}
+\end{table}
+
+\subsection{Écran (SPI) et empreinte (UART)}
+\begin{itemize}
+  \item ST7789 : SPI0 (SCLK/MOSI) + DC/RESET/BLK via GPIO ;
+  \item Empreinte : \texttt{/dev/ttyAMA0} (GPIO 14/15), TX/RX croisés.
+\end{itemize}
+
+\subsection{Alimentation et stabilité}
+\begin{itemize}
+  \item Les servos doivent être alimentés par une source 5V externe, avec masse commune avec le Pi ;
+  \item Un condensateur (ex. 500\,$\mu$F) permet d'amortir les pics de courant ;
+  \item Sur Pi 5 (puce RP1), certaines bibliothèques historiques posent problème ; le projet migre vers \texttt{lgpio}.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\textwidth]{hardware_wiring.png}
+  \caption{Schéma de câblage (support de présentation)}
+\end{figure}
+
+\chapter{Implémentation logicielle}
+\section{Core Agent (Pi 5) : boucle principale et machine à états}
+Le coeur s'exécute dans \texttt{main.py}. Points clés :
+\begin{itemize}
+  \item \textbf{SLEEP/ACTIVE} : veille par défaut (rétro-éclairage off), réveil par bouton ou commande App ;
+  \item \textbf{Polling} : lecture périodique des commandes en base (ouvrir / enrôler / supprimer) ;
+  \item \textbf{Biométrie} : empreinte en premier plan, visage via un thread en arrière-plan (queue) ;
+  \item \textbf{Timeouts} : mise en veille sur inactivité (\texttt{SCREEN\_TIMEOUT}) et durée max de session (\texttt{MAX\_SESSION\_TIME}).
+\end{itemize}
+
+\subsection{Extrait : polling des commandes}
+\begin{lstlisting}[language=Python]
+# main.py: check_app_commands()
+cursor.execute(
+  "SELECT cmd_id, command_type, target_id FROM Pending_Commands "
+  "WHERE status='pending' ORDER BY created_at ASC LIMIT 1"
+)
+# UNLOCK / ENROLL_FACE / ENROLL_FINGER / DELETE_USER
+\end{lstlisting}
+
+\section{Passerelle FastAPI (api/server.py)}
+FastAPI gère les utilisateurs, l'authentification par token et la mise en file des commandes.
+Endpoints représentatifs :
+\begin{itemize}
+  \item \texttt{POST /users} : création (avec auto-affectation du premier canal libre) ;
+  \item \texttt{POST /auth} : auto-login via token lié à l'appareil ;
+  \item \texttt{PATCH /users/\{id\}} : modification (nom/canal) avec détection de conflits ;
+  \item \texttt{POST /command/unlock}, \texttt{/command/enroll\_face}, \texttt{/command/enroll\_finger} : insertion dans \texttt{Pending\_Commands} ;
+  \item \texttt{GET /logs} : consultation des logs d'accès.
+\end{itemize}
+
+\section{Base de données (SQLite)}
+La base est initialisée via \texttt{tools/setup\_database.py}. Tables principales :
+\begin{itemize}
+  \item \texttt{Users} : identité, droits, canal, token, encodage visage (JSON), statut empreinte ;
+  \item \texttt{Access\_Logs} : journal d'événements ;
+  \item \texttt{Pending\_Commands} : file de commandes (pending/processing/completed) ;
+  \item \texttt{System\_Settings} : paramètres clé/valeur.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{p{3.2cm}p{10.5cm}}
+\toprule
+Table & Champs clés (résumé)\\
+\midrule
+Users & user\_id, name, auth\_level, assigned\_channel, face\_encoding, has\_fingerprint, app\_token, created\_at \\
+Access\_Logs & log\_id, user\_id, timestamp, event\_type, status, detail\_message \\
+Pending\_Commands & cmd\_id, command\_type, target\_id, status, created\_at \\
+System\_Settings & key\_name, value, description \\
+\bottomrule
+\end{tabular}
+\caption{Vue d'ensemble du schéma SQLite (script + implémentation)}
+\end{table}
+
+\section{Reconnaissance faciale (hardware/face\_system.py)}
+Caractéristiques :
+\begin{itemize}
+  \item \texttt{face\_recognition} (encodage 128D), stockage JSON en base ;
+  \item initialisation caméra Pi 5 via GStreamer + libcamera ;
+  \item rotation et amélioration du contraste (CLAHE) ;
+  \item seuil de décision (0.68 dans l'implémentation) via distance d'encodage.
+\end{itemize}
+
+\section{Empreinte digitale et enrôlement (hardware/enrollment.py)}
+\begin{itemize}
+  \item Enrôlement empreinte : double capture, création du modèle, stockage dans le capteur (slot \texttt{user\_id}) ;
+  \item Enrôlement visage : timeout 20s, feedback sur écran et synchronisation App (mise à jour de \texttt{Pending\_Commands.detail\_message}).
+\end{itemize}
+
+\chapter{Sécurité, confidentialité et approche RGPD}
+\section{Confidentialité by design}
+\begin{itemize}
+  \item Les données biométriques restent \textbf{locales} (pas d'envoi vers un cloud) ;
+  \item L'app et l'API n'échangent que token et paramètres de commande ;
+  \item La suppression d'un compte entraîne la suppression des données associées (base + nettoyage côté capteur si possible).
+\end{itemize}
+
+\section{Droits et protection contre les erreurs}
+\begin{itemize}
+  \item L'API interdit la suppression du compte administrateur (\texttt{user\_id==1} ou \texttt{auth\_level<=1}) ;
+  \item L'app applique des garde-fous UI pour réduire les risques de suppression involontaire.
+\end{itemize}
+
+\chapter{Tests, démonstration et résultats}
+\section{Validation bout-en-bout}
+Chaînes validées :
+\begin{itemize}
+  \item Inscription app (auto-affectation) $\rightarrow$ token $\rightarrow$ auto-login ;
+  \item Enrôlement (visage/empreinte) $\rightarrow$ guidage à l'écran $\rightarrow$ stockage DB/capteur ;
+  \item Authentification OK $\rightarrow$ ouverture servo + temporisation $\rightarrow$ fermeture ;
+  \item Commande d'ouverture à distance $\rightarrow$ insertion DB $\rightarrow$ exécution Core Agent.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.35\textwidth]{app_dashboard.png}
+  \caption{Exemple de dashboard Android (support de présentation)}
+\end{figure}
+
+\section{Limites connues}
+\begin{itemize}
+  \item Le capteur d'empreintes peut, rarement, se bloquer (UART) ; un watchdog a été testé mais ne résout pas systématiquement. Le redémarrage électrique reste le contournement le plus fiable.
+  \item En mode hotspot (réseau sans Internet), certains Android peuvent déconnecter le Wi-Fi ; la configuration passerelle et l'IHM app réduisent ce risque.
+  \item Le modèle à polling dépend de la périodicité et des verrous SQLite (timeout augmenté pour limiter « database is locked »).
+\end{itemize}
+
+\chapter{Conclusion et perspectives}
+DistCapsule aboutit à un \textbf{prototype fonctionnel} intégrant application Android, API FastAPI et exécution matérielle sur Raspberry Pi 5, formant une chaîne embarquée complète.
+
+Pistes d'amélioration :
+\begin{itemize}
+  \item Résoudre le problème de défaillance ponctuelle du capteur d'empreintes (stabilité UART, réinitialisation logicielle et reprise automatique).
+  \item Finaliser la fonctionnalité d'auto-affectation des capsules pour le premier canal. 
+  \item Remplacer le polling par des mécanismes plus réactifs (WebSocket / file de messages) tout en conservant le traitement local.
+  \item Renforcer l'audit (statistiques par utilisateur/canal, alertes sur anomalies).
+  \item Industrialiser la partie mécanique (coque, maintenance, réduction des vibrations, gestion des câbles).
+\end{itemize}
+
+\appendix
+\chapter{Références (sélection)}
+\begin{thebibliography}{9}
+  \bibitem{fastapi} FastAPI Documentation. \url{https://fastapi.tiangolo.com/}
+  \bibitem{rpi5} Raspberry Pi Documentation (Pi 5 / GPIO / Camera). \url{https://www.raspberrypi.com/documentation/}
+  \bibitem{face_recognition} face\_recognition (dlib-based) library. \url{https://github.com/ageitgey/face_recognition}
+\end{thebibliography}
+
+\end{document}
