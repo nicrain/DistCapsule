@@ -36,8 +36,11 @@ cd tools
 sudo ./install_service.sh
 ```
 *   **Wi-Fi SSID**: `DistCapsule_Box` (192.168.4.1)
+*   **Wi-Fi 密码**: `capsule_admin`
 *   **API 端口**: 8000
 *   **自启**: 树莓派开机后所有服务将自动启动。
+
+> 🔧 **高级管理**: 关于 SSH 连接、服务日志查看及数据库维护指令，请参阅 [**系统管理与运维指南 (SYSADMIN_GUIDE)**](./SYSADMIN_GUIDE.md)。
 
 ---
 

@@ -86,8 +86,11 @@ cd tools
 sudo ./install_service.sh
 ```
 *   **SSID** : `DistCapsule_Box` (IP: 192.168.4.1)
+*   **Mot de passe** : `capsule_admin`
 *   **Port API** : 8000
 *   **Démarrage** : Automatique au boot du Pi.
+
+> 🔧 **Administration** : Pour les détails sur l'accès SSH, les logs système et la maintenance SQL, consultez le [**Guide d'Administration (SYSADMIN_GUIDE)**](docs/SYSADMIN_GUIDE.md).
 
 ---
 
