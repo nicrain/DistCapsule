@@ -9,7 +9,6 @@ venv/
 .venv
 env.bak/
 venv.bak/
-3D/
 *.db
 .DS_Store
 
@@ -32,3 +31,6 @@ local.properties
 
 # Android - module build dirs
 android/*/build/
+
+# --- LaTeX ---
+.latex_tmp_files/

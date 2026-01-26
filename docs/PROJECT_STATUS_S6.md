@@ -49,7 +49,7 @@
 *   **2026-01-16**: 
     *   **Docs**: Création des diapositives de présentation (`docs/slides/`) avec architecture AAA et histoire du design 3D.
     *   **Fix Caméra**: Correction de la rotation de 90° (Counter-Clockwise) dans `face_system.py` et `face_enroll.py`.
-    *   **IA**: Ajustement du seuil de reconnaissance faciale à 0.68 (vs 0.72) pour réduire les faux positifs.
+    *   **IA**: Ajustement du seuil de reconnaissance faciale à 0.35 pour une sécurité accrue.
     *   **UX**: Interface bilingue (Chinois / Français) pour tous les logs, menus et affichages LCD.
     *   **UX**: Clarification des logs (Remplacement du terme "Distance" par "Différence de caractéristiques").
     *   **Wiring**: Mise à jour des broches pour les Servos 2-5 (GPIO 6, 12, 13, 19).

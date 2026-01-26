@@ -137,8 +137,11 @@ class FaceRecognizer:
             best_match_index = np.argmin(face_distances)
             min_distance = face_distances[best_match_index]
 
-            # 阈值判定 (0.68)
-            if min_distance < 0.68: 
+            # 阈值判定 (0.35)
+
+            if min_distance < 0.35:
+
+             
                 user_id = self.known_face_ids[best_match_index]
                 print(f"[Face] 识别成功 / Succès! ID: {user_id} (特征差异/Diff: {min_distance:.2f})")
                 return user_id

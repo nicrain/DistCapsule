@@ -1,90 +1,70 @@
-## 智能胶囊分配器项目规格说明书(Cahier des Charges)
+## 智能胶囊分配器项目规格说明书 (Cahier des Charges - V1.1 As-Built)
 
 ### I. 整体目标与概念 (Objectifs Généraux)
 
-
 | 编号 | 项目名称 | 描述 |
 | :--- | :--- | :--- |
-| **P1.0** | **项目名称** | Projet AAA: Distributeur de Capsules Intelligent (智能胶囊分配器) |
-| **P1.1** | **核心理念** | 将商用胶囊**多通道展示架**改造为具有身份认证和**通道访问控制**功能的个人**专属通道系统**（实现个人信箱功能）。 |
-| **P1.2** | **用户支持** | 系统需支持 **5 个独立用户**，每用户对应展示架上的 **1 个垂直分配通道 (Canal de Distribution)**。 |
-| **P1.3** | **通道访问** | 认证成功后，系统需驱动相应的闸门，允许用户在**限定时间内**自由地 **存入或取出** 胶囊。 |
-| **P1.4** | **设计简化** | 利用现成的 **5 通道胶囊展示架**，机械设计重点仅在于**通道出口**的 **锁定与解锁机构**。 |
+| **P1.0** | **项目名称** | DistCapsule: Distributeur de Capsules Intelligent (智能胶囊分配器) |
+| **P1.1** | **核心理念** | 将商用胶囊展示架改造为具有**生物识别身份认证**和**通道访问控制**功能的个人专属存储系统。 |
+| **P1.2** | **架构演进** | V1.1 版本已完全摒弃单片机辅助（Arduino/ESP32），采用 **Raspberry Pi 5 全托管架构**，通过 `lgpio` 直接驱动硬件，配合 FastAPI 提供移动端服务。 |
+| **P1.3** | **用户支持** | 支持多用户管理，每位用户可绑定 1 个物理通道，并通过 Android App 进行可视化管理。 |
 
 ### II. 功能需求 (Exigences Fonctionnelles)
 
-
-| 编号 | 模块 | 功能描述 | 优先度 |
+| 编号 | 模块 | 功能描述 | 状态 |
 | :--- | :--- | :--- | :--- |
-| **F2.1** | **用户管理** | Pi 需存储并管理至少 5 个用户的 ID、权限和认证信息（指纹/人脸模板）。 | 必须 |
-| **F2.1.1** | **App 注册引导** | Android App 需提供新用户**注册引导流程**，包括采集**人脸/指纹模板**并将其安全存储在 Pi 数据库中。 | 必须 |
-| **F2.1.2** | **通道命名配置** | Android App 需允许用户为其分配的通道设置**个性化名称**（例如：“我的特浓咖啡”）。 | 必须 |
-| **F2.1.3** | **超时时间设置** | Android App 需允许用户自定义其通道的**自动关闭延迟时间**（$T$ 秒），该设置需存储在 Pi 数据库。 | 必须 |
-| **F2.2** | **人脸认证** | 用户通过摄像头进行人脸扫描，Pi 需在本地完成认证并在 **3 秒内** 完成身份确认。 | 必须 |
-| **F2.3** | **指纹认证** | 用户通过指纹模块进行指纹扫描，Pi 需在本地完成认证并在 **2 秒内** 完成身份确认。 | 必须 |
-| **F2.4** | **QR 码认证** | Android App 扫码并发送 QR 码信息给 Pi，Pi 进行认证。 | 必须 |
-| **F2.5** | **通道解锁** | 认证成功后，系统需驱动相应的 **SG90 舵机**，将通道闸门移动到**完全解锁**位置。 | 必须 |
-| **F2.6** | **通道自动锁定** | Pi 负责计时。解锁后，通道需保持开启 **用户设定的限定时间 ($T$)**，时间结束后自动驱动舵机恢复**锁定状态**。 | 必须 |
-| **F2.7** | **App 通信** | Android App 需通过 **本地 Wi-Fi/MQTT 协议** 实时与 Pi 交换数据和指令。 | 必须 |
-| **F2.8** | **状态反馈** | App 需实时显示所有通道的锁定/解锁状态、系统是否在线以及认证结果。 | 必须 |
-| **F2.8.1** | **屏幕提示** | **OLED 屏幕** 需显示系统状态、唤醒指令、认证结果（成功/失败）和通道关闭倒计时提示。 | 必须 |
-| **F2.9** | **控制隔离** | Pi 和舵机控制逻辑必须通过 **串行通信** 进行隔离，确保舵机运动不干扰 Pi 操作系统。 | 必须 |
+| **F2.1** | **用户管理** | 数据库 (SQLite) 存储用户 ID、Token、权限 (Admin/User) 及生物识别状态。 | ✅ V1.0 |
+| **F2.1.1** | **App 注册/登录** | Android App 基于 UUID Token 实现**一键注册**与**自动登录**。 | ✅ V1.1 |
+| **F2.1.2** | **通道分配** | 管理员可通过 App 的可视化界面 (Vivid UI) 为用户分配或收回物理通道 (1-5)。 | ✅ V1.1 |
+| **F2.2** | **人脸认证** | Pi 5 + Camera Module 3 实时识别人脸，比对特征向量 (Tolerance 0.35)。 | ✅ V1.0 |
+| **F2.3** | **指纹认证** | DY-50 光学指纹模块 (UART) 实现秒级解锁，含 Watchdog 自愈机制防止硬件死锁。 | ✅ V1.1 |
+| **F2.4** | **通道控制** | 认证成功后，SG90 舵机自动开启对应通道闸门，3秒后自动关闭。 | ✅ V1.0 |
+| **F2.5** | **远程指令** | App 可通过 Wi-Fi (HTTP API) 发送远程解锁或触发录入模式指令。 | ✅ V1.0 |
+| **F2.6** | **反馈交互** | 1.3" IPS 屏幕实时显示欢迎信息、操作提示及错误代码；App 端同步显示状态。 | ✅ V1.0 |
 
-### III. 技术要求与约束 (Exigences Techniques)
-
+### III. 技术架构与硬件配置 (Architecture Technique)
 
 | 编号 | 约束 | 描述 |
 | :--- | :--- | :--- |
-| **T3.1** | **主控平台** | **Raspberry Pi 5** (需具备 $5A$ 供电和强大的运算能力)。 |
-| **T3.2** | **运动控制** | **Arduino 或 ESP32** (用于精确控制 5 个 SG90 舵机，实现锁定/解锁两点定位)。 |
-| **T3.3** | **供电** | 需使用一个高质量、高电流的 **5V / $5.0A$** 的独立稳压电源，以确保 Pi 5 和所有舵机的稳定运行。 |
-| **T3.4** | **机械设计** | 5 套独立的 **3D 打印闸门 (Gate)** 和 SG90 支架，闸门设计必须确保**通道的完全打开和完全关闭**。 |
-| **T3.5** | **通信协议** | Pi ↔ App 使用 **MQTT 协议**；Pi ↔ Arduino 使用**串行通信协议**。 |
-| **T3.6** | **传感器唤醒** | **摄像头和认证程序**必须在 Pi 处于休眠待机状态时**保持关闭**，只有在用户按下 **唤醒按钮 (H10.0)** 后才启动。 | 必须 |
+| **T3.1** | **主控平台** | **Raspberry Pi 5 (8GB)**。负责所有业务逻辑、视觉处理、API 服务及 GPIO 控制。 |
+| **T3.2** | **IO 控制** | **`lgpio` (Python)**。替代 RPi.GPIO，解决 Pi 5 RP1 芯片的兼容性问题，实现 Soft-PWM 舵机控制。 |
+| **T3.3** | **通信协议** | **HTTP (FastAPI)**。替代 MQTT，简化架构，提供 RESTful 接口供 Android 调用。 |
+| **T3.4** | **供电策略** | **双路供电**：Pi 5 使用官方 27W USB-C 电源；舵机使用**独立 5V/4A 电源适配器**（共地）。 |
+| **T3.5** | **生物识别** | 指纹 (UART /dev/ttyAMA0) + 人脸 (OpenCV/Face_Recognition)。 |
 
 ---
 
-## 硬件采购清单 (Liste d'Achat Matériel)
+## 硬件清单 (Liste Matériel Finalisée)
 
-### 一、核心处理与控制 (Unité Centrale et Contrôle)
+### 一、核心组件 (Unité Centrale)
 
-| 编号 | 组件 | 规格/型号建议 | 数量 | 主要用途 | 采购备注 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **A1.0** | **主控计算机** | **[Raspberry Pi 5 8GB ](https://letmeknow.fr/fr/cartes-officielles/3354-raspberry-pi-5-8gb-5056561803319.html)** | 1 | 认证、数据库、网络中心 | |
-| **A1.1** | **运动控制器** | [ADAFRUIT ESP32-S3 4MB FLASH 2MB PSRAM](https://letmeknow.fr/fr/feather/2849-adafruit-feather-esp32-s3-4mb-flash-2mb-psram-652733343048.html) | 1 | 精确控制 5 个舵机 | 通过 USB Serial 连接 Pi |
-| **A1.2** | **主动散热风扇** | [Refroidisseur Active Cooler Raspberry Pi 5](https://letmeknow.fr/fr/autres/3421-refroidisseur-active-cooler-raspberry-pi-5-5056561803357.html) | 1 | 保证 Pi 5 高负荷下稳定运行 | |
-| **A1.3** | **存储卡** | [Carte Micro-SD 32Gb Ultra SanDisk Classe 10](https://letmeknow.fr/fr/raspberry-pi/3541-carte-micro-sd-32gb-ultra-sandisk-classe-10-619659134785.html) | 1 | Pi 操作系统和数据存储 | |
+| 组件 | 规格 | 用途 |
+| :--- | :--- | :--- |
+| **Raspberry Pi 5** | 8GB RAM | 核心计算单元 |
+| **Micro SD** | 32GB Class 10 | 操作系统 (Bookworm) |
+| **Camera Module 3** | Wide Angle | 人脸数据采集与识别 |
+| **LCD Screen** | 1.3" ST7789 SPI | 本地状态显示 |
+| **Fingerprint Sensor** | DY-50 / R307 (UART) | 指纹采集与比对 |
+| **Button** | Momentary Push Button | 系统唤醒 (GPIO 26) |
 
-### 二、电源与基础布线 (Alimentation et Infrastructure)
+### 二、执行机构 (Actionneurs)
 
-| 编号 | 组件 | 规格/型号建议 | 数量 | 主要用途 | 采购备注 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **A2.0** | **Pi 主电源适配器** | **5V / 5.0A** ([Alimentation officielle Raspberry Pi 5 27W USB-C](https://letmeknow.fr/fr/raspberry-pi/3332-alimentation-officielle-raspberry-pi-5-27w-usb-c-5056561803401.html)) | 1 | 专供 Pi 5 和 ESP32 (通过 USB L4.0 供电)。 | **关键组件！** |
-| **A2.1** | **舵机独立电源** | [Boîtier coupleur de piles 4 AA (R6) avec interrupteur](https://letmeknow.fr/fr/coupleurs/613-boitier-coupleur-de-piles-4-aa-r6-avec-interrupteur-0711978441602.html) | 1 | **为 5 个 SG90 舵机 提供独立 $6\text{V}$ 供电，实现电流隔离。** | |
-| **A2.2** | **面包板** | [GRAND BREADBOARD(830 trous)](https://letmeknow.fr/fr/cablages/258-grande-breadboard-3614408217068.html) | 1 | 舵机电源分发、地线汇集和信号跳线中心。 | |
+| 组件 | 规格 | 用途 |
+| :--- | :--- | :--- |
+| **SG90 Servo** | 180° Micro Servo (x5) | 控制 5 个胶囊通道闸门 |
+| **3D Printed Parts** | PLA (Custom Design) | 舵机支架、闸门、传感器外壳 |
 
-### 三、输入与输出外设 (Périphériques I/O)
+### 三、电源 (Alimentation)
 
-| 编号 | 组件 | 规格/型号建议 | 数量 | 主要用途 | 采购备注 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **A3.0** | **摄像头** | **[Raspberry Pi Camera Module 3](https://letmeknow.fr/fr/raspberry-pi/2907-module-camera-v3-raspberry-pi-5056561803241.html)** | 1 | 人脸识别和 QR 码扫描 | |
-| **A3.1** | **指纹识别模块** | [Module de reconnaissance d'empreintes digitales FPM10A](https://letmeknow.fr/fr/capteurs/1992-module-de-reconnaissance-d-empreintes-digitales-fpm10a-642613441629.html) | 1 | 指纹认证 | |
-| **A3.2** | **RFID/NFC 模块(可选)** | **PN532 或 RC522 模块** | 1 | RFID/NFC 认证（可选） | |
-| **A3.3** | **状态显示屏** | [Afficheur LCD 2 lignes 16 caractères vert I2C](https://letmeknow.fr/fr/ecrans/167-afficheur-16-caracteres-2-lignes-i2c-vert-4894479454558.html) | 1 | I2C 接口接入 Pi 5 的 GPIO，显示状态。 | |
-| **A3.4** | **唤醒按钮** | [Adafruit Bouton Poussoir Led Vert 16 mm Momentané](https://letmeknow.fr/fr/boutons-et-interrupteurs/3834-adafruit-bouton-poussoir-led-vert-16-mm-momentane-0711978444146.html) | 1 | 连接 Pi 5 的 GPIO，用于从休眠模式唤醒系统。 | |
+| 组件 | 规格 | 备注 |
+| :--- | :--- | :--- |
+| **Pi Power Supply** | USB-C PD 27W | 树莓派官方电源 |
+| **Servo Power** | 5V 4A DC Adapter | **独立供电**，防止电流反噬 |
+| **DC Jack** | 5.5x2.1mm Socket | 接入外部 5V 电源 |
 
-### 四、执行与机械结构 (Actionneurs et Mécanique)
+### 四、软件栈 (Software Stack)
 
-| 编号 | 组件 | 规格/型号建议 | 数量 | 主要用途 | 采购备注 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **A4.0** | **胶囊展示架主体** | [Rangement Capsule](https://amzn.eu/d/jfPP7i2) | 1 | 机械改装基础 | |
-| **A4.1** | **动作执行器** | **[SG90 Nano Servo (微型舵机)](https://letmeknow.fr/fr/moteurs-et-servo-moteurs/30-micro-servo-moteur-sg90-nano-4894479459935.html)** | 5 | 驱动 5 个胶囊通道的锁定/解锁闸门 | |
-| **A4.2** | **3D 打印材料** | PLA/PETG 耗材 | 适量 | 打印舵机支架和通道闸门 | |
-
-### 五、连接线材 (Câbles)
-
-| 编号 | 组件 | 规格/型号建议 | 数量 | 主要用途 | 采购备注 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **A5.0** | **[Nappe de 40 jumpers mâle - mâle 20cm](https://letmeknow.fr/fr/cablages/492-nappe-de-40-jumpers-male-male-20cm-0711978444962.html)** | **主要采购 $20\text{cm}$ 长度。** | **1** | **核心连接线：** 连接 **舵机** (母头) 到 **面包板孔** (母头)。 | **用于舵机连接时需加固。** |
-| **A5.1** | **[Nappe de 40 jumpers mâle - femelle 20cm](https://letmeknow.fr/fr/cablages/96-nappe-de-40-jumpers-male-femelle-20cm-6915671063107.html)** | **主要采购 $10\text{cm}$ 到 $20\text{cm}$ 长度。** | **1** | 主控连接：用于连接 **Pi 5/ESP32** (公头) 到 **传感器** 或 **面包板跳线**。 | |
-| **A5.2** | **[Cable USB-C](https://letmeknow.fr/fr/cablages/2926-cable-usb-c-642613923354.html)** | 高速数据线 | 1 | 连接 **Raspberry Pi 5** 和 **ESP32-S3**（供电 + USB 虚拟串口通信）。 | |
+*   **OS**: Raspberry Pi OS (Bookworm)
+*   **Backend**: Python 3.11, FastAPI, SQLite, Pydantic
+*   **Hardware**: lgpio, opencv-python, adafruit-circuitpython-fingerprint
+*   **Mobile**: Android Native (Java), Retrofit, Material Design 3

@@ -73,6 +73,19 @@ Puts the machine into face recording mode.
 Puts the machine into fingerprint recording mode.
 *   **POST** `/command/enroll_finger?user_id=12`
 
+### 3.4 Poll Command Status (Enrollment)
+Checks the status of the latest asynchronous command (e.g., enrollment) for a user.
+*   **GET** `/command/poll/{user_id}`
+*   **Response**:
+    ```json
+    {
+      "cmd_id": 55,
+      "command_type": "ENROLL_FINGER",
+      "status": "success",     // pending, success, failed, timeout
+      "detail_message": "Fingerprint stored at ID 12"
+    }
+    ```
+
 ---
 
 ## 4. Data Models
@@ -97,6 +110,7 @@ Puts the machine into fingerprint recording mode.
   "user_id": 12,
   "timestamp": "2026-01-16 14:30:00",
   "event_type": "APP_UNLOCK",
-  "status": "SUCCESS"
+  "status": "SUCCESS",
+  "detail_message": "Channel 1 unlocked via App"
 }
 ```
