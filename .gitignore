@@ -33,4 +33,11 @@ local.properties
 android/*/build/
 
 # --- LaTeX ---
+
 .latex_tmp_files/
+
+
+
+# --- Gemini CLI ---
+
+.gemini/
